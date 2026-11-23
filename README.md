@@ -29,7 +29,7 @@ Black and white, one font, one character grid. Slovenian and English.
 - **Znamenitosti**: 44 municipalities carry a landmark upgrade, such as Idrija's mercury mine,
   Krško's power plant, Planica in Kranjska Gora or kremšnita in Bled.
 - **Kurent**: shows up on the map now and then. Catch him for a ×7 boost, a pustni krof or a click frenzy.
-- **Referendum**: prestige. Reset your run for votes (each +2 % income for good) and adopt one of
+- **Referendum**: prestige. Reset your run for votes (each +5 % income for good) and adopt one of
   12 **constitutional amendments**: cheaper producers, a more frequent Kurent, the first 25 občine free, and so on.
 - **Prazniki**: seasonal events from the real calendar: Pust and Prešernov dan in February,
   Dan državnosti in June, the tourist season, trgatev, Martinovanje in November, Christmas, the ski season.
@@ -42,15 +42,15 @@ Settings → *Prenos igre* copies the save so you can continue on another device
 
 Two simulations, both in `tools/`:
 
-| who | to 100 občin | to all 212 | referendums |
-|---|---|---|---|
-| perfect bot, playing nonstop (`sim_prestige.py 0.08`) | 2 h of play | ~23 h of play | 3 |
-| 3 visits a day, 10 min each, tab closed (`sim_casual.py`) | 1.5 days | 6.5 days | 0 |
-| 5 visits a day, 10 min each | 0.9 days | 5.5 days | 0 |
-| tab left open, a look every 2 h | 0.8 days | 3.3 days | 0 |
+| who | all 212 | referendums |
+|---|---|---|
+| perfect bot, playing nonstop (`sim_prestige.py`) | ~24.5 h of play | 3 |
+| 3 visits a day, 10 min each, calls a referendum past ~150 občin | ~9 days | 4 |
+| the same player, never calling a referendum | ~15 days | 0 |
 
 Neither model includes the Kurent, achievements, amendments or events, which all speed things up.
-Casual players get over the late-game wall with offline income and so never need a referendum.
+Each referendum vote is +5 % income, so calling one late in a run pays off for active and casual
+players alike; the game says so in the *next občina* panel when the moment is right.
 
 ## Playtesting
 

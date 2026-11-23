@@ -2,9 +2,9 @@
 
 The player opens the game a few times a day for a short session, clicks a bit,
 buys greedily (same rule as tools/sim_prestige.py) and closes the tab. While
-closed the game pays offline income: 50 % for up to 8 h. A referendum is called
-at the end of a session when the next občina is more than STALL_H hours of
-income away and the referendum would at least double the votes. Amendments,
+closed the game pays offline income: 50 % for up to 8 h. Past 150 občine the
+player calls a referendum at the end of a session whenever it would at least
+double the votes (use_refs=False never calls one). Amendments,
 the Kurent, achievements and seasonal events are left out, so real players
 with those bonuses will be somewhat faster.
 
@@ -15,8 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from econ import d, IDX, GEN, TIERS, LM, regs  # noqa: E402
 from sim_prestige import ocost, PDIV, VOTE_DIV, VOTE_PCT  # noqa: E402
 
-LATE = 0.08
-STALL_H = 6
+LATE = 0.12
 
 
 class Game:
@@ -90,7 +89,7 @@ class Game:
         self.earn(self.ips() * (secs if tab_open else min(secs, 8 * 3600) * 0.5))
 
 
-def player(sessions, minutes, cps, tab_open=False, max_days=120):
+def player(sessions, minutes, cps, tab_open=False, max_days=120, use_refs=True):
     """sessions: hours of the day at which the player looks in"""
     g = Game(); day = 0; marks = {}; refs = 0
     while day < max_days:
@@ -102,10 +101,9 @@ def player(sessions, minutes, cps, tab_open=False, max_days=120):
             if g.n == len(d):
                 return marks, refs
             nxt = sessions[i + 1] if i + 1 < len(sessions) else sessions[0] + 24
-            # stalled and a referendum would at least double the votes?
+            # late in a run, call a referendum once it would at least double the votes
             gain = int(math.cbrt(g.life / VOTE_DIV)) - g.votes
-            wait_h = (ocost(g.n, LATE) - g.sit) / max(g.ips(), 1e-9) / 3600
-            if wait_h > STALL_H and gain >= max(1, g.votes):
+            if use_refs and g.n >= 150 and gain >= max(10, g.votes):
                 g = Game(g.votes + gain, g.life); refs += 1
             g.away(nxt - h - minutes / 60, tab_open)
         day += 1
@@ -114,10 +112,9 @@ def player(sessions, minutes, cps, tab_open=False, max_days=120):
 
 if __name__ == '__main__':
     profiles = [
-        ('3 short visits a day (10 min)', [8, 13, 21], 10, 3, False),
-        ('5 visits a day (10 min)', [8, 11, 14, 18, 22], 10, 3, False),
-        ('tab left open all day, checks every 2 h (5 min)', [8, 10, 12, 14, 16, 18, 20, 22], 5, 2, True),
+        ('3 visits a day (10 min), uses referendums', [8, 13, 21], 10, 3, False, True),
+        ('3 visits a day (10 min), never a referendum', [8, 13, 21], 10, 3, False, False),
     ]
-    for name, sess, mins, cps, tab in profiles:
-        marks, refs = player(sess, mins, cps, tab)
+    for name, sess, mins, cps, tab, refs_on in profiles:
+        marks, refs = player(sess, mins, cps, tab, use_refs=refs_on)
         print(f'{name:50s} days to 50/100/150/200/212: {marks}  referendums: {refs}')

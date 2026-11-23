@@ -13,7 +13,7 @@ from econ import d, IDX, GEN, TIERS, LM, regs  # noqa: E402
 
 PDIV = 20000
 VOTE_DIV = 1e9      # votes = cbrt(lifetime / VOTE_DIV)
-VOTE_PCT = 0.02     # each vote: +2 % income
+VOTE_PCT = 0.05     # each vote: +5 % income
 
 
 def ocost(i, late=0.0):
@@ -92,6 +92,6 @@ def campaign(cps=5, late=0.0, stall_min=45, tmax_total=80 * 3600, quiet=False):
 
 
 if __name__ == '__main__':
-    late = float(sys.argv[1]) if len(sys.argv) > 1 else 0.0
+    late = float(sys.argv[1]) if len(sys.argv) > 1 else 0.12
     h, runs = campaign(late=late)
     print(f'late={late}: all 212 after {h} h of play over {runs} runs')

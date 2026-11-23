@@ -15,10 +15,13 @@
 <meta property="og:image" content="https://collarcore.github.io/improved-disco/og.png">
 <meta property="og:url" content="https://collarcore.github.io/improved-disco/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/ibm-plex-mono-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url(fonts/ibm-plex-mono-latin-ext-400-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"IBM Plex Mono";font-weight:700;font-display:swap;src:url(fonts/ibm-plex-mono-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"IBM Plex Mono";font-weight:700;font-display:swap;src:url(fonts/ibm-plex-mono-latin-ext-700-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
 /* VOICE: a municipal terminal from 1991, dry and a bit proud
    IDEA: a text-mode registry screen; every glyph sits on one character grid
    PICTURE: the ASCII map of Slovenia filling in, občina by občina
@@ -133,10 +136,10 @@ ACH.push(['ref1','Ljudstvo je odločilo','razpiši referendum',()=>S.refs>=1],['
 function checkAch(){for(const a of ACH){if(a[0]==='tri'||S.ach.includes(a[0]))continue;if(a[3]()){S.ach.push(a[0]);log('dosežek: '+a[1]+' (+1 %)')}}}
 
 /* ================= FORMAT ================= */
-function fmt(x,dec){if(!isFinite(x))return '∞';if(x<1e6){return x.toLocaleString('sl-SI',{maximumFractionDigits:dec&&x<100?1:0})}
+function fmt(x,dec){if(!isFinite(x))return '∞';if(x<1e6){return x.toLocaleString('sl-SI',{maximumFractionDigits:dec&&x<100?1:0,useGrouping:'always'})}
  const sf=['mio','mrd','bil','bld','tril','trld','kvad','kvadd'];let k=Math.floor(Math.log10(x)/3)-2;if(k>=sf.length)return x.toExponential(2).replace('.',',');
  return (x/10**(3*k+6)).toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+sf[k]}
-const num=x=>x.toLocaleString('sl-SI');
+const num=x=>x.toLocaleString('sl-SI',{useGrouping:'always'});
 const dur=s=>{s=Math.max(0,Math.round(s));if(s<60)return s+' s';const m=Math.floor(s/60);if(m<60)return m+' min';const h=Math.floor(m/60);return h<48?h+' h '+(m%60)+' min':Math.floor(h/24)+' dni'};
 const L=s=>[...s].length;
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -163,9 +166,11 @@ function box(title,lines,w,right=[]){const inner=w-4;
 const bar=(f,w)=>{const k=Math.round(Math.max(0,Math.min(1,f))*w);return '['+'#'.repeat(k)+'.'.repeat(w-k)+']'};
 
 /* ================= BIG DIGITS / BANNERS ================= */
-const SEG={'0':[' _ ','| |','|_|'],'1':['   ','  |','  |'],'2':[' _ ',' _|','|_ '],'3':[' _ ',' _|',' _|'],'4':['   ','|_|','  |'],'5':[' _ ','|_ ',' _|'],
- '6':[' _ ','|_ ','|_|'],'7':[' _ ','  |','  |'],'8':[' _ ','|_|','|_|'],'9':[' _ ','|_|',' _|'],'.':[' ',' ','.'],',':[' ',' ',','],'-':['   ',' _ ','   '],'e':['   ',' _ ','|_ '],'+':['   ',' | ','   ']};
-function big(str){const r=['','',''];for(const ch of str){const g=SEG[ch];if(!g)continue;for(let i=0;i<3;i++)r[i]+=g[i]}return r}
+const SEG={'0':[' ## ','#  #','#  #','#  #',' ## '],'1':['  # ',' ## ','  # ','  # ',' ###'],'2':[' ## ','#  #','  # ',' #  ','####'],
+ '3':['### ','   #',' ## ','   #','### '],'4':['#  #','#  #','####','   #','   #'],'5':['####','#   ','### ','   #','### '],'6':[' ## ','#   ','### ','#  #',' ## '],
+ '7':['####','   #','  # ',' #  ',' #  '],'8':[' ## ','#  #',' ## ','#  #',' ## '],'9':[' ## ','#  #',' ###','   #',' ## '],
+ '.':[' ',' ',' ',' ','#'],',':['  ','  ','  ',' #','# '],'-':['    ','    ','####','    ','    '],'e':[' ## ','#  #','####','#   ',' ###'],'+':['   ',' # ','###',' # ','   ']};
+function big(str){const r=['','','','',''];for(const ch of [...str]){const g=SEG[ch];if(!g)continue;for(let i=0;i<5;i++)r[i]+=(r[i]?' ':'')+g[i]}return r}
 const BAN_BIG=[
 '               \\/',
 '  ___  ____   ____ ___ _   _ _____',
@@ -215,9 +220,9 @@ let MODE='',W={},FS=14;
 function layout(){const vw=document.documentElement.clientWidth-16;const mz=document.getElementById('measure');
  const cw=f=>{document.body.style.fontSize=f+'px';return mz.getBoundingClientRect().width/100};
  let mode,f;
- for(f of [14,13]){const c=Math.floor(vw/cw(f));if(c>=174){mode='3';W={a:40,b:88,c:Math.min(48,c-132),tot:0};break}}
- if(!mode)for(f of [14,13]){const c=Math.floor(vw/cw(f));if(c>=130){mode='2';W={a:40,b:88};break}}
- if(!mode){for(f of [14,13,12,11,10]){const c=Math.floor(vw/cw(f));if(c>=48||f===10){mode='1';W={a:Math.max(48,Math.min(c,c>=88?88:62))};break}}}
+ for(f of [14,13]){const c=Math.floor(vw/cw(f));if(c>=175){mode='3';W={a:41,b:88,c:Math.min(48,c-133)};break}}
+ if(!mode)for(f of [14,13]){const c=Math.floor(vw/cw(f));if(c>=131){mode='2';W={a:41,b:88};break}}
+ if(!mode){for(f of [14,13,12,11,10]){const c=Math.floor(vw/cw(f));if(c>=48||f===10){mode='1';W={a:Math.max(49,Math.min(c,c>=89?89:63))-(Math.max(49,Math.min(c,c>=89?89:63))%2?0:1)};break}}}
  FS=f;document.body.style.fontSize=f+'px';
  const key=mode+JSON.stringify(W);if(key===MODE)return;MODE=key;
  const P={bell:'a',stat:'a',ups:'c',reg:'c',list:'c',ach:'c',ref:'a',set:'a',next:'b',map:'b',gen:'b',log:'b'};
@@ -236,12 +241,12 @@ let PW={},HW=80,cache={};
 /* ================= PANELS ================= */
 function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);const dg=big(m?m[1]:s);
  const unit='tolarji'+(m&&m[2]?' ('+m[2]+')':'');const rate='+'+fmt(ips(),1)+' SIT/s';const sub='212 občin, od Osilnice do Ljubljane';const lines=[];
- if(w>=100){const left=[...ban,'',sub];const right=['',unit,...dg,'',rate];const rows=Math.max(left.length,right.length);
-  for(let i=0;i<rows;i++)lines.push(padR(left[i]||'',w-30)+padL(right[i]||'',30))}
- else lines.push(...ban,'',sub,'',unit,...dg,rate);
+ if(w>=100){const left=[...ban,'',sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L));
+  for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<7?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>'}:padR(left[i]||'',w-rw)+r)}}
+ else lines.push(...ban,'',sub,'',unit,'',...dg.map(d=>({h:'<b>'+esc(padR(d,w))+'</b>'})),'',rate);
  lines.push('='.repeat(w));
  lines.push(cut('občine '+S.n+'/212   prebivalci '+num(pop())+(S.won?'   *** VSA SLOVENIJA JE TVOJA ***':''),w));
- return lines.map(l=>esc(padR(l,w))).join('\n')}
+ return lines.map(l=>typeof l==='object'?l.h:esc(padR(l,w))).join('\n')}
 const BELL=[
 '          +',
 '          |',
@@ -256,13 +261,13 @@ const BELL=[
 '       | | | |',
 '   ____|_|_|_|____'];
 function pBell(w){const iw=w-4;const sw=swing>0?(swing%2?'/o)':'(o\\'):'(o)';const cl=swing>0?(swing%2?'/':'\\'):'|';
- const art=BELL.map(l=>l.replace('%%%',sw).replace('%',cl));const aw=Math.max(...art.map(L));const off=Math.floor((iw-aw)/2);
+ const art=BELL.map(l=>l.replace('%%%',sw).replace('%',cl));const aw=Math.max(...art.map(L));const AX=10;const off=Math.floor((iw-1)/2)-AX;
  const grid=art.map(l=>[...padR(' '.repeat(off)+l,iw)]);
  for(const p of parts){const y=p.y0-Math.floor(p.age/2);if(y<0)continue;const x=p.x<.5?Math.max(0,off-L(p.t)-1-Math.floor(p.x*4)):Math.min(iw-L(p.t),off+aw+1+Math.floor((p.x-.5)*4));
   [...p.t].forEach((ch,j)=>{if(grid[y][x+j]!==undefined)grid[y][x+j]=ch})}
  const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell'}]);
  lines.push(['']);
- const lbl='[  Z V O N I  ]';lines.push([' '.repeat(Math.floor((iw-L(lbl))/2)),{t:lbl,a:'ring'}]);
+ const lbl='[  Z V O N I  ]';lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring'}]);
  lines.push(['']);lines.push(lr('en klik',fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
  if(now<kurUntil)lines.push(lr('KURENTOVANJE ×7',Math.ceil((kurUntil-now)/1000)+' s',iw));
@@ -398,8 +403,8 @@ document.addEventListener('pointerdown',e=>{const t=target(e);if(t&&(t.dataset.a
 document.addEventListener('click',e=>{const t=target(e);if(!t||t.dataset.a==='ring'||t.dataset.a==='kurent')return;act(t.dataset.a);render()});
 let typed='';
 document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
- if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();act(e.target.dataset.a);render();return}
- if(e.code==='Space'){e.preventDefault();ring();render();return}
+ if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render()}return}
+ if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render()}return}
  if(e.key==='n'){unlock();render()}
  typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri')){S.ach.push('tri');log('dosežek: Na vrhu (+1 %)');ding(1319,.06,1.2)}});
 document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('#mapgrid i');if(!c)return;const i=+c.className.match(/c(\d+)/)[1];if(i!==hover){hover=i;document.getElementById('hov').textContent=`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`;mapInfo()}});
@@ -409,7 +414,7 @@ document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);
  if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+13e3;drawMap(true)}
 let last=performance.now(),saveT=0,achT=0,partT=0;
-function tick(){const now=performance.now(),dt=Math.min(1,(now-last)/1000);last=now;const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;
+function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();const kx=has(LM.find(l=>l.kind==='kur').id)?.6:1;
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(120e3+Math.random()*120e3)*kx}

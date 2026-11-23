@@ -37,6 +37,7 @@ A full first run takes many hours. The game saves to your browser and earns at h
 | `tools/build.py` | fills the template → `index.html` |
 | `tools/mapgen.py` | regenerates the maps from coordinates (weighted Voronoi) |
 | `tools/econ.py`, `tools/sim.py` | balance simulation with a greedy bot |
+| `fonts/` | IBM Plex Mono, self-hosted (SIL Open Font License, see `fonts/OFL.txt`) |
 
 Rebuild after editing: `python3 tools/build.py`
 

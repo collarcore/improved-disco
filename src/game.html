@@ -124,7 +124,7 @@ const votesTotal=()=>Math.floor(Math.cbrt(S.all/1e9));
 const votesGain=()=>Math.max(0,votesTotal()-S.votes);
 function upgrades(){const L=[];
  GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:g[0]+': '+t[2],desc:GPL[k]+' ×2',cost:g[1]*t[1]})}));
- LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:l.name,desc:lmDesc(l)+' · '+O[l.o].n,cost:lmcost(l)})});
+ LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:l.name,desc:lmDesc(l)+' · '+ab(O[l.o].n,16),cost:lmcost(l)})});
  CLK.forEach(c=>{if(S.clicks>=c[2]&&!has(c[0]))L.push({id:c[0],name:c[1],desc:'klik ×'+c[4]+(c[5]?', +'+c[5]*100+' % dohodka na klik':''),cost:c[3]})});
  return L.sort((a,b)=>a.cost-b.cost)}
 function lmDesc(l){const v=String(l.v).replace('.',',');return l.kind==='gen'?GPL[l.t]+' ×'+v:l.kind==='glob'?'vse ×'+v:l.kind==='click'?'klik ×'+v:l.kind==='pct'?'klik +'+Math.round(l.v*100)+' % dohodka':'kurent pogosteje, učinki 2× dlje'}
@@ -147,10 +147,16 @@ function fmt(x,dec){if(!isFinite(x))return '∞';if(x<1e6){return x.toLocaleStri
 const num=x=>x.toLocaleString('sl-SI',{useGrouping:'always'});
 const dur=s=>{s=Math.max(0,Math.round(s));if(s<60)return s+' s';const m=Math.floor(s/60);if(m<60)return m+' min';const h=Math.floor(m/60);return h<48?h+' h '+(m%60)+' min':Math.floor(h/24)+' dni'};
 const L=s=>[...s].length;
+const SHORT={"Sveta Trojica v Slovenskih goricah": ["Sv. Trojica v Slov. goricah", "Sv. Trojica v Sl. gor.", "Sv. Trojica"], "Sveti Andraž v Slovenskih goricah": ["Sv. Andraž v Slov. goricah", "Sv. Andraž v Sl. gor.", "Sv. Andraž"], "Sveti Jurij v Slovenskih goricah": ["Sv. Jurij v Slov. goricah", "Sv. Jurij v Sl. gor.", "Sv. Jurij v S. g."], "Miklavž na Dravskem polju": ["Miklavž na Drav. polju", "Miklavž na D. p.", "Miklavž"], "Sveti Jurij ob Ščavnici": ["Sv. Jurij ob Ščavnici", "Sv. Jurij ob Šč.", "Sv. Jurij o. Š."], "Dobrova-Polhov Gradec": ["Dobrova-Polh. Gradec", "Dobrova-P. G."], "Cerklje na Gorenjskem": ["Cerklje na Gor.", "Cerklje n. G."], "Kostanjevica na Krki": ["Kostanjevica n. K.", "Kostanj. n. K."], "Gorenja vas-Poljane": ["Gor. vas-Poljane", "G. vas-Poljane"], "Slovenska Bistrica": ["Slov. Bistrica", "Sl. Bistrica"], "Šmartno pri Litiji": ["Šmartno pri Lit.", "Šmartno p. L."], "Miren-Kostanjevica": ["Miren-Kostanj.", "Miren-K."], "Lovrenc na Pohorju": ["Lovrenc na Poh.", "Lovrenc n. P."], "Ribnica na Pohorju": ["Ribnica na Poh.", "Ribnica n. P."], "Slovenske Konjice": ["Slov. Konjice", "Sl. Konjice"], "Ravne na Koroškem": ["Ravne na Kor.", "Ravne n. K."], "Šmarje pri Jelšah": ["Šmarje pri J.", "Šmarje p. J."], "Dol pri Ljubljani": ["Dol pri Lj.", "Dol p. Lj."], "Dolenjske Toplice": ["Dol. Toplice", "Dol. Topl."], "Šmarješke Toplice": ["Šmarj. Toplice", "Šm. Toplice"], "Mokronog-Trebelno": ["Mokronog-Treb.", "Mokronog-T."], "Rečica ob Savinji": ["Rečica ob Sav.", "Rečica o. S."], "Središče ob Dravi": ["Središče ob Dr.", "Središče o. D."], "Bistrica ob Sotli": ["Bistrica ob S.", "Bistrica o. S."], "Ilirska Bistrica": ["Il. Bistrica", "Il. Bistr."], "Šempeter-Vrtojba": ["Šempeter-Vrt.", "Šempeter-V."], "Moravske Toplice": ["Mor. Toplice", "Mor. Topl."], "Selnica ob Dravi": ["Selnica ob Dr.", "Selnica o. D."], "Črna na Koroškem": ["Črna na Kor.", "Črna n. K."], "Zagorje ob Savi": ["Zagorje o. S.", "Zagorje"], "Rogaška Slatina": ["Rog. Slatina", "R. Slatina"], "Hrpelje-Kozina": ["Hrpelje-Koz.", "Hrpelje-K."], "Jugovzhodna Slovenija": ["Jugovzhodna Slov.", "Jugovzhodna"], "Primorsko-notranjska": ["Primorsko-notr.", "Prim.-notr."], "Osrednjeslovenska": ["Osrednjeslov.", "Osr.-slov."]};
+const SMALLW=new Set(['v','na','ob','pri','pod','nad','in']);
+/* fit a proper name into w characters: full name, then official-style short forms, then initials */
+function ab(s,w){if(L(s)<=w)return s;for(const v of SHORT[s]||[])if(L(v)<=w)return v;
+ const ws=s.split(' ');for(let i=ws.length-1;i>0;i--){if(SMALLW.has(ws[i])||L(ws[i])<=3)continue;ws[i]=[...ws[i]][0]+'.';const r=ws.join(' ');if(L(r)<=w)return r}
+ return cut(ws.join(' '),w)}
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const padR=(s,w)=>s+' '.repeat(Math.max(0,w-L(s)));
 const padL=(s,w)=>' '.repeat(Math.max(0,w-L(s)))+s;
-const cut=(s,w)=>L(s)>w?[...s].slice(0,Math.max(0,w-1)).join('')+'~':s;
+const TRUNC=window.__trunc=[];const cut=(s,w)=>{if(L(s)<=w)return s;TRUNC.push(s);return [...s].slice(0,Math.max(0,w-1)).join('')+'~'};
 function wrap(s,w){const out=[];let line='';for(const word of s.split(' ')){if(L(line)+L(word)+(line?1:0)>w){if(line)out.push(line);line=word}else line=line?line+' '+word:word}if(line)out.push(line);return out}
 
 /* ================= TEXT UI ENGINE =================
@@ -159,7 +165,7 @@ const sl=g=>L(typeof g==='string'?g:g.t);
 function seg(g){if(typeof g==='string')return esc(g);const t=esc(g.t);
  if(g.raw)return g.raw;
  if(g.a)return `<span class="b${g.c?' '+g.c:''}" data-a="${g.a}" role="button" tabindex="0">${t}</span>`;return g.c?`<span class="${g.c}">${t}</span>`:t}
-function fit(line,w){let h='',l=0;for(const g of line){const n=sl(g);if(l+n>w){if(typeof g==='string'){h+=esc([...g].slice(0,w-l).join(''));l=w}break}h+=seg(g);l+=n}return h+' '.repeat(w-l)}
+function fit(line,w){let h='',l=0;for(const g of line){const n=sl(g);if(l+n>w){TRUNC.push(line.map(x=>typeof x==='string'?x:x.t).join(''));if(typeof g==='string'){h+=esc([...g].slice(0,w-l).join(''));l=w}break}h+=seg(g);l+=n}return h+' '.repeat(w-l)}
 const btn=(t,a,on=true,c)=>on?{t:'['+t+']',a,c}:{t:'('+t.trim().toLowerCase()+')'};
 const two=(a,b,w)=>{const la=a.reduce((s,g)=>s+sl(g),0),lb=b.reduce((s,g)=>s+sl(g),0);return [...a,' '.repeat(Math.max(1,w-la-lb)),...b]};
 const lr=(a,b,w)=>two([a],[b],w);
@@ -242,8 +248,8 @@ let PW={},HW=80,cache={};
 
 /* ================= PANELS ================= */
 function headStatus(w){if(S.n>=O.length)return '*** VSA SLOVENIJA JE TVOJA ***   občine 212/212';const c=ocost(S.n),f=Math.min(1,S.sit/c),v=ips();
- const tail=' '+Math.floor(f*100)+' %'+(f<1&&v>0?' · še ~'+dur((c-S.sit)/v):' · lahko odkleneš');const head='občine '+S.n+'/212 · naslednja: '+O[S.n].n+' ';
- const bw=Math.max(6,Math.min(30,w-L(head)-L(tail)-2));return L(head)+bw+2+L(tail)<=w?head+bar(f,bw)+tail:'naslednja: '+O[S.n].n+tail}
+ const tail=' '+Math.floor(f*100)+' %'+(f<1&&v>0?' · še ~'+dur((c-S.sit)/v):' · lahko odkleneš');const head='občine '+S.n+'/212 · naslednja: '+ab(O[S.n].n,16)+' ';
+ const bw=Math.max(6,Math.min(30,w-L(head)-L(tail)-2));return L(head)+bw+2+L(tail)<=w?head+bar(f,bw)+tail:'naslednja: '+ab(O[S.n].n,w-11-L(tail))+tail}
 function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))>w)dg=big(m?m[1]:s,'small');
  const unit='tolarji';if(m&&m[2]){const last=dg.length-1;dg=dg.map((r,i)=>r+(i===last?' '+m[2]:' '.repeat(L(m[2])+1)))}const rate='+'+fmt(ips(),1)+' SIT/s';const sub='212 občin, od Osilnice do Ljubljane';const lines=[];
  if(w>=100){const left=[...ban,'',sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L))+2;
@@ -295,7 +301,8 @@ function pNext(w){const iw=w-4;const ls=[];
   wrap('Vseh 212 občin in '+num(TOTAL)+' prebivalcev je tvojih. Čas te igre: '+dur((S.won-S.t0)/1000)+'.',iw).forEach(l=>ls.push(l));
   wrap('Razpiši referendum: dobiš glasove in začneš znova, hitreje.',iw).forEach(l=>ls.push(l));return box('NASLEDNJA OBČINA',ls,w,['[N]'])}
  const o=O[S.n],c=ocost(S.n),can=S.sit>=c,v=ips();
- ls.push(lr('#'+String(S.n+1).padStart(3,'0')+'  '+o.n.toUpperCase()+(o.u?' (MO)':''),REG[o.r][1],iw));
+ {const id='#'+String(S.n+1).padStart(3,'0')+'  ',mo=o.u?' (MO)':'';const rg=ab(REG[o.r][1],Math.max(10,iw-L(id)-L(mo)-L(o.n)-2));
+ ls.push(lr(id+ab(o.n,iw-L(id)-L(mo)-L(rg)-2).toUpperCase()+mo,rg,iw))}
  ls.push(num(o.p)+' prebivalcev · '+o.a+' km² · občina od '+(o.y||'?'));
  ls.push('po odklepu: dohodek +'+((ipsAfterUnlock()-1)*100).toLocaleString('sl-SI',{maximumFractionDigits:1})+' %');
  const extra=[];GEN.forEach(g=>{if(g[3]===S.n+1)extra.push('odpre '+g[0].toLowerCase())});if(LMAT[S.n])extra.push('znamenitost: '+LMAT[S.n].name);
@@ -305,8 +312,8 @@ function pNext(w){const iw=w-4;const ls=[];
  let k=0,s=S.sit;while(S.n+k<O.length&&s>=ocost(S.n+k)){s-=ocost(S.n+k);k++}
  if(can)ls.push([btn(' ODKLENI · '+fmt(c)+' SIT ','unlock'),...(k>1?['  ',btn(' VSE MOŽNE ('+k+') ','all')]:[])]);
  else ls.push('cena '+fmt(c)+' SIT'+(v>0?' · še ~'+dur((c-S.sit)/v):''));
- const g=votesGain();if(!can&&v>0&&(c-S.sit)/v>3600&&g>=Math.max(1,S.votes))ls.push(cut('napredek je počasen: referendum ti da +'+g+' glasov',iw));else ls.push('');
- const nx=[1,2,3].map(k=>O[S.n+k]).filter(Boolean).map(q=>q.n);ls.push(cut('sledijo: '+(nx.length?nx.join(', ')+(S.n+4<O.length?' …':''):'Ljubljana je zadnja.'),iw));
+ const g=votesGain();if(!can&&v>0&&(c-S.sit)/v>3600&&g>=Math.max(1,S.votes))ls.push(wrap('počasi gre: referendum ti da +'+g+' glasov',iw)[0]);else ls.push('');
+ const nx=[1,2,3].map(k=>O[S.n+k]).filter(Boolean).map(q=>q.n);{let s='sledijo: ';if(!nx.length)s+='Ljubljana je zadnja.';else{let k=0;for(const q of nx){const add=(k?', ':'')+q;if(L(s+add)+2>iw)break;s+=add;k++}if(k<nx.length||S.n+4<O.length)s+=' …'}ls.push(s)}
  return box('NASLEDNJA OBČINA',ls,w,['[N]'])}
 function mapFor(w){return w-4>=MAPS.big.W?MAPS.big:MAPS.small}
 function mapGridHTML(M,iw){const n=S.n;const pad=Math.floor((iw-M.W)/2);let h='';
@@ -328,11 +335,11 @@ function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElement
 let infoKey='';
 function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo');if(!el)return;const iw=w-4;const i=hover;
  let a,b;if(i<0){a='premakni miško ali tapni občino.';b='o sedež  O mestna občina  @ Ljubljana  ? naslednja  . zaklenjena'}
- else{const o=O[i];const known=i<=S.n+2;a=(known?o.n:'??????')+(o.u&&known?' (MO)':'')+' · '+num(o.p)+' preb. · '+o.a+' km² · '+REG[o.r][1];
+ else{const o=O[i];const known=i<=S.n+2;a=(known?o.n:'??????')+(o.u&&known?' (MO)':'')+' · '+num(o.p)+' preb. · '+o.a+' km² · '+REG[o.r][1];if(L(a)>iw)a=(known?ab(o.n,18):'??????')+(o.u&&known?' (MO)':'')+' · '+num(o.p)+' preb. · '+o.a+' km² · '+ab(REG[o.r][1],14);
   b=i<S.n?'odklenjena · #'+(i+1)+(LMAT[i]?' · znamenitost: '+LMAT[i].name:''):i===S.n?'naslednja · '+fmt(ocost(i))+' SIT':'zaklenjena · #'+(i+1)}
  const k=a+b;if(!force&&k===infoKey)return;infoKey=k;
- const items=b.split('  ');const bl=[];let cur='';items.forEach(it=>{if(cur&&L(cur)+2+L(it)>iw){bl.push(cur);cur=it}else cur=cur?cur+'  '+it:it});if(cur)bl.push(cur);
- const lines=['',...wrap(a,iw).slice(0,1),...bl.slice(0,2)];while(lines.length<4)lines.push('');
+ let bl;if(i<0){const items=b.split('  ');bl=[];let cur='';items.forEach(it=>{if(cur&&L(cur)+2+L(it)>iw){bl.push(cur);cur=it}else cur=cur?cur+'  '+it:it});if(cur)bl.push(cur)}else bl=wrap(b,iw);
+ const aw=wrap(a,iw);const lines=['',...aw.slice(0,2),...bl.slice(0,3-Math.min(2,aw.length))];while(lines.length<4)lines.push('');
  el.innerHTML=lines.map(l=>'| '+esc(padR(cut(l,iw),iw))+' |\n').join('')}
 function bestGen(){let best=-1,bv=Infinity;GEN.forEach((g,k)=>{if(S.n<g[3])return;const v=gcost(k,1)/(GEN[k][2]*genMult(k));if(v<bv){bv=v;best=k}});return best}
 function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;const bg=bestGen();
@@ -346,25 +353,26 @@ function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;const bg=bestGen();
  return box('PROIZVODNJA',ls,w,right)}
 function pUps(w){const iw=w-4;const U=upgrades();const ls=[];const max=MODE.startsWith('3')?9:6;
  if(!U.length)ls.push('ni novih izboljšav.');
- U.slice(0,max).forEach(u=>{const can=S.sit>=u.cost;ls.push(lr(cut(u.name,iw-14),fmt(u.cost),iw));
+ U.slice(0,max).forEach(u=>{const can=S.sit>=u.cost;const nw=wrap(u.name,iw-L(fmt(u.cost))-2);nw.forEach((l,j)=>ls.push(j===0?lr(l,fmt(u.cost),iw):l));
   const d=wrap(u.desc,iw-10);d.forEach((l,j)=>ls.push(j===d.length-1?two(['  '+l],[btn(' KUPI ','u'+u.id,can)],iw):['  '+l]))});
  if(U.length>max)ls.push('… in še '+(U.length-max));
- const nextLm=LM.find(l=>l.o>=S.n);if(nextLm){ls.push('');ls.push(cut('naslednja znamenitost: čez '+(nextLm.o-S.n+1)+' '+obc(nextLm.o-S.n+1),iw))}
+ const nextLm=LM.find(l=>l.o>=S.n);if(nextLm){ls.push('');wrap('naslednja znamenitost: čez '+(nextLm.o-S.n+1)+' '+obc(nextLm.o-S.n+1),iw).forEach(l=>ls.push(l))}
  const aff=U.filter(u=>u.cost<=S.sit).length;return box('IZBOLJŠAVE',ls,w,aff>1?[btn(' KUPI VSE ','upall')]:['[ kupljenih '+S.ups.length+' ]'])}
 const obc=n=>n%100===1?'občino':n%100===2?'občini':n%100===3||n%100===4?'občine':'občin';
 function pReg(w){const iw=w-4;const rc=regCount();const ls=[];const bw=Math.max(8,iw-31);
- REG.forEach((r,i)=>{const done=rc[i]===RN[i];const nm=L(r[1])<=iw-bw-12?r[1]:r[0];ls.push([r[2]+' '+padR(cut(nm,iw-bw-12),iw-bw-12),bar(rc[i]/RN[i],bw-2),' ',done?{t:padL('×1,25',8),c:'bold'}:padL(rc[i]+'/'+RN[i],8)])});
+ REG.forEach((r,i)=>{const done=rc[i]===RN[i];const nm=ab(r[1],iw-bw-12);ls.push([r[2]+' '+padR(nm,iw-bw-12),bar(rc[i]/RN[i],bw-2),' ',done?{t:padL('×1,25',8),c:'bold'}:padL(rc[i]+'/'+RN[i],8)])});
  return box('REGIJE',ls,w,['[ cela = ×1,25 ]'])}
 function pList(w){const iw=w-4;const rows=MODE.startsWith('1')?10:16;if(regPage===null)regPage=Math.max(0,Math.min(O.length-rows,S.n-Math.floor(rows/2)));
  const ls=[];for(let i=regPage;i<Math.min(O.length,regPage+rows);i++){const o=O[i];const known=i<=S.n+2;
   const nm=known?o.n+(o.u?' (MO)':''):'?'.repeat(Math.min(12,L(o.n)));const mark=i<S.n?'x':i===S.n?'>':' ';const lm=LMAT[i]&&known?' *':'';
-  const line=padR(cut(mark+' '+String(i+1).padStart(3,'0')+' '+nm+lm,iw-11),iw-10)+padL(num(o.p),10);ls.push(i===S.n?[{t:line,c:'on'}]:line)}
+  const pre=mark+' '+String(i+1).padStart(3,'0')+' ',room=iw-11-L(pre);const nmF=known?ab(o.n,room-(o.u?5:0)-(lm?2:0))+(o.u?' (MO)':'')+lm:nm;
+  const line=padR(pre+nmF,iw-10)+padL(num(o.p),10);ls.push(i===S.n?[{t:line,c:'on'}]:line)}
  ls.push('');ls.push(two([btn('<<','pg-'+rows),' ',btn('<','pg-1'),' ',btn('>','pg1'),' ',btn('>>','pg'+rows)],[btn(' NASLEDNJA ','pg0')],iw));
  ls.push('x odklenjena  > naslednja  * znamenitost');
  return box('REGISTER OBČIN',ls,w,['[ '+(regPage+1)+'-'+Math.min(O.length,regPage+rows)+' ]'])}
 function pAch(w){const iw=w-4;const per=6;const pages=Math.ceil(ACH.length/per);achPage=(achPage+pages)%pages;const ls=[];
  ls.push(lr('dobljeno '+S.ach.length+'/'+ACH.length,'+'+S.ach.length+' % dohodka',iw));ls.push('');
- ACH.slice(achPage*per,achPage*per+per).forEach(a=>{const got=S.ach.includes(a[0]);ls.push(cut((got?'[x] ':'[ ] ')+(got||a[0]!=='tri'?a[1]:'???'),iw));ls.push(cut('    '+a[2],iw))});
+ ACH.slice(achPage*per,achPage*per+per).forEach(a=>{const got=S.ach.includes(a[0]);wrap((got||a[0]!=='tri'?a[1]:'???'),iw-4).forEach((l,j)=>ls.push((j?'    ':got?'[x] ':'[ ] ')+l));wrap(a[2],iw-4).forEach(l=>ls.push('    '+l))});
  ls.push('');ls.push(two([btn('<','ach-1'),' ',btn('>','ach1')],[(achPage+1)+'/'+pages],iw));
  return box('DOSEŽKI',ls,w)}
 function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
@@ -376,11 +384,11 @@ function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
 function pLog(w){const iw=w-4;const n=MODE.startsWith('1')?6:8;const ls=[];for(const e of S.log){const ws=wrap(e,iw-6);ws.forEach((l,j)=>ls.push(j?'      '+l:l));if(ls.length>=n)break}ls.length=Math.min(ls.length,n);while(ls.length<n)ls.push('');return box('DNEVNIK',ls,w)}
 function pSet(w){const iw=w-4;const ls=[];
  ls.push([btn(S.sound?' zvok: vklopljen ':' zvok: izklopljen ','snd'),' ',btn(S.light?' tema: svetla ':' tema: temna ','thm')]);
- ls.push('');ls.push('tipke:');ls.push('  preslednica  pozvoni');ls.push('  N            odkleni naslednjo občino');ls.push('');
+ ls.push('');ls.push('tipke:');ls.push('  [preslednica]  pozvoni');ls.push('  [N]  odkleni naslednjo občino');ls.push('');
  wrap('Prenos igre: igra se shranjuje samo v tem brskalniku. Za prenos na drug telefon ali računalnik jo tu kopiraj, tam pa prilepi.',iw).forEach(l=>ls.push(l));
- ls.push([btn(' kopiraj igro ','exp'),' ',btn(' naloži prilepljeno ','imp')]);
+ ls.push([btn(' kopiraj igro ','exp'),' ',btn(' naloži ','imp')]);
  ls.push(['> ',{t:'                    ',raw:'<input id="impin" aria-label="Prilepi shranjeno igro" placeholder="prilepi tukaj">'}]);
- ls.push(flash?cut(flash,iw):'');ls.push([Date.now()<resetArm?btn(' RES IZBRIŠEM VSE? ','rstyes'):btn(' začni čisto od začetka ','rst')]);ls.push('');
+ wrap(flash||'',iw).forEach(l=>ls.push(l));if(!flash)ls.push('');ls.push([Date.now()<resetArm?btn(' RES IZBRIŠEM VSE? ','rstyes'):btn(' začni čisto od začetka ','rst')]);ls.push('');
  wrap('Podatki: seznam občin na slovenski Wikipediji. Zemljevid je približek iz središč občin.',iw).forEach(l=>ls.push(l));
  return box('NASTAVITVE',ls,w)}
 
@@ -396,7 +404,7 @@ function full(){cache={};mapKey='';render()}
 let dockHTML='',bellSeen=true;const bellIO=new IntersectionObserver(es=>{for(const e of es)bellSeen=e.isIntersecting});let bellObserved=null;
 function renderDock(){const d=document.getElementById('dock');const be=document.getElementById('p-bell');if(be&&be!==bellObserved){bellIO.disconnect();bellIO.observe(be);bellObserved=be}const on=MODE.startsWith('1')&&!bellSeen;d.hidden=!on;document.body.classList.toggle('docked',on);if(!on)return;
  const w=PW.bell||49;const left='tolarji '+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT='[  Z V O N I  ]';
- const h='<span>'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(cut(left,w-L(right)-5),w-L(right)-4)+right+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
+ const h='<span>'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
  if(h!==dockHTML){d.innerHTML=h;dockHTML=h}}
 
 /* ================= INPUT ================= */

@@ -1,7 +1,8 @@
 import sys,math
 from econ import *
-def run(C0,G,PDIV,cps,tmax=40*3600,verbose=False,EXP=0.0):
-    ocost=lambda i: C0*G**i*(d[i]['p']/3000)**EXP
+import math
+OCOST=lambda i:30*1.15**i*math.exp(.08*i*(211-i)/211)+8*(i+1)**3
+def run(ocost=OCOST,PDIV=20000,cps=5,tmax=40*3600):
     sit=0;n=0;own=[0]*len(GEN);gm=[1]*len(GEN);glob=1;pct=0;cm=1;P=0;rc={};rdone=0
     tiers=set();lms=set();t=0;marks={}
     def ips_of(own,gm,glob,P,rdone):
@@ -55,5 +56,4 @@ def run(C0,G,PDIV,cps,tmax=40*3600,verbose=False,EXP=0.0):
                 if n in (10,25,50,100,125,150,175,200,212): marks[n]=round(t/3600,2)
     return round(t/3600,2),n,marks,f"{ips:.3g}"
 if __name__=='__main__':
-    for C0,G in [(50,1.16),(50,1.17),(100,1.17)]:
-        print(C0,G,run(C0,G,20000,1))
+    print(run())  # (hours, občine, {milestone: hours}, final income)

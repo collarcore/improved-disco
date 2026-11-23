@@ -24,7 +24,8 @@ Black and white, one font, one character grid.
 - **Referendum**: prestige. Reset your run for votes; each vote gives +2 % income for good.
 - **Dosežki**: 50 achievements, each +1 %. One of them is a secret.
 
-A full first run takes many hours. The game saves to your browser and earns at half speed while you're away (up to 8 h).
+A perfect bot clicking 5×/s needs about 1 h for 50 občine, 2 h for 100 and 10 h for all 212;
+real players take longer, and referendums speed up later runs. The game saves to your browser and earns at half speed while you're away (up to 8 h).
 
 ## Files
 

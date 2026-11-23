@@ -37,15 +37,19 @@ body{font:400 14px/1.25 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;fo
 .col{display:flex;flex-direction:column}
 pre{margin:0 0 1.25em;font:inherit;white-space:pre;overflow:hidden}
 .b{cursor:pointer;outline:none}
-.b:hover,.b:focus-visible,.on{background:var(--fg);color:var(--bg)}
-.bell{cursor:pointer}.b.bell:hover{background:none;color:inherit}
+.b:focus-visible,.b:active,.on{background:var(--fg);color:var(--bg)}
+@media(hover:hover){.b:hover{background:var(--fg);color:var(--bg)}}
+.bell{cursor:pointer}.b.bell:hover,.b.bell:active{background:none;color:inherit}
 .bold{font-weight:700}
 .q{animation:bl 1s steps(1) infinite}
 @keyframes bl{50%{background:var(--fg);color:var(--bg)}}
 .kur{cursor:pointer;animation:bl .5s steps(1) infinite}
-#map i{font-style:normal}
+#mapgrid i{font-style:normal}
 input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;padding:0;margin:0;width:20ch;caret-color:var(--fg)}
 #measure{position:fixed;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none}
+#dock{position:fixed;left:0;right:0;bottom:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 100vw var(--bg);clip-path:inset(0 -100vw -100px -100vw);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+#dock[hidden]{display:none}
+body.docked #root{padding-bottom:7em}
 @media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}
 </style>
 </head>
@@ -53,6 +57,7 @@ input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;pa
 <div id="root"><pre id="head"></pre><div id="cols"></div></div>
 <span id="measure">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span>
 <style id="hov"></style>
+<pre id="dock" hidden></pre>
 <script>
 {
 /* ================= DATA ================= */
@@ -85,7 +90,7 @@ const LM=[['Solčava','Logarska dolina','gen',0,2],['Kostel','Grad Kostel','clic
 const LMAT=Object.fromEntries(LM.map(l=>[l.o,l]));
 const CLK=[['k1','Pritrkavanje',50,200,2,0],['k2','Bronasti zvon',500,2e4,2,.01],['k3','Zvonik na hribu',2000,2e7,2,.01],['k4','Veliki zvon',6000,2e10,2,.02],['k5','Zvonovi vseh far',15000,2e13,2,.02]];
 const C0=50,G=1.16,PDIV=20000,GROW=1.15;
-const ocost=i=>Math.ceil(C0*G**i);
+const ocost=i=>Math.ceil(30*1.15**i*Math.exp(.08*i*(211-i)/211)+8*(i+1)**3);
 const lmcost=l=>ocost(l.o)*3;
 
 /* ================= STATE ================= */
@@ -166,11 +171,8 @@ function box(title,lines,w,right=[]){const inner=w-4;
 const bar=(f,w)=>{const k=Math.round(Math.max(0,Math.min(1,f))*w);return '['+'#'.repeat(k)+'.'.repeat(w-k)+']'};
 
 /* ================= BIG DIGITS / BANNERS ================= */
-const SEG={'0':[' ## ','#  #','#  #','#  #',' ## '],'1':['  # ',' ## ','  # ','  # ',' ###'],'2':[' ## ','#  #','  # ',' #  ','####'],
- '3':['### ','   #',' ## ','   #','### '],'4':['#  #','#  #','####','   #','   #'],'5':['####','#   ','### ','   #','### '],'6':[' ## ','#   ','### ','#  #',' ## '],
- '7':['####','   #','  # ',' #  ',' #  '],'8':[' ## ','#  #',' ## ','#  #',' ## '],'9':[' ## ','#  #',' ###','   #',' ## '],
- '.':[' ',' ',' ',' ','#'],',':['  ','  ','  ',' #','# '],'-':['    ','    ','####','    ','    '],'e':[' ## ','#  #','####','#   ',' ###'],'+':['   ',' # ','###',' # ','   ']};
-function big(str){const r=['','','','',''];for(const ch of [...str]){const g=SEG[ch];if(!g)continue;for(let i=0;i<5;i++)r[i]+=(r[i]?' ':'')+g[i]}return r}
+const FIG={big:{"0": ["  ___  ", " / _ \\ ", "| | | |", "| |_| |", " \\___/ ", "       "], "1": [" _ ", "/ |", "| |", "| |", "|_|", "   "], "2": [" ____  ", "|___ \\ ", "  __) |", " / __/ ", "|_____|", "       "], "3": [" _____ ", "|___ / ", "  |_ \\ ", " ___) |", "|____/ ", "       "], "4": [" _  _   ", "| || |  ", "| || |_ ", "|__   _|", "   |_|  ", "        "], "5": [" ____  ", "| ___| ", "|___ \\ ", " ___) |", "|____/ ", "       "], "6": ["  __   ", " / /_  ", "| '_ \\ ", "| (_) |", " \\___/ ", "       "], "7": [" _____ ", "|___  |", "   / / ", "  / /  ", " /_/   ", "       "], "8": ["  ___  ", " ( _ ) ", " / _ \\ ", "| (_) |", " \\___/ ", "       "], "9": ["  ___  ", " / _ \\ ", "| (_) |", " \\__, |", "   /_/ ", "       "], ".": ["   ", "   ", "   ", " _ ", "(_)", "   "], ",": ["   ", "   ", "   ", " _ ", "( )", "|/ "], "-": ["       ", "       ", " _____ ", "|_____|", "       ", "       "], "+": ["       ", "   _   ", " _| |_ ", "|_   _|", "  |_|  ", "       "], "e": ["      ", "  ___ ", " / _ \\", "|  __/", " \\___|", "      "]},small:{"0": ["  __  ", " /  \\ ", "| () |", " \\__/ ", "      "], "1": [" _ ", "/ |", "| |", "|_|", "   "], "2": [" ___ ", "|_  )", " / / ", "/___|", "     "], "3": [" ____", "|__ /", " |_ \\", "|___/", "     "], "4": [" _ _  ", "| | | ", "|_  _|", "  |_| ", "      "], "5": [" ___ ", "| __|", "|__ \\", "|___/", "     "], "6": ["  __ ", " / / ", "/ _ \\", "\\___/", "     "], "7": [" ____ ", "|__  |", "  / / ", " /_/  ", "      "], "8": [" ___ ", "( _ )", "/ _ \\", "\\___/", "     "], "9": [" ___ ", "/ _ \\", "\\_, /", " /_/ ", "     "], ".": ["   ", "   ", " _ ", "(_)", "   "], ",": ["   ", "   ", " _ ", "( )", "|/ "], "-": ["     ", " ___ ", "|___|", "     ", "     "], "+": ["   _   ", " _| |_ ", "|_   _|", "  |_|  ", "       "], "e": ["     ", " ___ ", "/ -_)", "\\___|", "     "]}};
+function big(str,f){const F=FIG[f];const h=F['0'].length;const r=Array(h).fill('');for(const ch of [...str]){const g=F[ch];if(!g)continue;for(let i=0;i<h;i++)r[i]+=(r[i]?' ':'')+g[i]}while(r.length&&!r[r.length-1].trim())r.pop();return r}
 const BAN_BIG=[
 '               \\/',
 '  ___  ____   ____ ___ _   _ _____',
@@ -239,10 +241,10 @@ function layout(){const vw=document.documentElement.clientWidth-16;const mz=docu
 let PW={},HW=80,cache={};
 
 /* ================= PANELS ================= */
-function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);const dg=big(m?m[1]:s);
+function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))>w)dg=big(m?m[1]:s,'small');
  const unit='tolarji'+(m&&m[2]?' ('+m[2]+')':'');const rate='+'+fmt(ips(),1)+' SIT/s';const sub='212 občin, od Osilnice do Ljubljane';const lines=[];
- if(w>=100){const left=[...ban,'',sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L));
-  for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<7?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>'}:padR(left[i]||'',w-rw)+r)}}
+ if(w>=100){const left=[...ban,'',sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L))+2;
+  for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<2+dg.length?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>'}:padR(left[i]||'',w-rw)+r)}}
  else lines.push(...ban,'',sub,'',unit,'',...dg.map(d=>({h:'<b>'+esc(padR(d,w))+'</b>'})),'',rate);
  lines.push('='.repeat(w));
  lines.push(cut('občine '+S.n+'/212   prebivalci '+num(pop())+(S.won?'   *** VSA SLOVENIJA JE TVOJA ***':''),w));
@@ -324,13 +326,14 @@ function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo
  const k=a+b;if(!force&&k===infoKey)return;infoKey=k;
  const lines=['',...wrap(a,iw).slice(0,1),...wrap(b,iw).slice(0,2)];while(lines.length<4)lines.push('');
  el.innerHTML=lines.map(l=>'| '+esc(padR(cut(l,iw),iw))+' |\n').join('')}
-function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;
+function bestGen(){let best=-1,bv=Infinity;GEN.forEach((g,k)=>{if(S.n<g[3])return;const v=gcost(k,1)/(GEN[k][2]*genMult(k));if(v<bv){bv=v;best=k}});return best}
+function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;const bg=bestGen();
  GEN.forEach((g,k)=>{if(S.n<g[3]){if(S.n>=(GEN[k-1]||[])[3])ls.push(lr('???',' odpre se pri '+g[3]+' občinah',iw));return}
   const a=S.amt==='max'?Math.max(1,gmax(k)):S.amt;const c=gcost(k,a);const can=S.sit>=c&&(S.amt!=='max'||gmax(k)>0);
   const each=GEN[k][2]*genMult(k)*allMult()*kurMult();const label=S.amt===1?' KUPI ':' KUPI '+a+' ';
-  if(wide){ls.push([padR(g[0],12),padL(String(S.own[k]),5),'  ',padL(fmt(genIps(k)*kurMult(),1)+'/s',14),'  ',padL('+'+fmt(each,1)+'/s',13),'  ',padL(fmt(c),12),'  ',btn(label,'g'+k,can)])}
-  else{ls.push(lr(g[0]+'  ×'+S.own[k],fmt(genIps(k)*kurMult(),1)+'/s',iw));ls.push(two(['  cena '+fmt(c)],[btn(label,'g'+k,can)],iw))}});
- if(wide)ls.unshift([padR('',12),padL('kos',5),'  ',padL('skupaj',14),'  ',padL('vsak',13),'  ',padL('cena',12)]);
+  const nm=g[0]+(k===bg?' *':'');if(wide){ls.push([padR(nm,13),padL(String(S.own[k]),5),'  ',padL(fmt(genIps(k)*kurMult(),1)+'/s',14),'  ',padL('+'+fmt(each,1)+'/s',13),'  ',padL(fmt(c),12),'  ',btn(label,'g'+k,can)])}
+  else{ls.push(lr(nm+'  ×'+S.own[k],fmt(genIps(k)*kurMult(),1)+'/s',iw));ls.push(two(['  cena '+fmt(c)],[btn(label,'g'+k,can)],iw))}});
+ ls.push('');ls.push('* najboljše razmerje med ceno in dohodkom');if(wide)ls.unshift([padR('',13),padL('kos',5),'  ',padL('skupaj',14),'  ',padL('vsak',13),'  ',padL('cena',12)]);
  const right=[];[1,10,100,'max'].forEach(a=>{right.push({t:'['+(a==='max'?'MAX':'×'+a)+']',a:'amt'+a,c:S.amt===a?'on':''})});
  return box('PROIZVODNJA',ls,w,right)}
 function pUps(w){const iw=w-4;const U=upgrades();const ls=[];const max=MODE.startsWith('3')?9:6;
@@ -377,8 +380,13 @@ function put(id,html){if(cache[id]===html)return;const el=document.getElementByI
  const act=document.activeElement;const fa=act&&el.contains(act)&&act.dataset?act.dataset.a:null;const inp=act&&act.id==='impin'?act.value:null;
  if(inp!==null&&id==='p-set')return;
  el.innerHTML=html;cache[id]=html;if(fa){const n=el.querySelector(`[data-a="${fa}"]`);if(n)n.focus({preventScroll:true})}}
-function render(){put('head',pHead());for(const id in PAN)if(PW[id])put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
+let lastTitle='';function title(){const s=(kurPos?(Date.now()%1000<500?'(!) KURENT · ':'(.) KURENT · '):'')+fmt(Math.floor(S.sit))+' SIT · Občine';if(s!==lastTitle){document.title=s;lastTitle=s}}
+function render(){put('head',pHead());title();renderDock();for(const id in PAN)if(PW[id])put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
 function full(){cache={};mapKey='';render()}
+let dockHTML='';function renderDock(){const d=document.getElementById('dock');const on=MODE.startsWith('1');d.hidden=!on;document.body.classList.toggle('docked',on);if(!on)return;
+ const w=PW.bell||49;const left='tolarji '+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT='[  Z V O N I  ]';
+ const h='<span>'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(cut(left,w-L(right)-5),w-L(right)-4)+right+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
+ if(h!==dockHTML){d.innerHTML=h;dockHTML=h}}
 
 /* ================= INPUT ================= */
 function act(a){if(!a)return;
@@ -412,7 +420,7 @@ document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('
 
 /* ================= LOOP ================= */
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);
- if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+13e3;drawMap(true)}
+ if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+13e3;drawMap(true);ding(392,.05,.4);setTimeout(()=>ding(392,.05,.4),180)}
 let last=performance.now(),saveT=0,achT=0,partT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}

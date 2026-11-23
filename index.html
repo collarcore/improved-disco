@@ -50,6 +50,8 @@ input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;pa
 #dock{position:fixed;left:0;right:0;bottom:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 100vw var(--bg);clip-path:inset(0 -100vw -100px -100vw);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 #dock[hidden]{display:none}
 body.docked #root{padding-bottom:7em}
+#toast{position:fixed;top:1.25em;left:0;right:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 1ch var(--bg),0 0 0 calc(1ch + 1px) var(--fg);z-index:20;cursor:pointer}
+#toast[hidden]{display:none}#toast.pop{animation:tp .9s steps(1)}@keyframes tp{0%,30%,60%{background:var(--fg);color:var(--bg)}15%,45%,75%{background:var(--bg);color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}
 </style>
 </head>
@@ -58,6 +60,7 @@ body.docked #root{padding-bottom:7em}
 <span id="measure">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span>
 <style id="hov"></style>
 <pre id="dock" hidden></pre>
+<pre id="toast" hidden role="status" aria-live="polite"></pre>
 <script>
 {
 /* ================= DATA ================= */
@@ -125,7 +128,7 @@ const votesGain=()=>Math.max(0,votesTotal()-S.votes);
 function upgrades(){const L=[];
  GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:g[0]+': '+t[2],desc:GPL[k]+' ×2',cost:g[1]*t[1]})}));
  LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:l.name,desc:lmDesc(l)+' · '+ab(O[l.o].n,16),cost:lmcost(l)})});
- CLK.forEach(c=>{if(S.clicks>=c[2]&&!has(c[0]))L.push({id:c[0],name:c[1],desc:'klik ×'+c[4]+(c[5]?', +'+c[5]*100+' % dohodka na klik':''),cost:c[3]})});
+ CLK.forEach(c=>{if(S.clicks>=c[2]&&!has(c[0]))L.push({id:c[0],name:c[1],desc:'klik ×'+c[4]+(c[5]?', +'+c[5]*100+' % dohodka na klik':'')+', nov zvok',cost:c[3]})});
  return L.sort((a,b)=>a.cost-b.cost)}
 function lmDesc(l){const v=String(l.v).replace('.',',');return l.kind==='gen'?GPL[l.t]+' ×'+v:l.kind==='glob'?'vse ×'+v:l.kind==='click'?'klik ×'+v:l.kind==='pct'?'klik +'+Math.round(l.v*100)+' % dohodka':'kurent pogosteje, učinki 2× dlje'}
 
@@ -138,7 +141,9 @@ REG.forEach((r,i)=>ACH.push(['r'+i,'Cela regija: '+r[1],'odkleni vse občine reg
 GEN.forEach((g,k)=>ACH.push(['g'+k,g[0]+' ×50','imej 50 '+GPL[k],()=>S.own[k]>=50]));
 [[1e6,'Milijonar'],[1e9,'Milijardar'],[1e12,'Bilijonar'],[1e15,'Državni proračun'],[1e18,'Evropski proračun']].forEach(([k,n])=>ACH.push(['l'+k,n,'skupaj zaslužiš '+fmt(k)+' SIT',()=>S.all>=k]));
 ACH.push(['ref1','Ljudstvo je odločilo','razpiši referendum',()=>S.refs>=1],['ref5','Večni referendum','razpiši 5 referendumov',()=>S.refs>=5],['tri','Na vrhu','skrivnost: natipkaj ime gore',()=>S.ach.includes('tri')]);
-function checkAch(){for(const a of ACH){if(a[0]==='tri'||S.ach.includes(a[0]))continue;if(a[3]()){S.ach.push(a[0]);log('dosežek: '+a[1]+' (+1 %)')}}}
+function gotAch(a){S.ach.push(a[0]);S.achT=S.achT||{};S.achT[a[0]]=Date.now();log('*** dosežek: '+a[1]+' (+1 %)');toast('ach',a[1],a[2]+'. Dohodek +1 %.',fanfare);
+ const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
+function checkAch(){for(const a of ACH){if(a[0]==='tri'||S.ach.includes(a[0]))continue;if(a[3]())gotAch(a)}}
 
 /* ================= FORMAT ================= */
 function fmt(x,dec){if(!isFinite(x))return '∞';if(x<1e6){return x.toLocaleString('sl-SI',{maximumFractionDigits:dec&&x<100?1:0,useGrouping:'always'})}
@@ -194,26 +199,74 @@ const BAN_SMALL=[
 ' \\___/|___/\\___|___|_|\\_|___|'];
 const BRAVO=[' ___ ___    ___   _____  _ ','| _ ) _ \\  /_\\ \\ / / _ \\| |','| _ \\   / / _ \\ V / (_) |_|','|___/_|_\\/_/ \\_\\_/ \\___/(_)'];
 
-/* ================= AUDIO ================= */
-let ac;function ding(f=880,v=.06,d=.7){if(!S.sound)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
- o.type='sine';o2.type='sine';o.frequency.value=f;o2.frequency.value=f*2.76;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);o2.connect(g);g.connect(ac.destination);o.start(t);o2.start(t);o.stop(t+d);o2.stop(t+d)}catch(e){}}
+/* ================= AUDIO =================
+   Bells are additive: a church bell's overtones sit near 0.5 (hum), 1 (prime),
+   1.2 (minor-third tierce), 1.5 (quint), 2 (nominal) and higher. Bigger bells
+   are lower, ring longer, and keep more of the hum. */
+let ac,master,echoIn;
+function audio(){if(ac)return ac;ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createDynamicsCompressor();master.threshold.value=-18;master.ratio.value=4;master.connect(ac.destination);
+ echoIn=ac.createGain();const d=ac.createDelay(1);d.delayTime.value=.31;const fb=ac.createGain();fb.gain.value=.38;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;
+ echoIn.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);lp.connect(master);return ac}
+let voices=0;
+function tone(f,{p=[[1,1,1]],dur=.7,vol=.05,when=0,echo=0}={}){if(!S.sound)return;try{const a=audio();if(a.state==='suspended')a.resume();if(voices>18)return;
+ const t0=a.currentTime+when;const g=a.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol*(voices>8?.5:1),t0+.004);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+ for(const [r,amp,dm] of p){const o=a.createOscillator(),og=a.createGain();o.frequency.value=f*r;og.gain.setValueAtTime(amp,t0);og.gain.exponentialRampToValueAtTime(.0001,t0+dur*(dm||1));o.connect(og);og.connect(g);o.start(t0);o.stop(t0+dur+.05)}
+ g.connect(master);if(echo){const e=a.createGain();e.gain.value=echo;g.connect(e);e.connect(echoIn)}
+ voices++;setTimeout(()=>voices--,(dur+when)*1000+60)}catch(e){}}
+const HAND=[[1,1,1],[2.76,.35,.45],[5.4,.12,.25]];
+const CHURCH=[[.5,.45,1.5],[1,1,1],[1.2,.55,.8],[1.5,.3,.7],[2,.6,.55],[2.5,.18,.4],[3,.15,.3],[4,.08,.2]];
+const GREAT=[[.5,.85,1.6],[.502,.4,1.6],[1,1,1],[1.004,.45,1],[1.2,.6,.85],[1.5,.3,.7],[2,.55,.6],[2.51,.18,.4],[3,.15,.3]];
+/* bell tiers: base handbell, then each click upgrade */
+const BELLS=[
+ {name:'zvonček',glyph:'o',notes:[1568],p:HAND,dur:.5,vol:.045},
+ {name:'pritrkavanje',glyph:'o',notes:[1568,1319,1175],p:HAND,dur:.55,vol:.045},
+ {name:'bronasti zvon',glyph:'O',notes:[784,659,587],p:CHURCH,dur:1.6,vol:.05},
+ {name:'zvonik na hribu',glyph:'O',notes:[523,440,392],p:CHURCH,dur:2.2,vol:.055,echo:.5},
+ {name:'veliki zvon',glyph:'@',notes:[262,220,196],p:GREAT,dur:3.4,vol:.06,echo:.45},
+ {name:'zvonovi vseh far',glyph:'@',notes:[262,220,196],p:GREAT,dur:3.4,vol:.05,echo:.45,all:true}];
+/* pritrkavanje: a slovenian bell-striking pattern over three bells (0 = highest) */
+const PRITRK=[0,1,2,1,0,1,2,2,0,2,1,2];
+const bellTier=()=>CLK.reduce((k,c,i)=>has(c[0])?i+1:k,0);
+let strike=0;
+function bellSound(){const B=BELLS[bellTier()];const note=B.notes.length>1?B.notes[PRITRK[strike++%PRITRK.length]]:B.notes[0]*(1+(Math.random()-.5)*.01);
+ tone(note,{p:B.p,dur:B.dur,vol:B.vol,echo:B.echo});
+ if(B.all){const other=[[784,CHURCH,1.6],[523,CHURCH,2.2],[1568,HAND,.5]][strike%3];tone(other[0]*(PRITRK[strike%12]===0?1:.89),{p:other[1],dur:other[2],vol:.03,when:.09,echo:.4})}
+ if(Date.now()<clkUntil)for(let i=0;i<3;i++)tone(2400+Math.random()*1800,{p:HAND,dur:.18,vol:.025,when:i*.045})}
+/* small fixed cues */
+function ding(f=880,v=.06,d=.7){tone(f,{p:HAND,dur:d,vol:v})}
+function fanfare(){[[784,0],[988,.12],[1175,.24],[1568,.36]].forEach(([f,w])=>tone(f,{p:CHURCH,dur:1.4,vol:.045,when:w,echo:.3}))}
+function regionChime(){[[392,0],[523,.18],[659,.36],[784,.54]].forEach(([f,w])=>tone(f,{p:CHURCH,dur:2.2,vol:.05,when:w,echo:.4}))}
 
+/* ================= TOASTS ================= */
+const toastQ=[];let toastTimer=0;
+const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
+function toast(kind,title,text,sound){
+ if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more){l.more++}else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];m.title='in še '+m.more+' '+(m.more===1?'dosežek':m.more===2?'dosežka':m.more<5?'dosežki':'dosežkov');m.text='Vse najdeš v panelu Dosežki.';return}
+ toastQ.push({kind,title,text});if(sound)sound();if(toastQ.length===1)showToast()}
+function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
+ const w=Math.min(48,PW.bell||48);const iw=w-4;const art=q.kind==='ach'?CUP:q.kind==='reg'?['  /\\  ',' /  \\ ','/____\\','  ||  ']:['','','',''];const aw=Math.max(...art.map(L))+2;
+ const tx=[q.title,...wrap(q.text,iw-aw)];const rows=Math.max(art.length,tx.length);const lines=[''];
+ for(let i=0;i<rows;i++)lines.push(padR(art[i]||'',aw)+(tx[i]||''));lines.push('');lines.push(padL('[ v redu ]',iw));
+ el.innerHTML=box(q.kind==='ach'?'DOSEŽEK':q.kind==='reg'?'CELA REGIJA':'NOVO',lines.map(l=>i0(l)),w);el.hidden=false;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+ clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,4500)}
+const i0=l=>l;
+function nextToast(){toastQ.shift();showToast()}
 /* ================= LOG ================= */
 function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' '+m);S.log=S.log.slice(0,40)}
 
 /* ================= ACTIONS ================= */
 function unlock(quiet){if(S.n>=O.length)return false;const c=ocost(S.n);if(S.sit<c)return false;S.sit-=c;const o=O[S.n];const rc0=regCount()[o.r];S.n++;
  if(!quiet)log('odklenjena '+o.n+' ('+num(o.p)+' preb.)');
- if(rc0+1===RN[o.r])log('cela regija '+REG[o.r][1]+': vse ×1,25');
+ if(rc0+1===RN[o.r]){log('cela regija '+REG[o.r][1]+': vse ×1,25');toast('reg',REG[o.r][1],'Vseh '+RN[o.r]+' občin je tvojih. Dohodek ×1,25.',regionChime)}
  GEN.forEach(g=>{if(g[3]===S.n)log('nova proizvodnja: '+g[0])});
  if(LMAT[S.n-1])log('znamenitost: '+LMAT[S.n-1].name+' ('+o.n+')');
- if(S.n===O.length&&!S.won){S.won=Date.now();log('*** vsa Slovenija je tvoja ***');ding(523,.08,1.5);ding(659,.06,1.5);ding(784,.06,1.5)}
+ if(S.n===O.length&&!S.won){S.won=Date.now();log('*** vsa Slovenija je tvoja ***');regionChime();setTimeout(fanfare,900)}
  if(!quiet)ding(660,.05);regPage=null;return true}
 function buyGen(k){if(S.n<GEN[k][3])return;let a=S.amt==='max'?gmax(k):S.amt;if(a<1)return;const c=gcost(k,a);if(S.sit<c)return;S.sit-=c;S.own[k]+=a;ding(990,.03,.3)}
-function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log('kupljeno: '+u.name+' ('+u.desc.split(' · ')[0]+')');ding(1175,.05)}
+function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log('kupljeno: '+u.name+' ('+u.desc.split(' · ')[0]+')');if(id[0]==='k'){strike=0;toast('new',BELLS[bellTier()].name.toUpperCase(),'Tvoj zvon zdaj zveni drugače. Pozvoni!',null);bellSound()}else ding(1175,.05)}
 let lastRing=0,swing=0,pslot=0;const parts=[];
 function ring(){const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;lastRing=Date.now();
- pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();ding([784,880,988,1047,1175][Math.floor(Math.random()*5)],.035,.5)}
+ pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const x2=has(LM.find(l=>l.kind==='kur').id)?2:1;const r=Math.random();
  if(r<.5){kurUntil=Date.now()+60e3*x2;log('kurentovanje! dohodek ×7 za '+60*x2+' s')}
  else if(r<.8){const g=Math.min(S.sit*.2,baseIps()*900)+13;S.sit+=g;S.life+=g;S.all+=g;log('pustni krof: +'+fmt(g)+' SIT')}
@@ -271,7 +324,7 @@ const BELL=[
 '       |  _  |',
 '       | | | |',
 '   ____|_|_|_|____'];
-function pBell(w){const iw=w-4;const sw=swing>0?(swing%2?'/o)':'(o\\'):'(o)';const cl=swing>0?(swing%2?'/':'\\'):'|';
+function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0?(swing%2?'/'+bg+')':'('+bg+'\\'):'('+bg+')';const cl=swing>0?(swing%2?'/':'\\'):'|';
  const art=BELL.map(l=>l.replace('%%%',sw).replace('%',cl));const aw=Math.max(...art.map(L));const AX=10;const off=Math.floor((iw-1)/2)-AX;
  const grid=art.map(l=>[...padR(' '.repeat(off)+l,iw)]);
  for(const p of parts){const y=p.y0-Math.floor(p.age/2);if(y<0)continue;const x=p.x<.5?Math.max(0,off-L(p.t)-1-Math.floor(p.x*4)):Math.min(iw-L(p.t),off+aw+1+Math.floor((p.x-.5)*4));
@@ -279,7 +332,7 @@ function pBell(w){const iw=w-4;const sw=swing>0?(swing%2?'/o)':'(o\\'):'(o)';con
  const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell'}]);
  lines.push(['']);
  const lbl='[  Z V O N I  ]';lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring'}]);
- lines.push(['']);lines.push(lr('en klik',fmt(clickVal(),1)+' SIT',iw));
+ lines.push(['']);lines.push(lr('zvon',BELLS[bellTier()].name,iw));lines.push(lr('en klik',fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
  if(now<kurUntil)lines.push(lr('KURENTOVANJE ×7',Math.ceil((kurUntil-now)/1000)+' s',iw));
  if(now<clkUntil)lines.push(lr('ZVONCI: klik ×77',Math.ceil((clkUntil-now)/1000)+' s',iw));
@@ -371,10 +424,11 @@ function pList(w){const iw=w-4;const rows=MODE.startsWith('1')?10:16;if(regPage=
  ls.push('x odklenjena  > naslednja  * znamenitost');
  return box('REGISTER OBČIN',ls,w,['[ '+(regPage+1)+'-'+Math.min(O.length,regPage+rows)+' ]'])}
 function pAch(w){const iw=w-4;const per=6;const pages=Math.ceil(ACH.length/per);achPage=(achPage+pages)%pages;const ls=[];
- ls.push(lr('dobljeno '+S.ach.length+'/'+ACH.length,'+'+S.ach.length+' % dohodka',iw));ls.push('');
- ACH.slice(achPage*per,achPage*per+per).forEach(a=>{const got=S.ach.includes(a[0]);wrap((got||a[0]!=='tri'?a[1]:'???'),iw-4).forEach((l,j)=>ls.push((j?'    ':got?'[x] ':'[ ] ')+l));wrap(a[2],iw-4).forEach(l=>ls.push('    '+l))});
+ ls.push(lr('dobljeno '+S.ach.length+'/'+ACH.length,'+'+S.ach.length+' % dohodka',iw));ls.push(bar(S.ach.length/ACH.length,iw-2));ls.push('');
+ const isNew=id=>S.achT&&S.achT[id]&&Date.now()-S.achT[id]<6e5;
+ ACH.slice(achPage*per,achPage*per+per).forEach(a=>{const got=S.ach.includes(a[0]);const nw=got&&isNew(a[0]);wrap((got||a[0]!=='tri'?a[1]:'???'),iw-4).forEach((l,j)=>ls.push(j?'    '+l:nw?[{t:'[!] '+l,c:'bold'}]:(got?'[x] ':'[ ] ')+l));wrap(a[2],iw-4).forEach(l=>ls.push('    '+l))});
  ls.push('');ls.push(two([btn('<','ach-1'),' ',btn('>','ach1')],[(achPage+1)+'/'+pages],iw));
- return box('DOSEŽKI',ls,w)}
+ const nNew=S.ach.filter(isNew).length;return box('DOSEŽKI',ls,w,nNew?[{t:'[ novih: '+nNew+' ]',c:'bold'}]:[])}
 function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
  ls.push(lr('glasovi',S.votes+' (+'+S.votes*2+' %)',iw));ls.push(lr('referendumi',String(S.refs),iw));ls.push(lr('ob referendumu dobiš','+'+g,iw));
  const nextAt=(votesTotal()+1)**3*1e9;ls.push(lr('naslednji glas pri',fmt(nextAt),iw));ls.push('');
@@ -413,6 +467,7 @@ function act(a){if(!a)return;
  if(a==='unlock'){unlock();return}
  if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log('odklenjenih '+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
  if(a==='kurent')return catchKurent();
+ if(a==='toast')return nextToast();
  if(a.startsWith('amt')){S.amt=a==='amtmax'?'max':+a.slice(3);return}
  if(/^g\d+$/.test(a))return buyGen(+a.slice(1));
  if(a==='upall'){let k=0;for(const u of upgrades()){if(u.cost<=S.sit){S.sit-=u.cost;S.ups.push(u.id);k++}}if(k){log('kupljenih izboljšav: '+k);ding(1175,.05)}return}
@@ -428,13 +483,14 @@ function act(a){if(!a)return;
  if(a==='rstyes'){S=fresh();resetArm=0;log('nova igra. pozvoni!');save();full();return}}
 const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){const el=document.elementFromPoint(e.clientX,e.clientY);t=el&&el.closest&&el.closest('[data-a]')}return t};
 document.addEventListener('pointerdown',e=>{const t=target(e);if(t&&(t.dataset.a==='ring'||t.dataset.a==='kurent')){e.preventDefault();act(t.dataset.a);render()}});
+document.getElementById('toast').addEventListener('click',()=>nextToast());
 document.addEventListener('click',e=>{const t=target(e);if(!t||t.dataset.a==='ring'||t.dataset.a==='kurent')return;act(t.dataset.a);render()});
 let typed='';
 document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
  if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render()}return}
  if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render()}return}
  if(e.key==='n'){unlock();render()}
- typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri')){S.ach.push('tri');log('dosežek: Na vrhu (+1 %)');ding(1319,.06,1.2)}});
+ typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri'))gotAch(ACH.find(a=>a[0]==='tri'))});
 document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('#mapgrid i');if(!c)return;const i=+c.className.match(/c(\d+)/)[1];if(i!==hover){hover=i;document.getElementById('hov').textContent=`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`;mapInfo()}});
 document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('#mapgrid')&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('#mapgrid'))){hover=-1;document.getElementById('hov').textContent='';mapInfo()}});
 

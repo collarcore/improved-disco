@@ -50,7 +50,7 @@ input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;pa
 #dock{position:fixed;left:0;right:0;bottom:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 100vw var(--bg);clip-path:inset(0 -100vw -100px -100vw);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 #dock[hidden]{display:none}
 body.docked #root{padding-bottom:7em}
-#toast{position:fixed;top:1.25em;left:0;right:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 1ch var(--bg),0 0 0 calc(1ch + 1px) var(--fg);z-index:20;cursor:pointer}
+#toast{position:fixed;margin:0;background:var(--bg);padding:1.25em 0;z-index:20;cursor:pointer}
 #toast[hidden]{display:none}#toast.pop{animation:tp .9s steps(1)}@keyframes tp{0%,30%,60%{background:var(--fg);color:var(--bg)}15%,45%,75%{background:var(--bg);color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}
 </style>
@@ -162,7 +162,7 @@ const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const padR=(s,w)=>s+' '.repeat(Math.max(0,w-L(s)));
 const padL=(s,w)=>' '.repeat(Math.max(0,w-L(s)))+s;
 const TRUNC=window.__trunc=[];const cut=(s,w)=>{if(L(s)<=w)return s;TRUNC.push(s);return [...s].slice(0,Math.max(0,w-1)).join('')+'~'};
-function wrap(s,w){const out=[];let line='';for(const word of s.split(' ')){if(L(line)+L(word)+(line?1:0)>w){if(line)out.push(line);line=word}else line=line?line+' '+word:word}if(line)out.push(line);return out}
+function wrap(s,w){s=s.replace(/(\d) (%|SIT|km²|s\b|min\b|h\b|preb\.)/g,'$1\u00a0$2');const out=[];let line='';for(const word of s.split(' ')){if(L(line)+L(word)+(line?1:0)>w){if(line)out.push(line);line=word}else line=line?line+' '+word:word}if(line)out.push(line);return out.map(l=>l.replace(/\u00a0/g,' '))}
 
 /* ================= TEXT UI ENGINE =================
    a "line" is an array of segments: string or {t,a,c} (a = action, c = css class) */
@@ -244,13 +244,20 @@ function toast(kind,title,text,sound){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more){l.more++}else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];m.title='in še '+m.more+' '+(m.more===1?'dosežek':m.more===2?'dosežka':m.more<5?'dosežki':'dosežkov');m.text='Vse najdeš v panelu Dosežki.';return}
  toastQ.push({kind,title,text});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
- const w=Math.min(48,PW.bell||48);const iw=w-4;const art=q.kind==='ach'?CUP:q.kind==='reg'?['  /\\  ',' /  \\ ','/____\\','  ||  ']:['','','',''];const aw=Math.max(...art.map(L))+2;
+ const w=toastCol().w;const iw=w-4;const art=q.kind==='ach'?CUP:q.kind==='reg'?['  /\\  ',' /  \\ ','/____\\','  ||  ']:['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[q.title,...wrap(q.text,iw-aw)];const rows=Math.max(art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push(padR(art[i]||'',aw)+(tx[i]||''));lines.push('');lines.push(padL('[ v redu ]',iw));
- el.innerHTML=box(q.kind==='ach'?'DOSEŽEK':q.kind==='reg'?'CELA REGIJA':'NOVO',lines.map(l=>i0(l)),w);el.hidden=false;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+ el.innerHTML=box(q.kind==='ach'?'DOSEŽEK':q.kind==='reg'?'CELA REGIJA':'NOVO',lines.map(l=>i0(l)),w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
  clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,4500)}
 const i0=l=>l;
 function nextToast(){toastQ.shift();showToast()}
+/* the pop-up borrows one column: the right one on 3 columns, else the left/only one */
+function toastCol(){const cs=document.querySelectorAll('#cols .col');const three=MODE.startsWith('3');const el=cs[three?2:0];return {el,w:three?W.c:W.a}}
+function placeToast(){const el=document.getElementById('toast');if(el.hidden)return;const mz=document.getElementById('measure');const cw=mz.getBoundingClientRect().width/100;
+ const cols=document.getElementById('cols').getBoundingClientRect();const tw=el.offsetWidth;const lh=parseFloat(getComputedStyle(document.body).lineHeight)||16;
+ const host=toastCol().el;const x=host?host.getBoundingClientRect().left:cols.left;
+ const d=document.getElementById('dock');const db=d.hidden?0:d.getBoundingClientRect().height;
+ el.style.left=Math.max(0,x)+'px';el.style.bottom=(db?db-1:lh)+'px'}
 /* ================= LOG ================= */
 function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' '+m);S.log=S.log.slice(0,40)}
 
@@ -459,7 +466,7 @@ let dockHTML='',bellSeen=true;const bellIO=new IntersectionObserver(es=>{for(con
 function renderDock(){const d=document.getElementById('dock');const be=document.getElementById('p-bell');if(be&&be!==bellObserved){bellIO.disconnect();bellIO.observe(be);bellObserved=be}const on=MODE.startsWith('1')&&!bellSeen;d.hidden=!on;document.body.classList.toggle('docked',on);if(!on)return;
  const w=PW.bell||49;const left='tolarji '+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT='[  Z V O N I  ]';
  const h='<span>'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
- if(h!==dockHTML){d.innerHTML=h;dockHTML=h}}
+ if(h!==dockHTML){d.innerHTML=h;dockHTML=h}placeToast()}
 
 /* ================= INPUT ================= */
 function act(a){if(!a)return;
@@ -509,7 +516,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 document.documentElement.classList.toggle('light',!!S.light);
 {const away=(Date.now()-S.save)/1000;if(away>60&&baseIps()>0){const g=baseIps()*Math.min(away,8*3600)*.5;S.sit+=g;S.life+=g;S.all+=g;log('med odsotnostjo ('+dur(away)+'): +'+fmt(g)+' SIT')}}
 if(!S.log.length)log('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.');
-const ro=new ResizeObserver(()=>{layout();render()});ro.observe(document.documentElement);
+const ro=new ResizeObserver(()=>{layout();render();placeToast()});ro.observe(document.documentElement);
 (document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{MODE='';layout();full()});
 layout();full();setInterval(tick,100);
 addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('pagehide',save);

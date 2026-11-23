@@ -24,8 +24,11 @@ Black and white, one font, one character grid.
 - **Referendum**: prestige. Reset your run for votes; each vote gives +2 % income for good.
 - **Dosežki**: 50 achievements, each +1 %. One of them is a secret.
 
-A perfect bot clicking 5×/s needs about 1 h for 50 občine, 2 h for 100 and 10 h for all 212;
-real players take longer, and referendums speed up later runs. The game saves to your browser and earns at half speed while you're away (up to 8 h).
+A single run stalls somewhere around 150–175 občine: that's the cue for a referendum.
+A perfect bot clicking 5×/s needs three runs and about 23 hours of play for all 212
+(`python3 tools/sim_prestige.py 0.08`). Real players, who check in now and then, take days.
+The game saves in your browser and earns at half speed while closed (up to 8 h).
+Settings → *Prenos igre* copies the save so you can continue on another device.
 
 ## Files
 
@@ -37,7 +40,8 @@ real players take longer, and referendums speed up later runs. The game saves to
 | `data/maps.json` | the ASCII maps (84 and 44 columns), one cell → one občina |
 | `tools/build.py` | fills the template → `index.html` |
 | `tools/mapgen.py` | regenerates the maps from coordinates (weighted Voronoi) |
-| `tools/econ.py`, `tools/sim.py` | balance simulation with a greedy bot |
+| `tools/econ.py`, `tools/sim.py` | one-run balance simulation with a greedy bot |
+| `tools/sim_prestige.py` | full campaign with referendums |
 | `fonts/` | IBM Plex Mono, self-hosted (SIL Open Font License, see `fonts/OFL.txt`) |
 
 Rebuild after editing: `python3 tools/build.py`

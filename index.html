@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Občine: kliker</title>
+<meta name="description" content="Tekstovni kliker: odkleni vseh 212 slovenskih občin, od Osilnice do Ljubljane.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta property="og:title" content="Občine: kliker">
+<meta property="og:description" content="Odkleni vseh 212 slovenskih občin. V ASCII.">
+<meta property="og:image" content="og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a municipal terminal from 1991, dry and a bit proud
+   IDEA: a text-mode registry screen; every glyph sits on one character grid
+   PICTURE: the ASCII map of Slovenia filling in, občina by občina
+   COLOUR+TYPE: black and white only, inverse video for focus; IBM Plex Mono at one size
+   LAYOUT: panels are ASCII boxes sized in characters; 3, 2 or 1 columns by screen width */
+:root{--bg:#000;--fg:#f2f2f2}
+:root.light{--bg:#fff;--fg:#000}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:400 14px/1.25 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-ligatures:none;-webkit-font-smoothing:antialiased;overflow-x:hidden;user-select:none;-webkit-user-select:none}
+#root{margin:0 auto;padding:1.25em 0 2.5em;display:flex;flex-direction:column;align-items:center}
+#cols{display:flex;gap:0 2ch;align-items:flex-start}
+.col{display:flex;flex-direction:column}
+pre{margin:0 0 1.25em;font:inherit;white-space:pre;overflow:hidden}
+.b{cursor:pointer;outline:none}
+.b:hover,.b:focus-visible,.on{background:var(--fg);color:var(--bg)}
+.bell{cursor:pointer}.b.bell:hover{background:none;color:inherit}
+.bold{font-weight:700}
+.q{animation:bl 1s steps(1) infinite}
+@keyframes bl{50%{background:var(--fg);color:var(--bg)}}
+.kur{cursor:pointer;animation:bl .5s steps(1) infinite}
+#map i{font-style:normal}
+input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;padding:0;margin:0;width:20ch;caret-color:var(--fg)}
+#measure{position:fixed;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}
+</style>
+</head>
+<body>
+<div id="root"><pre id="head"></pre><div id="cols"></div></div>
+<span id="measure">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span>
+<style id="hov"></style>
+<script>
+{
+/* ================= DATA ================= */
+const RAW=[["Osilnica",326,36,1994,"Jugovzhodna",0],["Hodoš",335,18,1998,"Pomurska",0],["Solčava",493,102,1998,"Savinjska",0],["Kobilje",502,20,1994,"Pomurska",0],["Kostel",604,56,1998,"Jugovzhodna",0],["Jezersko",679,69,1998,"Gorenjska",0],["Dobje",965,18,1998,"Savinjska",0],["Ribnica na Pohorju",1071,60,1998,"Koroška",0],["Sveti Andraž v Slovenskih Goricah",1191,18,1998,"Podravska",0],["Dobrovnik",1217,31,1998,"Pomurska",0],["Razkrižje",1231,10,1998,"Pomurska",0],["Žetale",1299,38,1998,"Podravska",0],["Bistrica ob Sotli",1334,31,1998,"Posavska",0],["Šalovci",1342,58,1998,"Pomurska",0],["Veržej",1361,12,1998,"Pomurska",0],["Velika Polana",1379,19,1998,"Pomurska",0],["Luče",1396,110,1994,"Savinjska",0],["Trnovska vas",1400,23,1998,"Podravska",0],["Zavrč",1453,19,1994,"Podravska",0],["Bloke",1563,75,1998,"Primorsko-notran.",0],["Odranci",1609,7,1994,"Pomurska",0],["Kuzma",1663,23,1994,"Pomurska",0],["Cankova",1748,31,1998,"Pomurska",0],["Središče ob Dravi",1827,33,2006,"Podravska",0],["Podlehnik",1828,46,1998,"Podravska",0],["Tabor",1833,35,1998,"Savinjska",0],["Loški potok",1839,135,1994,"Jugovzhodna",0],["Gornji Petrovci",1918,67,1994,"Pomurska",0],["Grad",1953,37,1998,"Pomurska",0],["Sveti Tomaž",1966,38,2006,"Podravska",0],["Makole",2052,37,2006,"Podravska",0],["Vitanje",2200,59,1994,"Savinjska",0],["Sveti Jurij v Slovenskih Goricah",2238,31,2006,"Podravska",0],["Podvelka",2242,104,1994,"Koroška",0],["Cerkvenjak",2250,25,1998,"Podravska",0],["Sveta Trojica v Slovenskih Goricah",2297,26,2006,"Podravska",0],["Rečica ob Savinji",2300,30,2006,"Savinjska",0],["Dobrna",2347,32,1998,"Savinjska",0],["Sveta Ana",2347,37,1998,"Podravska",0],["Sodražica",2354,49,1998,"Jugovzhodna",0],["Cirkulane",2357,32,2006,"Podravska",0],["Kostanjevica na Krki",2424,58,2006,"Posavska",0],["Ljubno",2476,79,1994,"Savinjska",0],["Juršinci",2486,36,1994,"Podravska",0],["Gornji Grad",2534,90,1994,"Savinjska",0],["Vuzenica",2594,50,1994,"Koroška",0],["Nazarje",2681,44,1994,"Savinjska",0],["Benedikt",2727,24,1998,"Podravska",0],["Gorje",2733,116,2006,"Gorenjska",0],["Destrnik",2737,34,1998,"Podravska",0],["Vransko",2792,53,1998,"Savinjska",0],["Sveti Jurij ob Ščavnici",2795,51,1994,"Pomurska",0],["Mirna",2895,31,2011,"Jugovzhodna",0],["Dornava",2915,28,1994,"Podravska",0],["Šentrupert",2915,49,2006,"Jugovzhodna",0],["Lovrenc na Pohorju",2981,84,1998,"Podravska",0],["Kozje",2996,90,1994,"Savinjska",0],["Črna na Koroškem",3001,156,1994,"Koroška",0],["Rogašovci",3027,40,1994,"Pomurska",0],["Bovec",3052,367,1994,"Goriška",0],["Turnišče",3070,24,1994,"Pomurska",0],["Rogatec",3081,40,1994,"Savinjska",0],["Horjul",3085,32,1998,"Osrednjeslovenska",0],["Mirna Peč",3238,48,1998,"Jugovzhodna",0],["Mokronog-Trebelno",3320,73,2006,"Jugovzhodna",0],["Muta",3329,39,1994,"Koroška",0],["Šmartno ob Paki",3436,18,1994,"Savinjska",0],["Ankaran",3444,8,2011,"Obalno-kraška",0],["Komen",3476,103,1994,"Obalno-kraška",0],["Loška dolina",3506,167,1994,"Primorsko-notran.",0],["Križevci",3531,46,1998,"Pomurska",0],["Škocjan",3531,61,1994,"Jugovzhodna",0],["Mežica",3536,27,1994,"Koroška",0],["Apače",3562,53,2006,"Pomurska",0],["Šmarješke Toplice",3606,34,2006,"Jugovzhodna",0],["Dolenjske Toplice",3666,110,1998,"Jugovzhodna",0],["Podčetrtek",3699,61,1994,"Savinjska",0],["Semič",3780,147,1994,"Jugovzhodna",0],["Črenšovci",3870,34,1994,"Pomurska",0],["Log-Dragomer",3895,11,2006,"Osrednjeslovenska",0],["Tišina",3908,39,1998,"Pomurska",0],["Dobrepolje",3946,103,1994,"Osrednjeslovenska",0],["Preddvor",3946,87,1994,"Gorenjska",0],["Kobarid",3964,193,1994,"Goriška",0],["Straža",4000,29,2006,"Jugovzhodna",0],["Trzin",4000,9,1998,"Osrednjeslovenska",0],["Majšperk",4009,73,1994,"Podravska",0],["Radeče",4046,52,1994,"Posavska",0],["Markovci",4050,30,1998,"Podravska",0],["Hajdina",4092,22,1998,"Podravska",0],["Starše",4111,34,1994,"Podravska",0],["Oplotnica",4203,33,1998,"Podravska",0],["Gorišnica",4212,29,1994,"Podravska",0],["Poljčane",4327,38,2006,"Podravska",0],["Selnica ob Dravi",4359,65,1998,"Podravska",0],["Renče-Vogrsko",4424,30,2006,"Goriška",0],["Mozirje",4438,54,1994,"Savinjska",0],["Cerkno",4445,132,1994,"Goriška",0],["Mislinja",4489,112,1994,"Koroška",0],["Žirovnica",4515,43,1998,"Gorenjska",0],["Štore",4542,28,1994,"Savinjska",0],["Velike Lašče",4546,103,1994,"Osrednjeslovenska",0],["Divača",4604,145,1994,"Obalno-kraška",0],["Borovnica",4688,42,1994,"Osrednjeslovenska",0],["Žužemberk",4708,164,1998,"Jugovzhodna",0],["Kungota",5018,49,1994,"Podravska",0],["Kanal",5047,147,1994,"Goriška",0],["Radenci",5064,34,1994,"Pomurska",0],["Miren-Kostanjevica",5069,63,1994,"Goriška",0],["Kranjska Gora",5143,256,1994,"Gorenjska",0],["Žiri",5159,49,1994,"Gorenjska",0],["Bohinj",5216,334,1994,"Gorenjska",0],["Vodice",5291,31,1994,"Osrednjeslovenska",0],["Prebold",5318,41,1998,"Savinjska",0],["Hrpelje–Kozina",5451,195,1994,"Obalno-kraška",0],["Naklo",5494,28,1994,"Gorenjska",0],["Brda",5564,72,1994,"Goriška",0],["Videm",5612,80,1994,"Podravska",0],["Moravče",5683,61,1994,"Osrednjeslovenska",0],["Puconci",5800,108,1994,"Pomurska",0],["Šmartno pri Litiji",5854,95,2002,"Osrednjeslovenska",0],["Vipava",5866,107,1994,"Goriška",0],["Braslovče",5908,55,1998,"Savinjska",0],["Moravske Toplice",5967,144,1994,"Pomurska",0],["Pivka",6168,223,1994,"Primorsko-notran.",0],["Lukovica",6193,75,1994,"Osrednjeslovenska",0],["Radlje ob Dravi",6229,94,null,"Koroška",0],["Dol pri Ljubljani",6438,33,1994,"Osrednjeslovenska",0],["Šempeter-Vrtojba",6451,15,1998,"Goriška",0],["Kidričevo",6606,71,1994,"Podravska",0],["Železniki",6629,164,1994,"Gorenjska",0],["Zreče",6657,67,1994,"Savinjska",0],["Polzela",6668,34,1998,"Savinjska",0],["Prevalje",6668,58,1998,"Koroška",0],["Komenda",6800,24,1998,"Osrednjeslovenska",0],["Duplek",7067,40,1994,"Podravska",0],["Ruše",7157,61,null,"Podravska",0],["Miklavž na Dravskem Polju",7300,13,1998,"Podravska",0],["Šentjernej",7446,96,1994,"Jugovzhodna",0],["Gorenja vas-Poljane",7739,153,1994,"Gorenjska",0],["Pesnica",7879,76,null,"Podravska",0],["Ig",7974,99,1994,"Osrednjeslovenska",0],["Cerklje na Gorenjskem",8029,78,1994,"Gorenjska",0],["Dobrova-Polhov Gradec",8068,118,1994,"Osrednjeslovenska",0],["Beltinci",8078,62,1994,"Pomurska",0],["Bled",8103,72,1994,"Gorenjska",0],["Rače-Fram",8363,51,1994,"Podravska",0],["Šentilj",8371,65,1994,"Podravska",0],["Metlika",8552,109,1994,"Jugovzhodna",0],["Gornja Radgona",8555,75,1994,"Pomurska",0],["Lenart",8674,62,1994,"Podravska",0],["Hrastnik",8755,59,1994,"Zasavska",0],["Dravograd",8773,105,1994,"Koroška",0],["Mengeš",8812,23,1994,"Osrednjeslovenska",0],["Šoštanj",9007,96,1994,"Savinjska",0],["Šenčur",9041,40,1994,"Gorenjska",0],["Vojnik",9360,75,1994,"Savinjska",0],["Ribnica",9825,154,null,"Jugovzhodna",0],["Lendava",10088,121,1994,"Pomurska",0],["Šmarje pri Jelšah",10575,108,null,"Savinjska",0],["Tolmin",10661,382,null,"Goriška",0],["Ljutomer",10850,107,1994,"Pomurska",0],["Ravne na Koroškem",11179,64,null,"Koroška",0],["Idrija",11482,293,1994,"Goriška",0],["Rogaška Slatina",11679,71,1994,"Savinjska",0],["Ormož",11792,142,null,"Podravska",0],["Cerknica",11899,241,1994,"Primorsko-notran.",0],["Hoče–Slivnica",12061,54,1998,"Podravska",0],["Škofljica",12199,44,1994,"Osrednjeslovenska",0],["Laško",13023,198,1994,"Savinjska",0],["Ilirska Bistrica",13130,480,1994,"Primorsko-notran.",0],["Brezovica",13202,91,1994,"Osrednjeslovenska",0],["Sežana",13669,217,null,"Obalno-kraška",0],["Trebnje",13855,163,null,"Jugovzhodna",0],["Črnomelj",14170,340,1994,"Jugovzhodna",0],["Tržič",15044,155,null,"Gorenjska",0],["Logatec",15129,173,1994,"Osrednjeslovenska",0],["Slovenske Konjice",15534,98,null,"Savinjska",0],["Kočevje",15595,556,1994,"Jugovzhodna",0],["Litija",15890,221,1994,"Zasavska",0],["Trbovlje",15935,58,null,"Zasavska",0],["Zagorje ob Savi",16347,147,null,"Zasavska",0],["Izola",16447,29,1994,"Obalno-kraška",0],["Slovenj Gradec",17063,174,null,"Koroška",1],["Postojna",17192,270,null,"Primorsko-notran.",0],["Medvode",17580,78,1994,"Osrednjeslovenska",0],["Sevnica",17602,272,null,"Posavska",0],["Piran",18206,44,null,"Obalno-kraška",0],["Ivančna Gorica",18272,227,1994,"Osrednjeslovenska",0],["Vrhnika",18296,116,null,"Osrednjeslovenska",0],["Murska Sobota",18317,64,1994,"Pomurska",1],["Radovljica",19359,119,null,"Gorenjska",0],["Šentjur",19757,222,null,"Savinjska",0],["Ajdovščina",19977,245,1994,"Goriška",0],["Žalec",21737,117,1998,"Savinjska",0],["Jesenice",21769,76,1994,"Gorenjska",0],["Grosuplje",22276,134,1994,"Osrednjeslovenska",0],["Škofja Loka",23850,146,null,"Gorenjska",0],["Ptuj",23898,67,1958,"Podravska",1],["Brežice",24412,268,1994,"Posavska",0],["Krško",26210,287,1994,"Posavska",1],["Slovenska Bistrica",26363,260,null,"Podravska",0],["Kamnik",29830,266,1994,"Osrednjeslovenska",0],["Nova Gorica",31781,280,null,"Goriška",1],["Velenje",33873,84,null,"Savinjska",1],["Domžale",38326,72,1952,"Osrednjeslovenska",0],["Novo mesto",38678,236,null,"Jugovzhodna",1],["Celje",49802,95,1994,"Savinjska",1],["Koper",54795,303,1994,"Obalno-kraška",1],["Kranj",57491,151,1994,"Gorenjska",1],["Maribor",114872,148,1994,"Podravska",1],["Ljubljana",302826,275,1994,"Osrednjeslovenska",1]];
+const MAPS={"big":{"W":84,"H":27,"g":[[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,21,21,21,-1,-1,13,13,13,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,58,58,28,28,27,27,27,13,1,1,1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,58,58,119,119,119,119,27,27,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,147,147,147,147,-1,-1,73,73,73,73,22,22,80,119,119,123,123,123,123,3,3,3,3,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,152,152,152,-1,65,65,126,126,126,33,33,33,-1,-1,-1,-1,147,147,147,140,32,38,38,38,73,149,149,107,107,80,190,190,123,123,60,9,9,3,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,109,109,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,152,152,152,152,45,45,65,126,126,33,33,33,33,94,94,94,210,210,140,140,140,32,32,150,35,47,34,51,51,51,70,14,144,144,20,78,15,15,158,158,158,158,-1,-1],[-1,-1,-1,-1,-1,-1,-1,109,109,109,109,109,109,109,109,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,72,72,72,162,162,133,133,183,183,45,45,7,7,7,55,55,55,55,136,136,136,210,210,210,135,135,135,150,17,17,8,51,51,70,70,70,161,161,78,78,15,158,158,158,158,158,-1,-1],[-1,-1,-1,-1,-1,-1,-1,109,109,109,109,109,109,109,109,-1,195,195,195,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,57,57,57,57,57,57,183,183,183,183,183,98,98,7,7,7,55,55,201,201,201,201,167,167,167,137,135,135,49,49,49,43,43,29,29,29,161,161,161,161,10,-1,-1,-1,-1,-1,-1,-1,-1],[-1,59,59,59,59,59,59,109,109,109,109,109,109,48,48,48,195,195,195,99,99,99,175,175,175,175,175,5,5,5,5,2,2,2,2,2,57,57,57,57,57,154,154,154,154,98,98,98,98,31,31,131,131,201,201,201,201,201,146,146,90,105,105,89,198,53,53,92,92,165,165,165,165,23,23,23,-1,-1,-1,-1,-1,-1,-1,-1],[59,59,59,59,59,59,59,59,59,109,109,111,111,111,48,48,48,48,145,145,191,191,175,175,175,175,175,5,5,5,5,2,2,2,16,16,16,42,42,96,96,96,154,154,204,204,204,37,31,31,31,131,131,131,201,201,201,201,201,86,86,86,129,117,117,117,88,40,18,18,165,165,165,23,23,23,-1,-1,-1,-1,-1,-1,-1,-1],[59,59,59,59,59,59,59,59,59,59,111,111,111,111,111,111,111,111,145,191,191,191,191,175,175,82,82,82,82,82,202,202,202,16,16,16,44,44,42,36,46,46,66,66,132,204,37,37,37,156,156,156,177,177,177,177,177,93,91,30,86,86,86,24,24,24,40,40,40,18,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,59,59,83,83,83,83,83,160,160,160,111,111,111,111,111,111,130,130,130,130,130,209,115,115,209,155,155,142,142,202,202,202,202,202,44,44,44,44,50,50,50,122,132,113,194,194,194,207,207,156,192,192,192,159,159,159,164,164,164,61,11,11,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,83,83,83,83,83,160,160,160,160,160,160,111,111,97,130,130,130,130,130,130,197,197,209,209,209,155,142,134,134,202,202,202,125,125,125,118,50,50,50,25,25,113,113,194,194,207,207,207,100,192,192,192,159,159,159,164,164,61,61,61,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,106,106,160,160,160,160,160,160,97,97,97,97,97,130,130,130,197,197,197,197,197,185,185,112,112,153,85,205,125,125,118,118,118,179,181,181,181,181,180,151,151,169,169,169,169,169,6,6,6,56,56,76,76,76,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,106,106,106,106,106,106,160,160,97,97,97,97,139,139,139,139,139,110,143,143,143,143,185,185,211,211,211,127,127,127,118,118,179,179,179,179,181,181,181,181,151,87,87,169,169,169,186,6,6,56,56,56,56,76,12,12,12,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,116,116,106,106,106,203,203,203,203,203,163,163,163,163,163,110,110,110,143,143,143,62,79,171,171,211,211,211,211,127,196,179,179,179,120,120,120,120,181,54,54,87,87,87,186,186,186,186,186,186,200,56,56,56,12,12,12,12,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,116,116,116,116,203,203,203,203,203,203,203,163,163,163,163,163,163,163,176,176,189,189,189,189,171,171,141,141,141,168,196,196,196,188,188,188,120,120,52,173,52,54,54,54,64,186,186,186,186,186,200,200,200,200,200,199,199,199,199,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,116,128,128,203,203,203,203,193,193,193,193,163,163,163,176,176,176,176,176,189,103,103,103,141,141,168,168,196,196,196,188,188,188,188,188,173,173,173,52,64,64,64,64,71,71,71,200,200,200,200,200,199,199,199,199,199,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,108,108,95,95,68,68,193,193,193,193,121,121,121,121,176,176,176,176,176,176,103,103,103,166,168,101,101,101,81,81,81,188,188,104,104,104,173,173,63,63,63,74,74,74,71,138,138,41,41,200,199,199,199,199,199,199,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,108,108,108,68,68,68,68,193,193,121,121,121,121,184,184,184,184,184,184,166,166,166,166,19,19,101,101,101,101,81,81,81,104,104,104,104,104,104,63,206,206,206,206,206,138,138,138,41,41,-1,199,199,199,199,199,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,68,68,68,172,172,172,172,172,172,121,184,184,184,184,184,184,166,166,166,69,19,19,19,39,39,39,157,157,157,157,104,104,104,75,75,75,84,206,206,206,206,206,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,172,172,172,172,172,172,102,102,102,124,124,124,124,124,69,69,69,69,69,26,26,26,26,157,157,157,157,178,178,178,178,75,75,75,75,77,77,77,77,148,148,148,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,-2,-2,-2,-2,-2,208,208,208,208,172,172,172,102,102,102,102,102,124,124,124,124,124,170,69,69,69,69,26,26,26,26,26,178,178,178,178,178,178,178,178,178,77,77,77,77,77,148,148,148,148,148,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,-2,-2,-2,208,208,208,208,67,208,208,208,114,114,114,114,114,114,170,170,170,170,170,170,170,170,170,-1,-1,-1,-1,-1,0,178,178,178,178,178,178,178,178,178,174,174,174,174,174,174,174,148,148,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,-2,-2,-2,187,182,182,208,208,208,208,208,114,114,114,114,114,114,170,170,170,170,170,170,170,170,170,-1,-1,-1,-1,0,0,0,0,178,178,4,4,4,4,174,174,174,174,174,174,174,174,174,174,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,-2,-2,-2,187,187,187,208,208,208,208,208,-1,-1,-1,-1,-1,170,170,170,170,170,170,170,170,170,-1,-1,-1,-1,-1,-1,0,0,-1,-1,4,4,4,4,-1,-1,174,174,174,174,174,174,174,174,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,-2,-2,-2,-2,-2,-2,-1,208,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,170,170,170,170,170,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]],"s":[[34,24],[76,1],[33,8],[77,3],[39,25],[29,9],[52,13],[48,6],[66,6],[76,4],[75,7],[62,11],[59,15],[74,1],[71,5],[76,5],[35,9],[64,6],[68,9],[28,20],[74,5],[69,0],[68,3],[74,8],[64,10],[42,12],[31,21],[73,1],[69,1],[69,7],[59,10],[49,9],[62,5],[50,5],[66,5],[64,5],[39,10],[47,10],[63,4],[32,20],[67,9],[52,18],[37,9],[66,7],[36,10],[45,5],[40,10],[65,5],[15,9],[64,7],[40,12],[68,6],[43,17],[66,8],[44,16],[51,6],[55,14],[38,7],[68,1],[4,10],[75,4],[59,12],[24,15],[44,18],[45,17],[46,5],[42,10],[9,23],[9,19],[27,21],[71,6],[49,17],[38,6],[65,3],[47,18],[43,20],[57,13],[46,22],[74,6],[25,15],[70,4],[34,18],[27,10],[5,11],[44,20],[31,13],[60,9],[45,14],[66,9],[63,8],[60,8],[58,10],[68,8],[57,10],[54,5],[7,18],[41,9],[15,13],[47,8],[19,8],[50,12],[32,19],[16,22],[26,17],[40,19],[62,8],[6,14],[68,4],[6,18],[10,7],[19,15],[14,10],[29,13],[44,11],[15,23],[24,11],[4,16],[65,9],[35,13],[71,2],[37,15],[15,18],[42,11],[73,3],[21,21],[34,13],[47,5],[31,14],[7,17],[62,9],[19,12],[51,9],[43,11],[41,6],[30,12],[61,6],[55,6],[60,7],[50,19],[17,14],[59,5],[30,16],[28,11],[23,15],[73,5],[19,9],[59,8],[58,3],[50,22],[67,4],[63,5],[44,13],[42,5],[30,13],[43,8],[27,11],[49,10],[35,20],[79,5],[55,12],[9,12],[72,6],[40,6],[16,16],[58,11],[71,8],[25,19],[59,7],[31,17],[47,13],[22,23],[27,15],[13,21],[42,17],[47,23],[24,9],[22,17],[53,10],[38,22],[37,14],[43,13],[41,13],[7,24],[44,6],[21,20],[27,13],[49,16],[6,25],[36,17],[24,16],[71,4],[20,9],[52,12],[14,18],[46,11],[17,8],[33,17],[24,13],[64,8],[57,17],[54,17],[55,8],[32,12],[9,16],[45,9],[32,13],[46,19],[48,12],[9,24],[25,12],[58,6],[29,15]]},"small":{"W":44,"H":14,"g":[[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,58,21,27,149,13,1,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,147,-1,-1,73,51,22,28,119,80,123,3,-1,-1,-1],[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,152,152,65,65,126,33,33,94,150,140,35,32,38,47,107,20,190,144,60,9,158,-1,-1],[-1,-1,-1,-1,109,109,109,109,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,72,72,162,133,183,45,7,55,167,136,90,210,137,135,17,34,8,29,14,161,10,15,78,158,-1],[59,59,59,59,109,109,109,48,48,195,99,191,175,175,5,5,2,2,2,57,57,96,66,154,98,204,31,131,201,89,146,49,105,198,53,92,43,165,70,23,-1,-1,-1,-1],[59,59,59,59,59,111,111,111,111,145,191,191,115,82,155,142,202,16,42,44,36,46,122,132,37,156,156,177,129,91,30,93,86,11,24,40,18,-1,-1,-1,-1,-1,-1,-1],[-1,83,83,83,160,160,160,111,97,130,130,197,197,209,112,134,153,205,125,118,50,50,25,113,194,207,100,192,159,117,164,61,88,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,106,106,106,160,160,97,139,139,110,143,143,143,185,211,85,127,118,179,179,181,180,151,87,169,186,6,56,56,76,12,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,116,116,128,203,203,203,163,163,163,163,189,62,79,171,141,141,196,196,120,120,52,54,64,186,186,186,200,200,200,199,199,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,108,95,68,193,193,121,121,176,176,176,103,103,168,101,81,81,188,104,173,173,63,74,71,138,41,200,199,199,199,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,68,68,172,172,172,184,184,184,184,166,19,19,39,39,157,157,104,104,75,84,206,206,138,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-1,-1,-1,-1,208,172,172,172,102,102,124,124,124,69,69,26,26,26,178,178,178,178,178,77,77,148,148,148,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,-2,182,208,67,208,114,114,114,170,170,170,170,170,-1,-1,0,0,178,178,178,174,174,174,174,174,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],[-2,-2,187,187,208,208,208,-1,-1,-1,170,170,170,170,-1,-1,-1,-1,-1,-1,4,-1,-1,174,174,174,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]],"s":[[17,12],[40,0],[17,4],[40,1],[20,13],[15,4],[27,7],[25,3],[35,3],[40,2],[39,3],[33,5],[31,7],[39,0],[37,3],[40,3],[17,5],[33,3],[36,5],[15,10],[36,2],[36,0],[35,1],[39,4],[34,5],[22,6],[16,11],[37,0],[36,1],[36,3],[30,5],[26,4],[32,2],[26,2],[34,3],[31,2],[20,5],[24,5],[33,2],[17,10],[35,5],[27,9],[18,5],[36,4],[19,5],[24,3],[21,5],[34,2],[8,4],[31,4],[21,6],[34,1],[21,8],[34,4],[22,8],[26,3],[28,7],[19,4],[35,0],[2,5],[39,2],[31,6],[12,8],[23,9],[23,8],[24,2],[22,4],[5,12],[5,10],[14,11],[38,4],[25,9],[19,3],[33,1],[24,9],[22,10],[30,7],[24,11],[41,3],[13,8],[38,1],[17,9],[13,5],[2,6],[23,10],[16,7],[32,5],[24,7],[32,6],[29,4],[29,3],[29,5],[35,4],[31,5],[28,2],[4,9],[21,4],[7,7],[24,4],[10,4],[26,6],[16,9],[8,11],[13,9],[20,9],[32,4],[3,7],[35,2],[3,9],[5,3],[10,7],[7,5],[14,6],[23,6],[8,12],[12,5],[2,8],[29,6],[18,7],[37,1],[19,8],[8,9],[22,5],[39,1],[11,11],[18,6],[25,2],[17,7],[3,8],[28,5],[10,6],[27,4],[23,5],[22,3],[15,6],[32,3],[28,3],[31,3],[26,9],[9,7],[30,2],[15,8],[15,5],[12,7],[38,2],[9,5],[30,4],[30,1],[26,11],[38,0],[29,2],[23,7],[22,2],[16,6],[23,4],[14,5],[26,5],[18,10],[41,2],[28,6],[5,6],[38,3],[21,3],[8,8],[30,6],[37,4],[13,10],[27,3],[15,9],[25,7],[11,12],[14,8],[7,10],[22,9],[24,12],[12,4],[11,9],[27,5],[20,11],[19,7],[22,7],[21,7],[3,12],[23,3],[11,10],[14,7],[26,8],[3,13],[19,9],[11,8],[37,2],[10,5],[27,6],[7,9],[24,6],[9,4],[17,8],[12,6],[33,4],[29,9],[28,8],[28,4],[16,5],[5,8],[25,4],[17,6],[24,10],[25,6],[4,12],[13,6],[30,3],[15,7]]}};
+const O=RAW.map(([n,p,a,y,r,u])=>({n,p,a,y,r,u}));
+const REG=[['Gorenjska','Gorenjska','^'],['Goriška','Goriška','%'],['Obalno-kraška','Obalno-kraška','='],['Primorsko-notran.','Primorsko-notranjska','&'],
+ ['Osrednjeslovenska','Osrednjeslovenska','#'],['Zasavska','Zasavska','*'],['Savinjska','Savinjska','+'],['Koroška','Koroška','Y'],
+ ['Podravska','Podravska','v'],['Pomurska','Pomurska','-'],['Posavska','Posavska','x'],['Jugovzhodna','Jugovzhodna Slovenija','T']];
+const RI=Object.fromEntries(REG.map((r,i)=>[r[0],i]));O.forEach(o=>o.r=RI[o.r]);
+const RN=REG.map((_,i)=>O.filter(o=>o.r===i).length);
+const IDX=Object.fromEntries(O.map((o,i)=>[o.n,i]));
+const TOTAL=O.reduce((s,o)=>s+o.p,0);
+const GEN=[['Njiva',15,.1,0],['Kozolec',100,1,2],['Čebelnjak',1100,8,8],['Gostilna',12e3,47,18],['Vinska klet',130e3,260,30],['Žaga',1.4e6,1400,45],
+ ['Rudnik',20e6,7800,62],['Toplice',330e6,44e3,80],['Smučišče',5.1e9,260e3,100],['Tovarna',75e9,1.6e6,125],['Pristanišče',1e12,10e6,150],['Elektrarna',14e12,65e6,175]];
+const GPL=['njive','kozolci','čebelnjaki','gostilne','vinske kleti','žage','rudniki','toplice','smučišča','tovarne','pristanišča','elektrarne'];
+const TIERS=[[10,10,'boljše orodje'],[25,100,'zadruga'],[50,1e4,'evropska sredstva'],[100,1e6,'digitalizacija'],[150,1e8,'zelena preobrazba'],[200,1e10,'pametna specializacija']];
+const LM=[['Solčava','Logarska dolina','gen',0,2],['Kostel','Grad Kostel','click',0,2],['Šentrupert','Dežela kozolcev','gen',1,3],['Bovec','Rafting na Soči','gen',3,2],
+ ['Ankaran','Najmlajša občina','glob',0,1.1],['Mežica','Podzemlje Pece','gen',6,2],['Kobarid','Hiša Franko','gen',3,3],['Žirovnica','Anton Janša','gen',2,3],
+ ['Radenci','Radenska','gen',7,2],['Kranjska Gora','Planica','gen',8,2],['Žiri','Žirovski čevlji','pct',0,.01],['Bohinj','Triglavski narodni park','glob',0,1.15],
+ ['Brda','Briška rebula','gen',4,3],['Vipava','Vipavski zelen','gen',4,2],['Moravske Toplice','Prekmurske terme','gen',7,2],['Cerklje na Gorenjskem','Krvavec','gen',8,2],
+ ['Bled','Blejska kremšnita','gen',3,2],['Metlika','Metliška črnina','gen',4,2],['Ribnica','Suha roba','gen',5,3],['Lendava','Nafta Lendava','gen',6,2],
+ ['Idrija','Rudnik živega srebra','gen',6,3],['Rogaška Slatina','Slatina','gen',7,3],['Ormož','Jeruzalem','gen',4,2],['Laško','Laško pivo','gen',3,2],
+ ['Sežana','Kobilarna Lipica','pct',0,.02],['Kočevje','Kočevski pragozd','gen',5,2],['Trbovlje','Rudarska tradicija','gen',6,2],['Izola','Ribiško pristanišče','gen',10,2],
+ ['Postojna','Postojnska jama','glob',0,1.25],['Piran','Sečoveljske soline','gen',10,2],['Murska Sobota','Prekmurska gibanica','gen',0,5],['Radovljica','Čebelarski muzej','gen',2,2],
+ ['Škofja Loka','Škofjeloški pasijon','glob',0,1.1],['Ptuj','Kurentovanje','kur',0,1],['Krško','Jedrska elektrarna','gen',11,3],['Kamnik','Velika planina','gen',8,2],
+ ['Nova Gorica','Trg Evrope','glob',0,1.1],['Velenje','Gospodinjski aparati','gen',9,2],['Novo mesto','Avtomobili in zdravila','gen',9,3],['Celje','Celjski grofje','glob',0,1.25],
+ ['Koper','Luka Koper','gen',10,3],['Kranj','Prešernovo mesto','pct',0,.03],['Maribor','Stara trta','gen',4,3],['Ljubljana','Prestolnica','glob',0,2]]
+ .map(([o,name,kind,t,v])=>({id:'lm'+IDX[o],o:IDX[o],name,kind,t,v}));
+const LMAT=Object.fromEntries(LM.map(l=>[l.o,l]));
+const CLK=[['k1','Pritrkavanje',50,200,2,0],['k2','Bronasti zvon',500,2e4,2,.01],['k3','Zvonik na hribu',2000,2e7,2,.01],['k4','Veliki zvon',6000,2e10,2,.02],['k5','Zvonovi vseh far',15000,2e13,2,.02]];
+const C0=50,G=1.16,PDIV=20000,GROW=1.15;
+const ocost=i=>Math.ceil(C0*G**i);
+const lmcost=l=>ocost(l.o)*3;
+
+/* ================= STATE ================= */
+const KEY='obcine-v2';
+const fresh=()=>({sit:15,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],log:[],won:0,amt:1,sound:1,light:0});
+let S=fresh();
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.own))S=Object.assign(fresh(),s)}catch(e){}
+const has=id=>S.ups.includes(id);
+let kurUntil=0,clkUntil=0,kurNext=Date.now()+90e3,kurPos=null,kurGone=0,hover=-1,regPage=null,achPage=0,refArm=0,resetArm=0,flash='';
+
+/* ================= ECONOMY ================= */
+function pop(){let p=0;for(let i=0;i<S.n;i++)p+=O[i].p;return p}
+function regCount(){const c=REG.map(()=>0);for(let i=0;i<S.n;i++)c[O[i].r]++;return c}
+const regsDone=()=>regCount().filter((c,i)=>c===RN[i]).length;
+function genMult(k){let m=1;TIERS.forEach((t,ti)=>{if(has('t'+k+'_'+ti))m*=2});LM.forEach(l=>{if(l.kind==='gen'&&l.t===k&&has(l.id))m*=l.v});return m}
+const globUp=()=>LM.reduce((m,l)=>l.kind==='glob'&&has(l.id)?m*l.v:m,1);
+const popMult=()=>1+pop()/PDIV;
+const regMult=()=>1.25**regsDone();
+const achMult=()=>1+.01*S.ach.length;
+const voteMult=()=>1+.02*S.votes;
+const kurMult=()=>Date.now()<kurUntil?7:1;
+const allMult=()=>popMult()*regMult()*achMult()*voteMult()*globUp();
+const genIps=k=>S.own[k]*GEN[k][2]*genMult(k)*allMult();
+function baseIps(){let s=0;for(let k=0;k<GEN.length;k++)s+=S.own[k]*GEN[k][2]*genMult(k);return s*allMult()}
+const ips=()=>baseIps()*kurMult();
+function clickVal(){let cm=1,pct=0;CLK.forEach(c=>{if(has(c[0])){cm*=c[4];pct+=c[5]}});LM.forEach(l=>{if(!has(l.id))return;if(l.kind==='click')cm*=l.v;if(l.kind==='pct')pct+=l.v});
+ return (cm+pct*baseIps())*(Date.now()<clkUntil?77:1)*kurMult()}
+const gcost=(k,a)=>GEN[k][1]*GROW**S.own[k]*(GROW**a-1)/(GROW-1);
+const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(GEN[k][1]*GROW**S.own[k])+1)/Math.log(GROW)));
+const votesTotal=()=>Math.floor(Math.cbrt(S.all/1e9));
+const votesGain=()=>Math.max(0,votesTotal()-S.votes);
+function upgrades(){const L=[];
+ GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:g[0]+': '+t[2],desc:GPL[k]+' ×2',cost:g[1]*t[1]})}));
+ LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:l.name,desc:lmDesc(l)+' · '+O[l.o].n,cost:lmcost(l)})});
+ CLK.forEach(c=>{if(S.clicks>=c[2]&&!has(c[0]))L.push({id:c[0],name:c[1],desc:'klik ×'+c[4]+(c[5]?', +'+c[5]*100+' % dohodka na klik':''),cost:c[3]})});
+ return L.sort((a,b)=>a.cost-b.cost)}
+function lmDesc(l){const v=String(l.v).replace('.',',');return l.kind==='gen'?GPL[l.t]+' ×'+v:l.kind==='glob'?'vse ×'+v:l.kind==='click'?'klik ×'+v:l.kind==='pct'?'klik +'+Math.round(l.v*100)+' % dohodka':'kurent pogosteje, učinki 2× dlje'}
+
+/* ================= ACHIEVEMENTS ================= */
+const ACH=[];
+[1,10,25,50,75,100,125,150,175,200,212].forEach(k=>ACH.push(['o'+k,k===1?'Prva občina':k===212?'Vsa Slovenija':k+' občin','odkleni '+k+' občin',()=>S.n>=k]));
+REG.forEach((r,i)=>ACH.push(['r'+i,'Cela regija: '+r[1],'odkleni vse občine regije',()=>regCount()[i]===RN[i]]));
+[[100,'Mežnar'],[1000,'Zvonar'],[10000,'Pritrkovalec'],[50000,'Zvon se ne ustavi']].forEach(([k,n])=>ACH.push(['c'+k,n,k.toLocaleString('sl-SI')+' klikov na zvon',()=>S.clicks>=k]));
+[[1,'Pust je tu'],[10,'Kurentova druščina'],[50,'Zima je pregnana']].forEach(([k,n])=>ACH.push(['k'+k,n,'ujemi kurenta '+k+'×',()=>S.kur>=k]));
+GEN.forEach((g,k)=>ACH.push(['g'+k,g[0]+' ×50','imej 50 '+GPL[k],()=>S.own[k]>=50]));
+[[1e6,'Milijonar'],[1e9,'Milijardar'],[1e12,'Bilijonar'],[1e15,'Državni proračun'],[1e18,'Evropski proračun']].forEach(([k,n])=>ACH.push(['l'+k,n,'skupaj zaslužiš '+fmt(k)+' SIT',()=>S.all>=k]));
+ACH.push(['ref1','Ljudstvo je odločilo','razpiši referendum',()=>S.refs>=1],['ref5','Večni referendum','razpiši 5 referendumov',()=>S.refs>=5],['tri','Na vrhu','skrivnost: natipkaj ime gore',()=>S.ach.includes('tri')]);
+function checkAch(){for(const a of ACH){if(a[0]==='tri'||S.ach.includes(a[0]))continue;if(a[3]()){S.ach.push(a[0]);log('dosežek: '+a[1]+' (+1 %)')}}}
+
+/* ================= FORMAT ================= */
+function fmt(x,dec){if(!isFinite(x))return '∞';if(x<1e6){return x.toLocaleString('sl-SI',{maximumFractionDigits:dec&&x<100?1:0})}
+ const sf=['mio','mrd','bil','bld','tril','trld','kvad','kvadd'];let k=Math.floor(Math.log10(x)/3)-2;if(k>=sf.length)return x.toExponential(2).replace('.',',');
+ return (x/10**(3*k+6)).toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+sf[k]}
+const num=x=>x.toLocaleString('sl-SI');
+const dur=s=>{s=Math.max(0,Math.round(s));if(s<60)return s+' s';const m=Math.floor(s/60);if(m<60)return m+' min';const h=Math.floor(m/60);return h<48?h+' h '+(m%60)+' min':Math.floor(h/24)+' dni'};
+const L=s=>[...s].length;
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const padR=(s,w)=>s+' '.repeat(Math.max(0,w-L(s)));
+const padL=(s,w)=>' '.repeat(Math.max(0,w-L(s)))+s;
+const cut=(s,w)=>L(s)>w?[...s].slice(0,Math.max(0,w-1)).join('')+'~':s;
+function wrap(s,w){const out=[];let line='';for(const word of s.split(' ')){if(L(line)+L(word)+(line?1:0)>w){if(line)out.push(line);line=word}else line=line?line+' '+word:word}if(line)out.push(line);return out}
+
+/* ================= TEXT UI ENGINE =================
+   a "line" is an array of segments: string or {t,a,c} (a = action, c = css class) */
+const sl=g=>L(typeof g==='string'?g:g.t);
+function seg(g){if(typeof g==='string')return esc(g);const t=esc(g.t);
+ if(g.raw)return g.raw;
+ if(g.a)return `<span class="b${g.c?' '+g.c:''}" data-a="${g.a}" role="button" tabindex="0">${t}</span>`;return g.c?`<span class="${g.c}">${t}</span>`:t}
+function fit(line,w){let h='',l=0;for(const g of line){const n=sl(g);if(l+n>w){if(typeof g==='string'){h+=esc([...g].slice(0,w-l).join(''));l=w}break}h+=seg(g);l+=n}return h+' '.repeat(w-l)}
+const btn=(t,a,on=true,c)=>on?{t:'['+t+']',a,c}:{t:'('+t.trim().toLowerCase()+')'};
+const two=(a,b,w)=>{const la=a.reduce((s,g)=>s+sl(g),0),lb=b.reduce((s,g)=>s+sl(g),0);return [...a,' '.repeat(Math.max(1,w-la-lb)),...b]};
+const lr=(a,b,w)=>two([a],[b],w);
+function box(title,lines,w,right=[]){const inner=w-4;
+ const tl=['+-',{t:'[ '+title+' ]',c:'bold'}],tr=[...right,'-+'];const used=tl.reduce((s,g)=>s+sl(g),0)+tr.reduce((s,g)=>s+sl(g),0);
+ let h=fit([...tl,'-'.repeat(Math.max(0,w-used)),...tr],w)+'\n';
+ for(const ln of lines)h+='| '+fit(Array.isArray(ln)?ln:[ln],inner)+' |\n';
+ return h+'+'+'-'.repeat(w-2)+'+'}
+const bar=(f,w)=>{const k=Math.round(Math.max(0,Math.min(1,f))*w);return '['+'#'.repeat(k)+'.'.repeat(w-k)+']'};
+
+/* ================= BIG DIGITS / BANNERS ================= */
+const SEG={'0':[' _ ','| |','|_|'],'1':['   ','  |','  |'],'2':[' _ ',' _|','|_ '],'3':[' _ ',' _|',' _|'],'4':['   ','|_|','  |'],'5':[' _ ','|_ ',' _|'],
+ '6':[' _ ','|_ ','|_|'],'7':[' _ ','  |','  |'],'8':[' _ ','|_|','|_|'],'9':[' _ ','|_|',' _|'],'.':[' ',' ','.'],',':[' ',' ',','],'-':['   ',' _ ','   '],'e':['   ',' _ ','|_ '],'+':['   ',' | ','   ']};
+function big(str){const r=['','',''];for(const ch of str){const g=SEG[ch];if(!g)continue;for(let i=0;i<3;i++)r[i]+=g[i]}return r}
+const BAN_BIG=[
+'               \\/',
+'  ___  ____   ____ ___ _   _ _____',
+' / _ \\| __ ) / ___|_ _| \\ | | ____|',
+'| | | |  _ \\| |    | ||  \\| |  _|',
+'| |_| | |_) | |___ | || |\\  | |___',
+' \\___/|____/ \\____|___|_| \\_|_____|'];
+const BAN_SMALL=[
+'             \\/',
+'  ___  ___  ___ ___ _  _ ___',
+' / _ \\| _ )/ __|_ _| \\| | __|',
+'| (_) | _ \\ (__ | || .` | _|',
+' \\___/|___/\\___|___|_|\\_|___|'];
+const BRAVO=[' ___ ___    ___   _____  _ ','| _ ) _ \\  /_\\ \\ / / _ \\| |','| _ \\   / / _ \\ V / (_) |_|','|___/_|_\\/_/ \\_\\_/ \\___/(_)'];
+
+/* ================= AUDIO ================= */
+let ac;function ding(f=880,v=.06,d=.7){if(!S.sound)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),o2=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
+ o.type='sine';o2.type='sine';o.frequency.value=f;o2.frequency.value=f*2.76;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);o2.connect(g);g.connect(ac.destination);o.start(t);o2.start(t);o.stop(t+d);o2.stop(t+d)}catch(e){}}
+
+/* ================= LOG ================= */
+function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' '+m);S.log=S.log.slice(0,40)}
+
+/* ================= ACTIONS ================= */
+function unlock(quiet){if(S.n>=O.length)return false;const c=ocost(S.n);if(S.sit<c)return false;S.sit-=c;const o=O[S.n];const rc0=regCount()[o.r];S.n++;
+ if(!quiet)log('odklenjena '+o.n+' ('+num(o.p)+' preb.)');
+ if(rc0+1===RN[o.r])log('cela regija '+REG[o.r][1]+': vse ×1,25');
+ GEN.forEach(g=>{if(g[3]===S.n)log('nova proizvodnja: '+g[0])});
+ if(LMAT[S.n-1])log('znamenitost: '+LMAT[S.n-1].name+' ('+o.n+')');
+ if(S.n===O.length&&!S.won){S.won=Date.now();log('*** vsa Slovenija je tvoja ***');ding(523,.08,1.5);ding(659,.06,1.5);ding(784,.06,1.5)}
+ if(!quiet)ding(660,.05);regPage=null;return true}
+function buyGen(k){if(S.n<GEN[k][3])return;let a=S.amt==='max'?gmax(k):S.amt;if(a<1)return;const c=gcost(k,a);if(S.sit<c)return;S.sit-=c;S.own[k]+=a;ding(990,.03,.3)}
+function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log('kupljeno: '+u.name+' ('+u.desc.split(' · ')[0]+')');ding(1175,.05)}
+let lastRing=0,swing=0,pslot=0;const parts=[];
+function ring(){const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;lastRing=Date.now();
+ pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();ding([784,880,988,1047,1175][Math.floor(Math.random()*5)],.035,.5)}
+function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const x2=has(LM.find(l=>l.kind==='kur').id)?2:1;const r=Math.random();
+ if(r<.5){kurUntil=Date.now()+60e3*x2;log('kurentovanje! dohodek ×7 za '+60*x2+' s')}
+ else if(r<.8){const g=Math.min(S.sit*.2,baseIps()*900)+13;S.sit+=g;S.life+=g;S.all+=g;log('pustni krof: +'+fmt(g)+' SIT')}
+ else{clkUntil=Date.now()+13e3*x2;log('zvonci! klik ×77 za '+13*x2+' s')}
+ ding(523,.06);ding(784,.05);drawMap(true)}
+function referendum(){const g=votesGain();if(g<1)return;const keep={all:S.all,votes:S.votes+g,refs:S.refs+1,ach:S.ach,sound:S.sound,light:S.light,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log};
+ S=Object.assign(fresh(),keep);log('referendum: +'+g+' glasov. Nova Slovenija se začne.');kurUntil=clkUntil=0;regPage=null;save();full()}
+function save(){S.save=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ================= LAYOUT ================= */
+let MODE='',W={},FS=14;
+function layout(){const vw=document.documentElement.clientWidth-16;const mz=document.getElementById('measure');
+ const cw=f=>{document.body.style.fontSize=f+'px';return mz.getBoundingClientRect().width/100};
+ let mode,f;
+ for(f of [14,13]){const c=Math.floor(vw/cw(f));if(c>=174){mode='3';W={a:40,b:88,c:Math.min(48,c-132),tot:0};break}}
+ if(!mode)for(f of [14,13]){const c=Math.floor(vw/cw(f));if(c>=130){mode='2';W={a:40,b:88};break}}
+ if(!mode){for(f of [14,13,12,11,10]){const c=Math.floor(vw/cw(f));if(c>=48||f===10){mode='1';W={a:Math.max(48,Math.min(c,c>=88?88:62))};break}}}
+ FS=f;document.body.style.fontSize=f+'px';
+ const key=mode+JSON.stringify(W);if(key===MODE)return;MODE=key;
+ const P={bell:'a',stat:'a',ups:'c',reg:'c',list:'c',ach:'c',ref:'a',set:'a',next:'b',map:'b',gen:'b',log:'b'};
+ const order1=['bell','next','map','gen','ups','stat','reg','list','ach','ref','log','set'];
+ let cols;
+ if(mode==='3')cols=[['bell','stat','ref','set'],['next','map','gen','log'],['ups','reg','list','ach']];
+ else if(mode==='2')cols=[['bell','stat','ups','reg','ref','set'],['next','map','gen','list','ach','log']];
+ else cols=[order1];
+ const wOf=(c,ci)=>mode==='1'?W.a:mode==='2'?(ci===0?W.a:W.b):[W.a,W.b,W.c][ci];
+ const el=document.getElementById('cols');el.innerHTML=cols.map((c,ci)=>`<div class="col">${c.map(id=>`<pre id="p-${id}" data-w="${wOf(id,ci)}"></pre>`).join('')}</div>`).join('');
+ PW={};cols.forEach((c,ci)=>c.forEach(id=>PW[id]=wOf(id,ci)));
+ HW=mode==='3'?W.a+W.b+W.c+4:mode==='2'?W.a+W.b+2:W.a;
+ cache={};drawMap(true)}
+let PW={},HW=80,cache={};
+
+/* ================= PANELS ================= */
+function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);const dg=big(m?m[1]:s);
+ const unit='tolarji'+(m&&m[2]?' ('+m[2]+')':'');const rate='+'+fmt(ips(),1)+' SIT/s';const sub='212 občin, od Osilnice do Ljubljane';const lines=[];
+ if(w>=100){const left=[...ban,'',sub];const right=['',unit,...dg,'',rate];const rows=Math.max(left.length,right.length);
+  for(let i=0;i<rows;i++)lines.push(padR(left[i]||'',w-30)+padL(right[i]||'',30))}
+ else lines.push(...ban,'',sub,'',unit,...dg,rate);
+ lines.push('='.repeat(w));
+ lines.push(cut('občine '+S.n+'/212   prebivalci '+num(pop())+(S.won?'   *** VSA SLOVENIJA JE TVOJA ***':''),w));
+ return lines.map(l=>esc(padR(l,w))).join('\n')}
+const BELL=[
+'          +',
+'          |',
+'         /^\\',
+'        /   \\',
+'       /_____\\',
+'       | ___ |',
+'       ||%%%||',
+'       ||_%_||',
+'       |     |',
+'       |  _  |',
+'       | | | |',
+'   ____|_|_|_|____'];
+function pBell(w){const iw=w-4;const sw=swing>0?(swing%2?'/o)':'(o\\'):'(o)';const cl=swing>0?(swing%2?'/':'\\'):'|';
+ const art=BELL.map(l=>l.replace('%%%',sw).replace('%',cl));const aw=Math.max(...art.map(L));const off=Math.floor((iw-aw)/2);
+ const grid=art.map(l=>[...padR(' '.repeat(off)+l,iw)]);
+ for(const p of parts){const y=p.y0-Math.floor(p.age/2);if(y<0)continue;const x=p.x<.5?Math.max(0,off-L(p.t)-1-Math.floor(p.x*4)):Math.min(iw-L(p.t),off+aw+1+Math.floor((p.x-.5)*4));
+  [...p.t].forEach((ch,j)=>{if(grid[y][x+j]!==undefined)grid[y][x+j]=ch})}
+ const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell'}]);
+ lines.push(['']);
+ const lbl='[  Z V O N I  ]';lines.push([' '.repeat(Math.floor((iw-L(lbl))/2)),{t:lbl,a:'ring'}]);
+ lines.push(['']);lines.push(lr('en klik',fmt(clickVal(),1)+' SIT',iw));
+ const now=Date.now();
+ if(now<kurUntil)lines.push(lr('KURENTOVANJE ×7',Math.ceil((kurUntil-now)/1000)+' s',iw));
+ if(now<clkUntil)lines.push(lr('ZVONCI: klik ×77',Math.ceil((clkUntil-now)/1000)+' s',iw));
+ return box('ZVONIK',lines,w,['[space]'])}
+function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
+ const row=(a,b)=>tl.push(lr(a,b,iw));
+ row('tolarji',fmt(Math.floor(S.sit)));row('na sekundo',fmt(ips(),1));row('na klik',fmt(clickVal(),1));row('občine',S.n+'/212');row('prebivalci',num(p));
+ tl.push(lr(bar(p/TOTAL,iw-9),(p/TOTAL*100).toLocaleString('sl-SI',{maximumFractionDigits:1})+' %',iw));tl.push('');
+ tl.push('množitelji:');const x=v=>'×'+v.toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2});
+ row('  prebivalci (1 na '+num(PDIV)+')',x(popMult()));row('  cele regije ('+rd+'/12)',x(regMult()));row('  znamenitosti',x(globUp()));
+ row('  dosežki ('+S.ach.length+')',x(achMult()));row('  glasovi ('+S.votes+')',x(voteMult()));if(kurMult()>1)row('  kurent',x(7));
+ row('  skupaj',x(allMult()*kurMult()));tl.push('');
+ row('čas igre',dur((Date.now()-S.t0)/1000));row('vsega zasluženo',fmt(S.all));
+ return box('STANJE',tl,w)}
+function pNext(w){const iw=w-4;const ls=[];
+ if(S.n>=O.length){BRAVO.forEach(l=>ls.push(' '.repeat(Math.max(0,Math.floor((iw-L(l))/2)))+l));ls.push('');
+  ls.push('Vseh 212 občin in '+num(TOTAL)+' prebivalcev je tvojih.');ls.push('čas: '+dur((S.won-S.t0)/1000)+'   klikov: '+num(S.clicks));
+  ls.push('Razpiši referendum za glasove in začni znova, hitreje.');return box('NASLEDNJA OBČINA',ls,w,['[n]'])}
+ const o=O[S.n],c=ocost(S.n),can=S.sit>=c,v=ips();
+ ls.push(lr('#'+String(S.n+1).padStart(3,'0')+'  '+o.n.toUpperCase()+(o.u?'  (mestna občina)':''),REG[o.r][1],iw));
+ ls.push(num(o.p)+' prebivalcev · '+o.a+' km² · ustanovljena '+(o.y||'?'));
+ const after=(1+(pop()+o.p)/PDIV)/popMult();
+ ls.push('dohodek po odklepu: ×'+after.toLocaleString('sl-SI',{minimumFractionDigits:3,maximumFractionDigits:3}));
+ const extra=[];GEN.forEach(g=>{if(g[3]===S.n+1)extra.push('odpre: '+g[0])});if(LMAT[S.n])extra.push('znamenitost: '+LMAT[S.n].name);
+ const rc=regCount();if(rc[o.r]+1===RN[o.r])extra.push('dokonča regijo');ls.push(extra.length?'* '+extra.join(' · '):'');
+ ls.push('');
+ const eta=can?'':v>0?'še ~'+dur((c-S.sit)/v):'';
+ ls.push([btn(' ODKLENI za '+fmt(c)+' ','unlock',can),' ',btn(' VSE ','all',can),'  ',eta]);
+ ls.push('');const nx=[1,2,3].map(k=>O[S.n+k]).filter(Boolean).map(q=>q.n);ls.push(cut('sledijo: '+(nx.length?nx.join(', ')+' …':'Ljubljana je zadnja.'),iw));
+ return box('NASLEDNJA OBČINA',ls,w,['[n]'])}
+function mapFor(w){return w-4>=MAPS.big.W?MAPS.big:MAPS.small}
+function mapGridHTML(M,iw){const n=S.n;const pad=Math.floor((iw-M.W)/2);let h='';
+ for(let y=0;y<M.H;y++){let row='| '+' '.repeat(pad);for(let x=0;x<M.W;x++){
+  if(kurPos&&y>=kurPos[1]&&y<kurPos[1]+3&&x>=kurPos[0]&&x<kurPos[0]+4){row+=`<span class="kur" data-a="kurent">${esc(KUR[y-kurPos[1]][x-kurPos[0]])}</span>`;continue}
+  const i=M.g[y][x];if(i===-2){row+='~';continue}if(i<0){row+=' ';continue}
+  const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i;
+  if(i<n)ch=seat?(O[i].n==='Ljubljana'?'@':O[i].u?'O':'o'):REG[O[i].r][2];else if(i===n){ch='?';cls+=' q'}else ch='.';
+  row+=`<i class="${cls}">${esc(ch)}</i>`}
+  h+=row+' '.repeat(iw-pad-M.W)+' |\n'}
+ return h}
+const KUR=['\\  /','(oo)','/##\\'];
+let mapKey='';
+function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElementById('p-map');if(!el)return;const M=mapFor(w);const k=S.n+'|'+(kurPos?kurPos.join():'')+'|'+w;
+ if(!force&&k===mapKey)return;mapKey=k;const iw=w-4;
+ el.innerHTML=fit(['+-',{t:'[ ZEMLJEVID ]',c:'bold'},'-'.repeat(w-L('+-[ ZEMLJEVID ]')-L('[ '+S.n+'/212 ]-+')),'[ '+S.n+'/212 ]-+'],w)+'\n'+'| '+' '.repeat(iw)+' |\n'+
+  `<span id="mapgrid">${mapGridHTML(M,iw)}</span><span id="mapinfo"></span>`+'+'+'-'.repeat(w-2)+'+';
+ mapInfo(true)}
+let infoKey='';
+function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo');if(!el)return;const iw=w-4;const i=hover;
+ let a,b;if(i<0){a='premakni miško ali tapni občino.';b='o sedež  O mestna občina  @ Ljubljana  ? naslednja  . zaklenjena'}
+ else{const o=O[i];const known=i<=S.n+2;a=(known?o.n:'??????')+(o.u&&known?' (MO)':'')+' · '+num(o.p)+' preb. · '+o.a+' km² · '+REG[o.r][1];
+  b=i<S.n?'odklenjena · #'+(i+1)+(LMAT[i]?' · znamenitost: '+LMAT[i].name:''):i===S.n?'naslednja · '+fmt(ocost(i))+' SIT':'zaklenjena · #'+(i+1)}
+ const k=a+b;if(!force&&k===infoKey)return;infoKey=k;
+ const lines=['',...wrap(a,iw).slice(0,1),...wrap(b,iw).slice(0,2)];while(lines.length<4)lines.push('');
+ el.innerHTML=lines.map(l=>'| '+esc(padR(cut(l,iw),iw))+' |\n').join('')}
+function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;
+ GEN.forEach((g,k)=>{if(S.n<g[3]){if(S.n>=(GEN[k-1]||[])[3])ls.push(lr('???',' odpre se pri '+g[3]+' občinah',iw));return}
+  const a=S.amt==='max'?Math.max(1,gmax(k)):S.amt;const c=gcost(k,a);const can=S.sit>=c&&(S.amt!=='max'||gmax(k)>0);
+  const each=GEN[k][2]*genMult(k)*allMult()*kurMult();const label=S.amt===1?' KUPI ':' KUPI '+a+' ';
+  if(wide){ls.push([padR(g[0],12),padL(String(S.own[k]),5),'  ',padL(fmt(genIps(k)*kurMult(),1)+'/s',14),'  ',padL('+'+fmt(each,1)+'/s',13),'  ',padL(fmt(c),12),'  ',btn(label,'g'+k,can)])}
+  else{ls.push(lr(g[0]+'  ×'+S.own[k],fmt(genIps(k)*kurMult(),1)+'/s',iw));ls.push(two(['  cena '+fmt(c)],[btn(label,'g'+k,can)],iw))}});
+ if(wide)ls.unshift([padR('',12),padL('kos',5),'  ',padL('skupaj',14),'  ',padL('vsak',13),'  ',padL('cena',12)]);
+ const right=[];[1,10,100,'max'].forEach(a=>{right.push({t:'['+(a==='max'?'MAX':'×'+a)+']',a:'amt'+a,c:S.amt===a?'on':''})});
+ return box('PROIZVODNJA',ls,w,right)}
+function pUps(w){const iw=w-4;const U=upgrades();const ls=[];const max=MODE.startsWith('3')?9:6;
+ if(!U.length)ls.push('ni novih izboljšav.');
+ U.slice(0,max).forEach(u=>{const can=S.sit>=u.cost;ls.push(lr(cut(u.name,iw-14),fmt(u.cost),iw));
+  const d=wrap(u.desc,iw-10);d.forEach((l,j)=>ls.push(j===d.length-1?two(['  '+l],[btn(' KUPI ','u'+u.id,can)],iw):['  '+l]))});
+ if(U.length>max)ls.push('… in še '+(U.length-max));
+ const nextLm=LM.find(l=>l.o>=S.n);if(nextLm)ls.push(''),ls.push(cut('naslednja znamenitost: #'+(nextLm.o+1),iw));
+ return box('IZBOLJŠAVE',ls,w,['[ '+S.ups.length+' ]'])}
+function pReg(w){const iw=w-4;const rc=regCount();const ls=[];const bw=Math.max(8,iw-31);
+ REG.forEach((r,i)=>{const done=rc[i]===RN[i];const nm=L(r[1])<=iw-bw-12?r[1]:r[0];ls.push([r[2]+' '+padR(cut(nm,iw-bw-12),iw-bw-12),bar(rc[i]/RN[i],bw-2),' ',done?{t:padL('×1,25',8),c:'bold'}:padL(rc[i]+'/'+RN[i],8)])});
+ return box('REGIJE',ls,w,['[ cela = ×1,25 ]'])}
+function pList(w){const iw=w-4;const rows=MODE.startsWith('1')?10:16;if(regPage===null)regPage=Math.max(0,Math.min(O.length-rows,S.n-Math.floor(rows/2)));
+ const ls=[];for(let i=regPage;i<Math.min(O.length,regPage+rows);i++){const o=O[i];const known=i<=S.n+2;
+  const nm=known?o.n+(o.u?' (MO)':''):'?'.repeat(Math.min(12,L(o.n)));const mark=i<S.n?'x':i===S.n?'>':' ';const lm=LMAT[i]&&known?' *':'';
+  const line=padR(cut(mark+' '+String(i+1).padStart(3,'0')+' '+nm+lm,iw-11),iw-10)+padL(num(o.p),10);ls.push(i===S.n?[{t:line,c:'on'}]:line)}
+ ls.push('');ls.push(two([btn('<<','pg-'+rows),' ',btn('<','pg-1'),' ',btn('>','pg1'),' ',btn('>>','pg'+rows)],[btn(' NASLEDNJA ','pg0')],iw));
+ ls.push('x odklenjena  > naslednja  * znamenitost');
+ return box('REGISTER OBČIN',ls,w,['[ '+(regPage+1)+'-'+Math.min(O.length,regPage+rows)+' ]'])}
+function pAch(w){const iw=w-4;const per=6;const pages=Math.ceil(ACH.length/per);achPage=(achPage+pages)%pages;const ls=[];
+ ls.push(lr('dobljeno '+S.ach.length+'/'+ACH.length,'+'+S.ach.length+' % dohodka',iw));ls.push('');
+ ACH.slice(achPage*per,achPage*per+per).forEach(a=>{const got=S.ach.includes(a[0]);ls.push(cut((got?'[x] ':'[ ] ')+(got||a[0]!=='tri'?a[1]:'???'),iw));ls.push(cut('    '+a[2],iw))});
+ ls.push('');ls.push(two([btn('<','ach-1'),' ',btn('>','ach1')],[(achPage+1)+'/'+pages],iw));
+ return box('DOSEŽKI',ls,w)}
+function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
+ ls.push(lr('glasovi',S.votes+' (+'+S.votes*2+' %)',iw));ls.push(lr('referendumi',String(S.refs),iw));ls.push(lr('ob referendumu dobiš','+'+g,iw));
+ const nextAt=(votesTotal()+1)**3*1e9;ls.push(lr('naslednji glas pri',fmt(nextAt),iw));ls.push('');
+ wrap('Vsak glas da +2 % dohodka. Referendum ponastavi tolarje, občine, proizvodnjo in izboljšave. Glasovi in dosežki ostanejo.',iw).forEach(l=>ls.push(l));ls.push('');
+ if(Date.now()<refArm)ls.push([btn(' RES? DA ','refyes'),' ',btn(' NE ','refno')]);else ls.push([btn(' RAZPIŠI REFERENDUM ','ref',g>=1)]);
+ return box('REFERENDUM',ls,w)}
+function pLog(w){const iw=w-4;const n=MODE.startsWith('1')?6:8;const ls=S.log.slice(0,n).map(l=>cut(l,iw));while(ls.length<n)ls.push('');return box('DNEVNIK',ls,w)}
+function pSet(w){const iw=w-4;const ls=[];
+ ls.push([btn(S.sound?' zvok: vklop ':' zvok: izklop ','snd'),' ',btn(S.light?' tema: svetla ':' tema: temna ','thm')]);
+ ls.push([btn(' izvozi ','exp'),' ',btn(' uvozi ','imp'),' ',Date.now()<resetArm?btn(' RES? ','rstyes'):btn(' ponastavi ','rst')]);
+ ls.push(['uvoz: ',{t:'                    ',raw:'<input id="impin" aria-label="Shranjena igra" placeholder="prilepi tukaj">'}]);
+ ls.push(flash?cut(flash,iw):'');ls.push('');
+ wrap('Podatki: seznam občin na slovenski Wikipediji. Zemljevid je približek iz središč občin. Igra se shranjuje v brskalnik.',iw).forEach(l=>ls.push(l));
+ ls.push('tipke: space zvoni, n odkleni');
+ return box('NASTAVITVE',ls,w)}
+
+/* ================= RENDER ================= */
+const PAN={bell:pBell,stat:pStat,next:pNext,gen:pGen,ups:pUps,reg:pReg,list:pList,ach:pAch,ref:pRef,log:pLog,set:pSet};
+function put(id,html){if(cache[id]===html)return;const el=document.getElementById(id);if(!el)return;
+ const act=document.activeElement;const fa=act&&el.contains(act)&&act.dataset?act.dataset.a:null;const inp=act&&act.id==='impin'?act.value:null;
+ if(inp!==null&&id==='p-set')return;
+ el.innerHTML=html;cache[id]=html;if(fa){const n=el.querySelector(`[data-a="${fa}"]`);if(n)n.focus({preventScroll:true})}}
+function render(){put('head',pHead());for(const id in PAN)if(PW[id])put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
+function full(){cache={};mapKey='';render()}
+
+/* ================= INPUT ================= */
+function act(a){if(!a)return;
+ if(a==='ring')return ring();
+ if(a==='unlock'){unlock();return}
+ if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log('odklenjenih '+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
+ if(a==='kurent')return catchKurent();
+ if(a.startsWith('amt')){S.amt=a==='amtmax'?'max':+a.slice(3);return}
+ if(/^g\d+$/.test(a))return buyGen(+a.slice(1));
+ if(a[0]==='u')return buyUp(a.slice(1));
+ if(a.startsWith('pg')){const v=+a.slice(2);if(v===0)regPage=null;else regPage=Math.max(0,Math.min(O.length-1,(regPage||0)+v));return}
+ if(a.startsWith('ach'))return achPage+=+a.slice(3);
+ if(a==='ref'){refArm=Date.now()+5000;return}if(a==='refno'){refArm=0;return}if(a==='refyes'){refArm=0;return referendum()}
+ if(a==='snd'){S.sound=S.sound?0:1;return}
+ if(a==='thm'){S.light=S.light?0:1;document.documentElement.classList.toggle('light',!!S.light);return}
+ if(a==='exp'){const t=btoa(unescape(encodeURIComponent(JSON.stringify(S))));try{navigator.clipboard.writeText(t).then(()=>flash='shranjena igra je v odložišču.',()=>flash='kopiranje ni uspelo.')}catch(e){flash='kopiranje ni uspelo.'}return}
+ if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const s=JSON.parse(decodeURIComponent(escape(atob(v.trim()))));if(!Array.isArray(s.own))throw 0;S=Object.assign(fresh(),s);flash='igra naložena.';save();full()}catch(e){flash='to ni veljavna shranjena igra.'}return}
+ if(a==='rst'){resetArm=Date.now()+4000;return}
+ if(a==='rstyes'){S=fresh();resetArm=0;log('nova igra. pozvoni!');save();full();return}}
+const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){const el=document.elementFromPoint(e.clientX,e.clientY);t=el&&el.closest&&el.closest('[data-a]')}return t};
+document.addEventListener('pointerdown',e=>{const t=target(e);if(t&&(t.dataset.a==='ring'||t.dataset.a==='kurent')){e.preventDefault();act(t.dataset.a);render()}});
+document.addEventListener('click',e=>{const t=target(e);if(!t||t.dataset.a==='ring'||t.dataset.a==='kurent')return;act(t.dataset.a);render()});
+let typed='';
+document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
+ if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();act(e.target.dataset.a);render();return}
+ if(e.code==='Space'){e.preventDefault();ring();render();return}
+ if(e.key==='n'){unlock();render()}
+ typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri')){S.ach.push('tri');log('dosežek: Na vrhu (+1 %)');ding(1319,.06,1.2)}});
+document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('#mapgrid i');if(!c)return;const i=+c.className.match(/c(\d+)/)[1];if(i!==hover){hover=i;document.getElementById('hov').textContent=`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`;mapInfo()}});
+document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('#mapgrid')&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('#mapgrid'))){hover=-1;document.getElementById('hov').textContent='';mapInfo()}});
+
+/* ================= LOOP ================= */
+function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);
+ if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+13e3;drawMap(true)}
+let last=performance.now(),saveT=0,achT=0,partT=0;
+function tick(){const now=performance.now(),dt=Math.min(1,(now-last)/1000);last=now;const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;
+ if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
+ const t=Date.now();const kx=has(LM.find(l=>l.kind==='kur').id)?.6:1;
+ if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(120e3+Math.random()*120e3)*kx}
+ if(kurPos&&t>kurGone){kurPos=null;drawMap(true)}
+ if((achT+=dt)>1){achT=0;checkAch()}
+ if((saveT+=dt)>5){saveT=0;save()}
+ render()}
+document.documentElement.classList.toggle('light',!!S.light);
+{const away=(Date.now()-S.save)/1000;if(away>60&&baseIps()>0){const g=baseIps()*Math.min(away,8*3600)*.5;S.sit+=g;S.life+=g;S.all+=g;log('med odsotnostjo ('+dur(away)+'): +'+fmt(g)+' SIT')}}
+if(!S.log.length)log('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.');
+const ro=new ResizeObserver(()=>{layout();render()});ro.observe(document.documentElement);
+(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{MODE='';layout();full()});
+layout();full();setInterval(tick,100);
+addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('pagehide',save);
+}
+</script>
+</body>
+</html>

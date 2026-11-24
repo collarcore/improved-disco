@@ -740,7 +740,12 @@ document.addEventListener('pointerdown',e=>{mapSecret(e.target);const t=target(e
 document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;let t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY);
  if(t&&t.dataset.a===a){act(a);render(true)}});
 document.addEventListener('pointercancel',()=>{downA=null});
-{const te=document.getElementById('toast');te.addEventListener('click',()=>nextToast());
+/* phones: a second tap within ~0.35 s must never zoom the page. touch-action covers most browsers; iOS Safari
+   can still zoom on fast taps, so the second touchend is cancelled. Actions run on pointer events, so nothing is lost. */
+{let lastEnd=0;document.addEventListener('touchend',e=>{const now=e.timeStamp;if(now-lastEnd<350&&e.cancelable&&!(e.target.closest&&e.target.closest('input')))e.preventDefault();lastEnd=now},{passive:false})}
+/* iOS zooms in when a text field smaller than 16 px gets focus; maximum-scale stops that, and iOS still allows pinch-zoom */
+if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const v=document.querySelector('meta[name=viewport]');if(v)v.content='width=device-width, initial-scale=1, maximum-scale=1'}
+{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(e.button===0||e.pointerType!=='mouse')nextToast()});te.addEventListener('click',e=>{if(e.detail===0)nextToast()});
  /* reading time: the pop-up waits while the mouse rests on it */
  te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden)toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */

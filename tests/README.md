@@ -9,6 +9,7 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `layout.py` | every line of every panel is the same width, no sideways overflow, at 10 widths and 5 game stages |
 | `truncation.py` | no text is cut off anywhere (pages through the register and achievements, hovers every municipality) |
 | `flicker.py` | spamming the bell keeps the button steady |
+| `taps.py` | phone: 30 fast taps ring 30 times, 5 fast [KUPI] taps buy 5, no zoom, the page stays put |
 | `popups.py` | every pop-up kind with the longest texts, 10 sizes × 3 scroll positions × 2 languages: on screen, on its column, box intact |
 | `secrets.py` | every secret can be found and none of them breaks anything (spoilers!) |
 | `hover.py` | sweeping the mouse across the map never flashes the legend |

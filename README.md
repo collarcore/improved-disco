@@ -20,8 +20,10 @@ Black and white, one font, one character grid. Slovenian and English.
 
 ## How it plays
 
-- **Zvonik**: click the bell (or press space) for tolarji. Five bell upgrades, each with its
-  own sound, from a small handbell to *pritrkavanje* to the bells of every parish.
+- **Zvonik**: click the bell (or press space) for tolarji. Ringing fills the **zvonjenje** meter,
+  which multiplies *all* income while you keep ringing: ×1.5 with the handbell, up to ×5 with
+  the bells of every parish. It drains when you pause, so active play matters all game.
+  Five bell upgrades, each with its own sound, from a small handbell to *pritrkavanje*.
 - **Proizvodnja**: 12 producers, from *njiva* to *elektrarna*. New ones open as you unlock more občine.
   `*` marks the best price for the income.
 - **Občine**: unlock them in order of population. Every resident adds to your income
@@ -31,26 +33,31 @@ Black and white, one font, one character grid. Slovenian and English.
 - **Kurent**: shows up on the map now and then. Catch him for a ×7 boost, a pustni krof or a click frenzy.
 - **Referendum**: prestige. Reset your run for votes (each +5 % income for good) and adopt one of
   12 **constitutional amendments**: cheaper producers, a more frequent Kurent, the first 25 občine free, and so on.
-- **Prazniki**: seasonal events from the real calendar: Pust and Prešernov dan in February,
+- **Teden**: every weekday has its own bonus from village life: tržni dan (Monday), obrtni dan,
+  delavnik, izletniki, petek v gostilni, gasilska veselica and nedeljska maša (Sunday: the meter fills twice as fast).
+- **Prazniki**: rarer extras from the real calendar: Pust and Prešernov dan in February,
   Dan državnosti in June, the tourist season, trgatev, Martinovanje in November, Christmas, the ski season.
-- **Dosežki**: 53 achievements, each +1 %. One of them is a secret.
+- **Dosežki**: 55 achievements, each +1 %. One of them is a secret.
 
 The game saves in your browser and earns at half speed while closed (up to 8 h).
 Settings → *Prenos igre* copies the save so you can continue on another device.
 
 ## How long it takes
 
-Two simulations, both in `tools/`:
+From `python3 tools/balance.py` (models producers, landmarks, bells, the ringing meter,
+the week and referendums; leaves out the Kurent, achievements, amendments and holidays,
+so real players are somewhat faster):
 
-| who | all 212 | referendums |
+| občine | active player (hours of play) | casual player, 3×10 min a day (days) |
 |---|---|---|
-| perfect bot, playing nonstop (`sim_prestige.py`) | ~24.5 h of play | 3 |
-| 3 visits a day, 10 min each, calls a referendum past ~150 občin | ~9 days | 4 |
-| the same player, never calling a referendum | ~15 days | 0 |
+| 10 | 0.8 | 0.9 |
+| 25 | 2.9 | 1.5 |
+| 50 | 6.7 | 2.9 |
+| 100 | 9.7 | 4.3 |
+| 150 | 15.2 | 7.9 |
+| all 212 | ~31 (8 referendums) | ~18.5 (6 referendums) |
 
-Neither model includes the Kurent, achievements, amendments or events, which all speed things up.
-Each referendum vote is +5 % income, so calling one late in a run pays off for active and casual
-players alike; the game says so in the *next občina* panel when the moment is right.
+Without referendums a run stalls around 150 občin; the *next občina* panel says when one pays off.
 
 ## Playtesting
 
@@ -76,9 +83,8 @@ users catch the Kurent. Animations stop under *prefers-reduced-motion*.
 | `data/maps.json` | the ASCII maps (84 and 44 columns), one cell → one občina |
 | `tools/build.py` | fills the shell with the game, data and maps → `index.html` |
 | `tools/mapgen.py` | regenerates the maps from coordinates (weighted Voronoi) |
-| `tools/econ.py`, `tools/sim.py` | one-run balance simulation with a greedy bot |
-| `tools/sim_prestige.py` | full campaign with referendums |
-| `tools/sim_casual.py` | calendar days for players who only look in now and then |
+| `tools/econ.py` | game data for the simulator |
+| `tools/balance.py` | balance simulator: active and casual players, prices in one place |
 | `fonts/` | IBM Plex Mono, self-hosted |
 | `docs/` | README images |
 

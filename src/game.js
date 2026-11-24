@@ -70,15 +70,25 @@ const EV=[{id:'pust',sl:'Pust',en:'Carnival',from:[2,1],to:[2,29],dsl:'kurent pr
  {id:'trgatev',sl:'Trgatev',en:'Grape harvest',from:[9,15],to:[10,15],dsl:'vinske kleti ×2',den:'wine cellars ×2',gm:{4:2}},
  {id:'martin',sl:'Martinovanje',en:"St Martin's month",from:[11,1],to:[11,30],dsl:'vinske kleti ×3, gostilne ×2',den:'wine cellars ×3, inns ×2',gm:{4:3,3:2}},
  {id:'bozic',sl:'Božič in novo leto',en:'Christmas and New Year',from:[12,20],to:[1,6],dsl:'klik ×2',den:'clicks ×2',click:2}];
+/* the week in a Slovenian village: one bonus per day, so every player meets them all */
+const WEEK=[
+ {id:'d0',sl:'Nedeljska maša',en:'Sunday mass',dsl:'klik ×3, zvonjenje se polni 2× hitreje',den:'clicks ×3, the ringing meter fills twice as fast',click:3,fill:2},
+ {id:'d1',sl:'Tržni dan',en:'Market day',dsl:'njive, kozolci in čebelnjaki ×3',den:'fields, hayracks and apiaries ×3',gm:{0:3,1:3,2:3}},
+ {id:'d2',sl:'Obrtni dan',en:'Crafts day',dsl:'žage in rudniki ×2',den:'sawmills and mines ×2',gm:{5:2,6:2}},
+ {id:'d3',sl:'Delavnik',en:'Shift day',dsl:'tovarne, pristanišča in elektrarne ×2',den:'factories, ports and power plants ×2',gm:{9:2,10:2,11:2}},
+ {id:'d4',sl:'Izletniki',en:'Day trippers',dsl:'toplice in smučišča ×2',den:'spas and ski resorts ×2',gm:{7:2,8:2}},
+ {id:'d5',sl:'Petek v gostilni',en:'Friday at the inn',dsl:'gostilne in vinske kleti ×2',den:'inns and wine cellars ×2',gm:{3:2,4:2}},
+ {id:'d6',sl:'Gasilska veselica',en:"Firefighters' party",dsl:'vse ×1,1, kurent pogosteje',den:'everything ×1.1, the Kurent comes more often',glob:1.1,kur:.6}];
 const PDIV=20000,GROW=1.15;
 
 /* ================= STATE ================= */
-const KEY='obcine-v2',VERSION=3;
+const KEY='obcine-v2',VERSION=4;
 const fresh=()=>({v:VERSION,sit:15,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
- lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{}});
+ lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[]});
 /* saves carry a version; each step upgrades an older shape */
 function migrate(s){if(!s||!Array.isArray(s.own))return null;const v=s.v||2,first=s.first||s.t0;s=Object.assign(fresh(),s);
  if(v<3){s.first=first||Date.now()}
+ /* v4: new unlock prices and the ringing meter; nothing in the save needs converting */
  s.v=VERSION;
  s.own=GEN.map((_,k)=>s.own[k]||0);return s}
 let S=fresh();
@@ -92,7 +102,9 @@ let kurUntil=0,clkUntil=0,kurNext=Date.now()+90e3,kurPos=null,kurGone=0,hover=-1
 let evCache={key:'',list:[]};
 function eventsNow(){const d=new Date(window.__date||Date.now());const key=d.toDateString();if(key===evCache.key)return evCache.list;
  const md=(d.getMonth()+1)*100+d.getDate();const inR=e=>{const a=e.from[0]*100+e.from[1],b=e.to[0]*100+e.to[1];return a<=b?md>=a&&md<=b:md>=a||md<=b};
- evCache={key,list:EV.filter(inR)};return evCache.list}
+ evCache={key,list:[WEEK[d.getDay()],...EV.filter(inR)]};return evCache.list}
+const holidaysNow=()=>eventsNow().slice(1);
+const evFill=()=>eventsNow().reduce((m,e)=>m*(e.fill||1),1);
 const evName=e=>tr(e.sl,e.en),evDesc=e=>tr(e.dsl,e.den);
 const evGen=k=>eventsNow().reduce((m,e)=>m*((e.gm&&e.gm[k])||1),1);
 const evGlob=()=>eventsNow().reduce((m,e)=>m*(e.glob||1),1);
@@ -100,7 +112,7 @@ const evClick=()=>eventsNow().reduce((m,e)=>m*(e.click||1),1);
 const evKur=()=>eventsNow().reduce((m,e)=>m*(e.kur||1),1);
 
 /* ================= ECONOMY ================= */
-const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.08*i*(211-i)/211)+8*(i+1)**3)*Math.exp(.12*Math.max(0,i-140))*(am('a3')?.8:1));
+const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*(am('a3')?.8:1));
 const lmcost=l=>ocost(l.o)*3*(am('a7')?.5:1)||Math.ceil((30*1.15**l.o)*3);
 function pop(){let p=0;for(let i=0;i<S.n;i++)p+=O[i].p;return p}
 function regCount(){const c=REG.map(()=>0);for(let i=0;i<S.n;i++)c[O[i].r]++;return c}
@@ -118,9 +130,15 @@ const kurMult=()=>Date.now()<kurUntil?7:1;
 const allMult=()=>popMult()*regMult()*achMult()*voteMult()*globUp()*evGlob();
 const genIps=k=>S.own[k]*gprod(k)*genMult(k)*allMult();
 function baseIps(){let s=0;for(let k=0;k<GEN.length;k++)s+=S.own[k]*gprod(k)*genMult(k);return s*allMult()}
-const ips=()=>baseIps()*kurMult();
+/* ringing meter: every ring fills it, it drains once you pause, and it multiplies all income
+   up to the current bell's cap (handbell ×1.5 … bells of every parish ×5) */
+const METER_CAP=[1.5,2,2.5,3,4,5],FILL=.025,GRACE=5000,DRAIN_S=45;
+let meter=0,lastRingT=0;
+const meterCap=()=>METER_CAP[bellTier()];
+const meterMult=()=>1+meter*(meterCap()-1);
+const ips=()=>baseIps()*kurMult()*meterMult();
 function clickVal(){let cm=am('a5')?5:1,pct=0;CLK.forEach(c=>{if(has(c[0])){cm*=c[5];pct+=c[6]}});LM.forEach(l=>{if(!has(l.id))return;if(l.kind==='click')cm*=l.v;if(l.kind==='pct')pct+=l.v});
- return (cm*evClick()+pct*baseIps())*(Date.now()<clkUntil?77:1)*kurMult()}
+ return (cm*evClick()+pct*baseIps())*(Date.now()<clkUntil?77:1)*kurMult()*meterMult()}
 const GD=()=>am('a1')?.85:1;
 const gcost=(k,a)=>gcostBase(k)*GD()*GROW**S.own[k]*(GROW**a-1)/(GROW-1);
 const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(gcostBase(k)*GD()*GROW**S.own[k])+1)/Math.log(GROW)));
@@ -161,7 +179,7 @@ const TRUNC=window.__trunc=[];const cut=(s,w)=>{if(L(s)<=w)return s;TRUNC.push(s
 function wrapItems(items,sep,w){const out=[];let cur='';for(const it of items){const add=cur?cur+sep+it:it;if(L(add)<=w){cur=add;continue}if(cur)out.push(cur);
  if(L(it)<=w)cur=it;else{const ws=wrap(it,w);out.push(...ws.slice(0,-1));cur=ws[ws.length-1]}}if(cur)out.push(cur);return out}
 /* wrap at spaces; never split a number from its unit */
-function wrap(s,w){s=s.replace(/(\d) (%|SIT|km²|s\b|min\b|h\b|preb\.|res\.|dni\b|days\b)/g,'$1\u00a0$2');const out=[];let line='';
+function wrap(s,w){s=s.replace(/(\d) (%|SIT|km²|s\b|min\b|h\b|preb\.|res\.|dni\b|days\b)/g,'$1\u00a0$2').replace(/ ×/g,'\u00a0×');const out=[];let line='';
  for(const word of s.split(' ')){if(L(line)+L(word)+(line?1:0)>w){if(line)out.push(line);line=word}else line=line?line+' '+word:word}
  if(line)out.push(line);return out.map(l=>l.replace(/\u00a0/g,' '))}
 
@@ -281,7 +299,9 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['ref5',()=>tr('Večni referendum','Eternal referendum'),()=>tr('razpiši 5 referendumov','call 5 referendums'),()=>S.refs>=5],
  ['am1',()=>tr('Ustavna sprememba','Constitutional change'),()=>tr('sprejmi prvi amandma','adopt your first amendment'),()=>S.amends.length>=1],
  ['am12',()=>tr('Nova ustava','A new constitution'),()=>tr('sprejmi vseh 12 amandmajev','adopt all 12 amendments'),()=>S.amends.length>=AM.length],
- ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a seasonal event'),()=>eventsNow().length>0],
+ ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
+ ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
+ ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],
  ['tri',()=>tr('Na vrhu','On top'),()=>tr('skrivnost: natipkaj ime gore','secret: type the name of a mountain'),()=>S.ach.includes('tri')]);
 function gotAch(a){S.ach.push(a[0]);S.achT[a[0]]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');
  toast('ach',a[1](),a[2]()+'. '+tr('Dohodek +','Income +')+pc(ACHP()*100)+'.',fanfare);const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
@@ -313,7 +333,7 @@ function buyGen(k){if(S.n<greq(k))return;let a=S.amt==='max'?gmax(k):S.amt;if(a<
 function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log(tr('kupljeno: ','bought: ')+u.name+' ('+u.desc.split(' · ')[0]+')');
  if(id[0]==='k'){strike=0;toast('new',bellName().toUpperCase(),tr('Tvoj zvon zdaj zveni drugače. Pozvoni!','Your bell sounds different now. Ring it!'),null);bellSound()}else ding(1175,.05)}
 let swing=0,pslot=0;const parts=[];
-function ring(){const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;
+function ring(){meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;
  pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const x2=has(kurLm.id)?2:1;const r=Math.random();
@@ -324,7 +344,7 @@ function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const x2=
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
  const keep={all:S.all,votes:S.votes+g,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
-  amends:pick?[...S.amends,pick]:S.amends,first:S.first,play:S.play,mile:S.mile,evSeen:S.evSeen};
+  amends:pick?[...S.amends,pick]:S.amends,first:S.first,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days};
  const bells=S.ups.filter(id=>id[0]==='k');S=Object.assign(fresh(),keep);
  if(am('a10'))S.ups=bells;if(am('a4')){S.own[0]=10;S.own[1]=10;S.own[2]=5}
  log(tr('referendum: +','referendum: +')+g+tr(' glasov. Nova Slovenija se začne.',' votes. A new Slovenia begins.'));
@@ -356,7 +376,7 @@ function layout(){const vw=document.documentElement.clientWidth-16;const mz=docu
 function headStatus(w){if(S.n>=O.length)return '*** '+tr('VSA SLOVENIJA JE TVOJA','ALL OF SLOVENIA IS YOURS')+' ***   212/212';const c=ocost(S.n),f=c?Math.min(1,S.sit/c):1,v=ips();
  const tail=' '+pc(Math.floor(f*100))+(f<1&&v>0?' · '+tr('še ~','~')+dur((c-S.sit)/v):' · '+tr('lahko odkleneš','ready'));const head=tr('občine ','')+S.n+'/212 · '+tr('naslednja: ','next: ')+ab(O[S.n].n,16)+' ';
  const bw=Math.max(6,Math.min(30,w-L(head)-L(tail)-2));return L(head)+bw+2+L(tail)<=w?head+bar(f,bw)+tail:tr('naslednja: ','next: ')+ab(O[S.n].n,w-11-L(tail))+tail}
-function headEvents(w){const ev=eventsNow();if(!ev.length)return [];return wrapItems(ev.map((e,i)=>(i?'':'* ')+evName(e)+' ('+evDesc(e)+')'),' · ',w)}
+function headEvents(w){const ev=eventsNow();return wrapItems(ev.map((e,i)=>(i?'':tr('* danes: ','* today: '))+evName(e)+' ('+evDesc(e)+')'),' · ',w)}
 function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))>w)dg=big(m?m[1]:s,'small');
  if(m&&m[2]){const last=dg.length-1;dg=dg.map((r,i)=>r+(i===last?' '+m[2]:' '.repeat(L(m[2])+1)))}
  const unit=tr('tolarji','tolars');const rate='+'+fmt(ips(),1)+' SIT/s';const sub=tr('212 občin, od Osilnice do Ljubljane','212 municipalities, from Osilnica to Ljubljana');const lines=[];
@@ -377,7 +397,8 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
  const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell',hid:true}]);
  lines.push(['']);
  const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',lab:tr('Pozvoni','Ring the bell')}]);
- lines.push(['']);lines.push(lr(tr('zvon','bell'),bellName(),iw));lines.push(lr(tr('en klik','per click'),fmt(clickVal(),1)+' SIT',iw));
+ lines.push(['']);{const x=xf(meterMult()),lab=tr('zvonjenje ','ringing ');lines.push([lab,H(bar(meter,iw-L(lab)-L(x)-3)),' ',x])}
+ lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click'),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
  if(now<kurUntil)lines.push(lr(tr('KURENTOVANJE ×7','KURENT ×7'),Math.ceil((kurUntil-now)/1000)+' s',iw));
  if(now<clkUntil)lines.push(lr(tr('ZVONCI: klik ×77','JINGLES: click ×77'),Math.ceil((clkUntil-now)/1000)+' s',iw));
@@ -388,9 +409,9 @@ function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
  tl.push(two([H(bar(p/TOTAL,iw-9))],[pc(p/TOTAL*100)],iw));tl.push('');
  tl.push(tr('množitelji:','multipliers:'));
  row(tr('  prebivalci (1 na ','  residents (1 per ')+num(PDIV)+')',xf(popMult()));row(tr('  cele regije (','  complete regions (')+rd+'/12)',xf(regMult()));row(tr('  znamenitosti','  landmarks'),xf(globUp()));
- row(tr('  dosežki (','  achievements (')+S.ach.length+')',xf(achMult()));row(tr('  glasovi (','  votes (')+S.votes+')',xf(voteMult()));
- if(evGlob()>1)row(tr('  praznik','  event'),xf(evGlob()));if(kurMult()>1)row('  '+tr('kurent','Kurent'),xf(7));
- row(tr('  skupaj','  total'),xf(allMult()*kurMult()));tl.push('');
+ row(tr('  zvonjenje','  ringing'),xf(meterMult()));row(tr('  dosežki (','  achievements (')+S.ach.length+')',xf(achMult()));row(tr('  glasovi (','  votes (')+S.votes+')',xf(voteMult()));
+ if(evGlob()>1)row(tr('  dan / praznik','  day / holiday'),xf(evGlob()));if(kurMult()>1)row('  '+tr('kurent','Kurent'),xf(7));
+ row(tr('  skupaj','  total'),xf(allMult()*kurMult()*meterMult()));tl.push('');
  row(tr('čas te igre','this run'),dur((Date.now()-S.t0)/1000));row(tr('vsega zasluženo','earned in total'),fmt(S.all));
  return box(tr('STANJE','STATUS'),tl,w)}
 function ipsAfterUnlock(){const o=O[S.n];const rc=regCount();const done=rc[o.r]+1===RN[o.r];return (1+(pop()+o.p)/PDIV)/popMult()*(done?REGB():1)}
@@ -522,7 +543,7 @@ let dockHTML='',bellSeen=true;const bellIO=new IntersectionObserver(es=>{for(con
 function renderDock(){const d=document.getElementById('dock');const be=document.getElementById('p-bell');if(be&&be!==bellObserved){bellIO.disconnect();bellIO.observe(be);bellObserved=be}
  const on=MODE.startsWith('1')&&!bellSeen;d.hidden=!on;document.body.classList.toggle('docked',on);if(!on)return;
  const w=PW.bell||49;const left=tr('tolarji ','tolars ')+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT=tr('[  Z V O N I  ]','[  R I N G  ]');
- const h='<span aria-hidden="true">'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+
+ const mx=xf(meterMult()),mlab=tr('zvonjenje ','ringing ');const h='<span aria-hidden="true">'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n'+esc('| '+mlab+bar(meter,w-L(mlab)-L(mx)-7)+' '+mx+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+
   esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
  if(h!==dockHTML){d.innerHTML=h;dockHTML=h}placeToast()}
 
@@ -568,9 +589,11 @@ document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);
  if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+13e3;drawMap(true);ding(392,.05,.4);setTimeout(()=>ding(392,.05,.4),180)}
 function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.getMonth()+1)*100+d.getDate();
- for(const e of eventsNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
+ const day=WEEK[d.getDay()];if(!S.days.includes(d.getDay()))S.days.push(d.getDay());const dk=d.toDateString();
+ if(S.evSeen.day!==dk){S.evSeen.day=dk;toast('ev',tr('Danes: ','Today: ')+evName(day),evDesc(day)+'.',null);log(tr('danes: ','today: ')+evName(day)+' ('+evDesc(day)+')')}
+ for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
 let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
-function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;S.play+=dt;
+function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;S.play+=dt;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(120e3+Math.random()*120e3)*(has(kurLm.id)?.6:1)*(am('a2')?.5:1)*evKur()}

@@ -22,9 +22,26 @@ try:
         t = pg.evaluate("document.getElementById('toast').hidden?'':document.getElementById('toast').innerText")
         print('still there 14 s later:', 'POSODOBITEV' in t)
         if 'POSODOBITEV' not in t: bad.append('sticky')
+        # a stray tap on the notice (not on a button) only hides it, like [kasneje]
+        tb = pg.locator('#toast').bounding_box(); pg.mouse.click(tb['x'] + 60, tb['y'] + 60); pg.wait_for_timeout(300)
+        t = pg.evaluate("document.getElementById('toast').hidden?'':document.getElementById('toast').innerText")
+        print('stray tap hides it without reloading:', 'POSODOBITEV' not in t)
+        if 'POSODOBITEV' in t: bad.append('stray')
+        # bring it back and press [osveži]
+        pg.evaluate("sessionStorage.removeItem('obcine-upd')")
+        c2 = None
         before = pg.evaluate("performance.timeOrigin")
-        tb = pg.locator('#toast').bounding_box()
-        with pg.expect_navigation(timeout=5000): pg.mouse.click(tb['x'] + 60, tb['y'] + 60)
+        pg.close(); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
+        for _ in range(20):
+            if pg.evaluate("document.getElementById('toast').hidden"): break
+            pg.evaluate("document.getElementById('toast').dispatchEvent(new PointerEvent('pointerup',{button:0,pointerType:'mouse'}))"); pg.wait_for_timeout(250)
+        pg.evaluate("document.dispatchEvent(new Event('visibilitychange'))")
+        for _ in range(40):
+            if pg.locator('#toast [data-a="updnow"]').count(): break
+            pg.wait_for_timeout(300)
+        before = pg.evaluate("performance.timeOrigin")
+        bb = pg.locator('#toast [data-a="updnow"]').bounding_box()
+        with pg.expect_navigation(timeout=5000): pg.mouse.click(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2)
         pg.wait_for_timeout(1500)
         reloaded = pg.evaluate("performance.timeOrigin") != before
         clicks = (pg.evaluate("dispatchEvent(new Event('pagehide'))"), pg.evaluate("JSON.parse(localStorage.getItem('obcine-v2')).clicks"))[1]

@@ -309,7 +309,8 @@ function drawToast(q){const el=document.getElementById('toast');
  const w=toastCol().w;const iw=w-4;const art=q.art||ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];/* every pop-up is the same height (5 rows inside), so each covers the same lines of the page */
  const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
- for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
+ for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');if(q.kind==='upd'){const l=tr('[ kasneje ]','[ later ]'),r=tr('[ osveži ]','[ reload ]');lines.push([' '.repeat(Math.max(0,iw-L(l)-2-L(r))),{t:l,a:'updlater',lab:tr('Posodobi kasneje','Update later')},'  ',{t:r,a:'updnow',lab:tr('Osveži zdaj','Reload now')}])}
+ else lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
  const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{upd:tr('POSODOBITEV','UPDATE'),osel:tr('GOLJUF','CHEATER'),win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.dataset.w=w+'.'+LANG}
 let toastMs=6000;const TOAST_ROWS=5;let lastScrollT=0;
@@ -656,6 +657,8 @@ function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok
 function act(a){if(!a)return;
  if(a==='ring')return ring();
  if(a==='unlock'){unlock();return}
+ if(a==='updnow'){if(updAvail)reloadFresh(updAvail);return}
+ if(a==='updlater'){updLater();return}
  if(a==='share'){try{navigator.clipboard.writeText(shareText()).then(()=>{copiedT=Date.now()+2500;render(true)},()=>{})}catch(e){}return}
  if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log(tr('odklenjenih ','unlocked ')+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
  if(a==='kurent')return catchKurent();
@@ -716,7 +719,7 @@ document.addEventListener('pointercancel',()=>{downA=null});
  for(const ev of ['gesturestart','gesturechange'])document.addEventListener(ev,e=>{if(onBell)e.preventDefault()},{passive:false})}
 /* iOS zooms in when a text field smaller than 16 px gets focus; maximum-scale stops that, and iOS still allows pinch-zoom */
 if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const v=document.querySelector('meta[name=viewport]');if(v)v.content='width=device-width, initial-scale=1, maximum-scale=1'}
-{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(!(e.button===0||e.pointerType!=='mouse'))return;if(toastQ[0]&&toastQ[0].kind==='upd'&&updAvail){reloadFresh(updAvail);return}nextToast()});te.addEventListener('click',e=>{if(e.detail!==0)return;if(toastQ[0]&&toastQ[0].kind==='upd'&&updAvail){reloadFresh(updAvail);return}nextToast()});
+{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(!(e.button===0||e.pointerType!=='mouse'))return;if(toastQ[0]&&toastQ[0].kind==='upd'){if(!(e.target.closest&&e.target.closest('[data-a]')))updLater();return}nextToast()});te.addEventListener('click',e=>{if(e.detail!==0)return;if(toastQ[0]&&toastQ[0].kind==='upd')return;nextToast()});
  /* reading time: the pop-up waits while the mouse rests on it */
  te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden&&!(toastQ[0]&&toastQ[0].kind==='upd'))toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */
@@ -817,10 +820,12 @@ function checkVersion(){if(!/^https?:$/.test(location.protocol)||updAvail)return
 function reloadFresh(b){try{sessionStorage.setItem('obcine-upd',b)}catch(e){}save();
  /* refresh the browser's cached copy of the page first, so the reload gets the new one */
  fetch(location.pathname,{cache:'reload'}).catch(()=>{}).finally(()=>location.reload())}
+/* 'later' hides the notice; the update still happens by itself the next time the tab goes to the background */
+function updLater(){if(toastQ[0]&&toastQ[0].kind==='upd'){toastQ.shift();showToast()}}
 function newVersion(b){let tried='';try{tried=sessionStorage.getItem('obcine-upd')||''}catch(e){}
  if(tried===b)return;/* already reloaded for this version and the server still sent the old page: don't loop */
  updAvail=b;if(document.hidden){reloadFresh(b);return}
- toast('upd',tr('Nova različica','New version'),tr('Igra je posodobljena. Tapni tukaj za osvežitev; napredek ostane.','The game has been updated. Tap here to reload; your progress stays.'),null)}
+ toast('upd',tr('Nova različica','New version'),tr('Igra je posodobljena. Osveži zdaj ali kasneje; napredek ostane.','The game has been updated. Reload now or later; your progress stays.'),null)}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&updAvail)reloadFresh(updAvail);else if(!document.hidden)checkVersion()});
 setTimeout(checkVersion,20e3);setInterval(checkVersion,5*60e3);
 

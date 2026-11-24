@@ -341,7 +341,7 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
  ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
  ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],
- ['tri',()=>tr('Na vrhu','On top'),()=>S.ach.includes('tri')?tr('natipkal si Triglav','you typed Triglav'):tr('skrivnost: natipkaj ime gore','secret: type the name of a mountain'),()=>false],
+ ['tri',()=>tr('Na vrhu','On top'),()=>S.ach.includes('tri')?tr('našel si Triglav','you found Triglav'):tr('skrivnost: najvišja gora, na tipkovnici ali na zemljevidu','secret: the highest mountain, on the keyboard or on the map'),()=>false],
  ['hac',()=>tr('Strešica','The háček'),()=>S.ach.includes('hac')?tr('strešica je padla s črke Č','the háček fell off the Č'):tr('skrivnost: nekaj v naslovu ni dobro pritrjeno','secret: something in the title is loose'),()=>false],
  ['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>S.ach.includes('zmaj')?tr('zmaj z Zmajskega mostu','the dragon of the Dragon Bridge'):tr('skrivnost: prestolnica ima čuvaja','secret: the capital has a guardian'),()=>false],
  ['obala',()=>tr('47 km obale','47 km of coast'),()=>S.ach.includes('obala')?tr('galeb, burek in 47 km obale','a seagull, a burek and 47 km of coast'):tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
@@ -526,12 +526,14 @@ function pNext(w){const iw=w-4;const ls=[];const T=tr('NASLEDNJA OBČINA','NEXT 
  return box(T,ls,w,['[N]'])}
 function mapFor(w){return w-4>=MAPS.big.W?MAPS.big:MAPS.small}
 const KUR=['\\  /','(oo)','/##\\'];
-function mapGridHTML(M,iw){const n=S.n;const pad=Math.floor((iw-M.W)/2);let h='';
+/* Triglav's summit (46.378 N, 13.837 E) on this map, for the touch route to the Triglav secret */
+function triglavCell(M){return [Math.floor((13.8369-13.36)/(16.64-13.36)*M.W),Math.floor((46.90-46.3783)/(46.90-45.40)*M.H)]}
+function mapGridHTML(M,iw){const n=S.n;const tg=triglavCell(M);const pad=Math.floor((iw-M.W)/2);let h='';
  for(let y=0;y<M.H;y++){let row='| '+' '.repeat(pad);for(let x=0;x<M.W;x++){
   if(kurPos&&y>=kurPos[1]&&y<kurPos[1]+3&&x>=kurPos[0]&&x<kurPos[0]+4){row+=`<span class="kur" data-a="kurent">${esc(KUR[y-kurPos[1]][x-kurPos[0]])}</span>`;continue}
   const near=kurPos&&y>=kurPos[1]-1&&y<=kurPos[1]+3&&x>=kurPos[0]-1&&x<=kurPos[0]+4;const da=near?' data-a="kurent"':'';
   const i=M.g[y][x];if(i===-2){/* the sea is drawn as loose, staggered waves so it never reads as land */const ch=(x+y)%2?' ':'~';row+=near?`<span data-a="kurent">${ch}</span>`:`<span class="sea">${ch}</span>`;continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
-  const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i+' r'+O[i].r+(i<n?' u':'');
+  const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i+' r'+O[i].r+(i<n?' u':'')+(Math.abs(x-tg[0])<=1&&Math.abs(y-tg[1])<=1?' tg':'');
   if(i<n)ch=seat?(O[i].n==='Ljubljana'?'@':O[i].u?'O':'o'):REG[O[i].r][3];else if(i===n){ch='?';cls+=' q'}else ch='.';
   row+=`<i class="${cls}"${da}>${esc(ch)}</i>`}
   h+=row+' '.repeat(iw-pad-M.W)+' |\n'}
@@ -715,7 +717,9 @@ function piranSunset(d){const y0=new Date(Date.UTC(d.getUTCFullYear(),0,1));cons
  return new Date(+y0+(n-1)*864e5+(720-4*lon-eot+4*H)*6e4)}
 /* map secrets: the capital's guardian, the coast and Piran at sunset */
 let seaClicks=0;
-function mapSecret(el){if(!el||!el.closest)return;if(el.closest('#mapgrid .sea')){if(++seaClicks===10){seaClicks=0;
+let tgTaps=0,tgT=0;
+function mapSecret(el){if(!el||!el.closest)return;
+ if(el.closest('#mapgrid')){if(el.closest('#mapgrid .tg')){const t=Date.now();tgTaps=t-tgT<3000?tgTaps+1:1;tgT=t;if(tgTaps>=3&&!S.ach.includes('tri')){tgTaps=0;secret('tri')}}else tgTaps=0}if(el.closest('#mapgrid .sea')){if(++seaClicks===10){seaClicks=0;
   tone(1760,{p:HAND,dur:.2,vol:.04});tone(1568,{p:HAND,dur:.2,vol:.04,when:.12});secret('obala')}return}
  const c=el.closest('#mapgrid i');if(c&&c.classList.contains('c'+IDX['Ljubljana'])&&S.n>IDX['Ljubljana']){
   secret('zmaj',regionChime)}

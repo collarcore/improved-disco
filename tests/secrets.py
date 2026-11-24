@@ -114,5 +114,21 @@ with sync_playwright() as p:
     check('copy result: button says copied', 'KOPIRANO' in pg.evaluate("document.body.innerText"))
     check('no script errors', not errs, errs)
     c.close()
+    # Triglav by touch: three taps on (or right next to) the summit on the map, on a phone and on a desktop
+    for w, h, touch in ((390, 844, True), (1600, 900, False)):
+        c = b.new_context(viewport={'width': w, 'height': h}, is_mobile=touch, has_touch=touch)
+        c.add_init_script("localStorage.setItem('obcine-v2',JSON.stringify(%s))" % json.dumps(dict(BASE, n=40)))
+        pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(800)
+        pg.evaluate("document.getElementById('toast').hidden=true")
+        def tap(sel):
+            el = pg.locator(sel).first; el.scroll_into_view_if_needed(); bb = el.bounding_box()
+            x, y = bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2
+            pg.touchscreen.tap(x, y) if touch else pg.mouse.click(x, y); pg.wait_for_timeout(150)
+        def got(): pg.evaluate("dispatchEvent(new Event('pagehide'))"); return 'tri' in pg.evaluate("JSON.parse(localStorage.getItem('obcine-v2')).ach")
+        tap('#mapgrid .tg'); tap('#mapgrid .tg'); tap('#mapgrid i:not(.tg)'); tap('#mapgrid .tg')
+        check(f'[{w}] Triglav: a tap elsewhere starts the count over', not got())
+        tap('#mapgrid .tg'); tap('#mapgrid .tg')
+        check(f'[{w}] Triglav: three taps on the summit find it', got())
+        c.close()
     b.close()
 print('\nFAILED:' if fails else '\nALL PASSED', fails if fails else '')

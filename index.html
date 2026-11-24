@@ -55,8 +55,10 @@ input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;pa
 #measure{position:fixed;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none}
 #dock{position:fixed;left:0;right:0;bottom:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 100vw var(--bg);clip-path:inset(0 -100vw -100px -100vw);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 #dock[hidden]{display:none}
-body.docked #root{padding-bottom:7em}
-html:has(body.docked){scroll-padding-bottom:7em}
+body.docked #root{padding-bottom:calc(var(--dockh,7em) + 1em)}
+html{touch-action:manipulation}
+.ring{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+html:has(body.docked){scroll-padding-bottom:calc(var(--dockh,7em) + 1em)}
 #toast{position:fixed;margin:0;background:var(--bg);padding:1.25em 0;z-index:20;cursor:pointer}
 #toast[hidden]{display:none}#toast.pop{animation:tp .9s steps(1)}@keyframes tp{0%,30%,60%{background:var(--fg);color:var(--bg)}15%,45%,75%{background:var(--bg);color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}
@@ -696,9 +698,10 @@ function renderDock(){const d=document.getElementById('dock');const be=document.
  const w=PW.bell||49;const left=tr('tolarji ','tolars ')+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT=tr('[  Z V O N I  ]','[  R I N G  ]');
  const mx=xf(meterMult()),mlab=tr('zvonjenje ','ringing ');
  const top=esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n'+esc('| '+mlab+bar(meter,w-L(mlab)-L(mx)-7)+' '+mx+' |')+'\n';
- const btn_='<span class="b ring" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
+ const btn_='<span class="b ring" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+esc('+'+'-'.repeat(w-2)+'+\n|'+' '.repeat(w-2)+'|')+'\n'+esc('|'+padR(' '.repeat(Math.floor((w-2-L(btnT))/2))+btnT,w-2)+'|')+'\n'+esc('|'+' '.repeat(w-2)+'|\n+'+'-'.repeat(w-2)+'+')+'</span>';
  if(btn_!==dockHTML){d.innerHTML='<span aria-hidden="true" id="dockstat"></span>'+btn_;dockHTML=btn_}
- const ds=document.getElementById('dockstat');if(ds.innerHTML!==top)ds.innerHTML=top;placeToast()}
+ const ds=document.getElementById('dockstat');if(ds.innerHTML!==top)ds.innerHTML=top;
+ const dh=d.offsetHeight+'px';if(document.documentElement.style.getPropertyValue('--dockh')!==dh)document.documentElement.style.setProperty('--dockh',dh);placeToast()}
 
 /* ================= INPUT ================= */
 function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok,()=>flash=tr('kopiranje ni uspelo.','copying failed.'))}catch(e){flash=tr('kopiranje ni uspelo.','copying failed.')}}

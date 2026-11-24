@@ -89,7 +89,8 @@ with sync_playwright() as p:
                 sel = ['[data-a="g0"]', '[data-a="g1"]', '[data-a="unlock"]', '[data-a="g2"]'][i % 4]
                 if pg.locator(sel).count():
                     el = pg.locator(sel).first; bb = el.bounding_box()
-                    if bb and 0 < bb['y'] < h: el.click()
+                    # tap where it is, like a person; el.click() would first scroll it into view itself
+                    if bb and 0 < bb['y'] and bb['y'] + bb['height'] < h: pg.mouse.click(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2)
                 for _ in range(3):
                     pos.add(round(pg.evaluate(f"document.getElementById('{ref}').getBoundingClientRect().top"))); pg.wait_for_timeout(70)
             check(f'{tag} {ref} stays put while buying/unlocking', len(pos) == 1 and pg.evaluate("scrollY") == y0, sorted(pos))

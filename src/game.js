@@ -624,9 +624,10 @@ function renderDock(){const d=document.getElementById('dock');const be=document.
  const w=PW.bell||49;const left=tr('tolarji ','tolars ')+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT=tr('[  Z V O N I  ]','[  R I N G  ]');
  const mx=xf(meterMult()),mlab=tr('zvonjenje ','ringing ');
  const top=esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n'+esc('| '+mlab+bar(meter,w-L(mlab)-L(mx)-7)+' '+mx+' |')+'\n';
- const btn_='<span class="b ring" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
+ const btn_='<span class="b ring" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+esc('+'+'-'.repeat(w-2)+'+\n|'+' '.repeat(w-2)+'|')+'\n'+esc('|'+padR(' '.repeat(Math.floor((w-2-L(btnT))/2))+btnT,w-2)+'|')+'\n'+esc('|'+' '.repeat(w-2)+'|\n+'+'-'.repeat(w-2)+'+')+'</span>';
  if(btn_!==dockHTML){d.innerHTML='<span aria-hidden="true" id="dockstat"></span>'+btn_;dockHTML=btn_}
- const ds=document.getElementById('dockstat');if(ds.innerHTML!==top)ds.innerHTML=top;placeToast()}
+ const ds=document.getElementById('dockstat');if(ds.innerHTML!==top)ds.innerHTML=top;
+ const dh=d.offsetHeight+'px';if(document.documentElement.style.getPropertyValue('--dockh')!==dh)document.documentElement.style.setProperty('--dockh',dh);placeToast()}
 
 /* ================= INPUT ================= */
 function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok,()=>flash=tr('kopiranje ni uspelo.','copying failed.'))}catch(e){flash=tr('kopiranje ni uspelo.','copying failed.')}}

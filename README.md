@@ -30,7 +30,8 @@ Black and white, one font, one character grid. Slovenian and English.
   (1 resident = +0.005 %), and finishing a statistical region gives ×1.25.
 - **Znamenitosti**: 44 municipalities carry a landmark upgrade, such as Idrija's mercury mine,
   Krško's power plant, Planica in Kranjska Gora or kremšnita in Bled.
-- **Kurent**: shows up on the map now and then. Catch him for a ×7 boost, a pustni krof or a click frenzy.
+- **Kurent**: shows up on the map every 4–8 minutes for 13 seconds. Catch him for ×3 income (30 s),
+  a pustni krof worth 3 minutes of income, or clicks ×7 (10 s). A nice bonus, not an engine.
 - **Referendum**: prestige. Reset your run for votes (each +5 % income for good) and adopt one of
   12 **constitutional amendments**: cheaper producers, a more frequent Kurent, the first 25 občine free, and so on.
 - **Teden**: every weekday has its own bonus from village life: tržni dan (Monday), obrtni dan,

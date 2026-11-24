@@ -126,7 +126,12 @@ const popMult=()=>1+pop()/PDIV;
 const regMult=()=>REGB()**regsDone();
 const achMult=()=>1+ACHP()*S.ach.length;
 const voteMult=()=>1+VOTEP()*S.votes;
-const kurMult=()=>Date.now()<kurUntil?7:1;
+/* Kurent: comes every 4-8 min, stays 13 s. Catching him gives one of
+   ×3 income for 30 s (50 %), a doughnut worth 3 min of income, at most 10 % of your tolars (30 %),
+   or clicks ×7 for 10 s (20 %). Ptuj's landmark: he comes 25 % more often and boosts last 1.5× longer.
+   An attentive player gains roughly +20-25 % from him overall. */
+const KC={every:[240e3,480e3],stay:13e3,mult:3,multS:30e3,krofS:180,krofBank:.1,click:7,clickS:10e3,ptujEvery:.75,ptujLong:1.5};
+const kurMult=()=>Date.now()<kurUntil?KC.mult:1;
 const allMult=()=>popMult()*regMult()*achMult()*voteMult()*globUp()*evGlob();
 const genIps=k=>S.own[k]*gprod(k)*genMult(k)*allMult();
 function baseIps(){let s=0;for(let k=0;k<GEN.length;k++)s+=S.own[k]*gprod(k)*genMult(k);return s*allMult()}
@@ -138,7 +143,7 @@ const meterCap=()=>METER_CAP[bellTier()];
 const meterMult=()=>1+meter*(meterCap()-1);
 const ips=()=>baseIps()*kurMult()*meterMult();
 function clickVal(){let cm=am('a5')?5:1,pct=0;CLK.forEach(c=>{if(has(c[0])){cm*=c[5];pct+=c[6]}});LM.forEach(l=>{if(!has(l.id))return;if(l.kind==='click')cm*=l.v;if(l.kind==='pct')pct+=l.v});
- return (cm*evClick()+pct*baseIps())*(Date.now()<clkUntil?77:1)*kurMult()*meterMult()}
+ return (cm*evClick()+pct*baseIps())*(Date.now()<clkUntil?KC.click:1)*kurMult()*meterMult()}
 const GD=()=>am('a1')?.85:1;
 const gcost=(k,a)=>gcostBase(k)*GD()*GROW**S.own[k]*(GROW**a-1)/(GROW-1);
 const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(gcostBase(k)*GD()*GROW**S.own[k])+1)/Math.log(GROW)));
@@ -149,7 +154,7 @@ function upgrades(){const L=[];
  LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:lname(l),desc:lmDesc(l)+' · '+ab(O[l.o].n,16),cost:lmcost(l)})});
  CLK.forEach(c=>{if(S.clicks>=c[3]&&!has(c[0]))L.push({id:c[0],name:tr(c[1],c[2]),desc:tr('klik','clicks')+' ×'+c[5]+(c[6]?', +'+pc(c[6]*100)+tr(' dohodka na klik',' of income per click'):'')+tr(', nov zvok',', new sound'),cost:c[4]})});
  return L.sort((a,b)=>a.cost-b.cost)}
-function lmDesc(l){const v=xv(l.v);return l.kind==='gen'?gpl(l.t)+' '+v:l.kind==='glob'?tr('vse ','everything ')+v:l.kind==='click'?tr('klik ','clicks ')+v:l.kind==='pct'?tr('klik +','clicks +')+pc(Math.round(l.v*100))+tr(' dohodka',' of income'):tr('kurent pogosteje, učinki 2× dlje','Kurent more often, effects last 2× longer')}
+function lmDesc(l){const v=xv(l.v);return l.kind==='gen'?gpl(l.t)+' '+v:l.kind==='glob'?tr('vse ','everything ')+v:l.kind==='click'?tr('klik ','clicks ')+v:l.kind==='pct'?tr('klik +','clicks +')+pc(Math.round(l.v*100))+tr(' dohodka',' of income'):tr('kurent pogosteje, učinki 1,5× dlje','Kurent more often, effects last 1.5× longer')}
 
 /* ================= FORMAT ================= */
 function fmt(x,dec){if(!isFinite(x))return '∞';if(x<1e6)return x.toLocaleString(LOC(),{maximumFractionDigits:dec&&x<100?1:0,useGrouping:'always'});
@@ -337,10 +342,10 @@ let swing=0,pslot=0;const parts=[];
 function ring(){meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;
  pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
-function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const x2=has(kurLm.id)?2:1;const r=Math.random();
- if(r<.5){kurUntil=Date.now()+60e3*x2;log(tr('kurentovanje! dohodek ×7 za ','Kurentovanje! income ×7 for ')+60*x2+' s')}
- else if(r<.8){const g=Math.min(S.sit*.2,baseIps()*900)+13;S.sit+=g;S.life+=g;S.all+=g;log(tr('pustni krof: +','carnival doughnut: +')+fmt(g)+' SIT')}
- else{clkUntil=Date.now()+13e3*x2;log(tr('zvonci! klik ×77 za ','jingle bells! clicks ×77 for ')+13*x2+' s')}
+function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
+ if(r<.5){const ms=KC.multS*lx;kurUntil=Date.now()+ms;log(tr('kurentovanje! dohodek ×','Kurentovanje! income ×')+KC.mult+tr(' za ',' for ')+ms/1000+' s')}
+ else if(r<.8){const g=Math.min(S.sit*KC.krofBank,baseIps()*KC.krofS)+13;S.sit+=g;S.life+=g;S.all+=g;log(tr('pustni krof: +','carnival doughnut: +')+fmt(g)+' SIT')}
+ else{const ms=KC.clickS*lx;clkUntil=Date.now()+ms;log(tr('zvonci! klik ×','jingle bells! clicks ×')+KC.click+tr(' za ',' for ')+ms/1000+' s')}
  ding(523,.06);ding(784,.05);drawMap(true)}
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
@@ -401,8 +406,8 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
  lines.push(['']);{const x=xf(meterMult()),lab=tr('zvonjenje ','ringing ');lines.push([lab,H(bar(meter,iw-L(lab)-L(x)-3)),' ',x])}
  lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click'),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
- if(now<kurUntil)lines.push(lr(tr('KURENTOVANJE ×7','KURENT ×7'),Math.ceil((kurUntil-now)/1000)+' s',iw));
- if(now<clkUntil)lines.push(lr(tr('ZVONCI: klik ×77','JINGLES: click ×77'),Math.ceil((clkUntil-now)/1000)+' s',iw));
+ if(now<kurUntil)lines.push(lr(tr('KURENTOVANJE ×','KURENT ×')+KC.mult,Math.ceil((kurUntil-now)/1000)+' s',iw));
+ if(now<clkUntil)lines.push(lr(tr('ZVONCI: klik ×','JINGLES: click ×')+KC.click,Math.ceil((clkUntil-now)/1000)+' s',iw));
  return box(tr('ZVONIK','BELL TOWER'),lines,w,[tr('[preslednica]','[space]')])}
 function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
  const row=(a,b)=>tl.push(lr(a,b,iw));
@@ -411,7 +416,7 @@ function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
  tl.push(tr('množitelji:','multipliers:'));
  row(tr('  prebivalci (1 na ','  residents (1 per ')+num(PDIV)+')',xf(popMult()));row(tr('  cele regije (','  complete regions (')+rd+'/12)',xf(regMult()));row(tr('  znamenitosti','  landmarks'),xf(globUp()));
  row(tr('  zvonjenje','  ringing'),xf(meterMult()));row(tr('  dosežki (','  achievements (')+S.ach.length+')',xf(achMult()));row(tr('  glasovi (','  votes (')+S.votes+')',xf(voteMult()));
- if(evGlob()>1)row(tr('  dan / praznik','  day / holiday'),xf(evGlob()));if(kurMult()>1)row('  '+tr('kurent','Kurent'),xf(7));
+ if(evGlob()>1)row(tr('  dan / praznik','  day / holiday'),xf(evGlob()));if(kurMult()>1)row('  '+tr('kurent','Kurent'),xf(KC.mult));
  row(tr('  skupaj','  total'),xf(allMult()*kurMult()*meterMult()));tl.push('');
  row(tr('čas te igre','this run'),dur((Date.now()-S.t0)/1000));row(tr('vsega zasluženo','earned in total'),fmt(S.all));
  return box(tr('STANJE','STATUS'),tl,w)}
@@ -609,7 +614,7 @@ document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('
 
 /* ================= LOOP ================= */
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);
- if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+13e3;drawMap(true);ding(392,.05,.4);setTimeout(()=>ding(392,.05,.4),180)}
+ if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+KC.stay;drawMap(true);ding(392,.05,.4);setTimeout(()=>ding(392,.05,.4),180)}
 function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.getMonth()+1)*100+d.getDate();
  const day=WEEK[d.getDay()];if(!S.days.includes(d.getDay()))S.days.push(d.getDay());const dk=d.toDateString();
  if(S.evSeen.day!==dk){S.evSeen.day=dk;toast('ev',tr('Danes: ','Today: ')+evName(day),evDesc(day)+'.',null);log(tr('danes: ','today: ')+evName(day)+' ('+evDesc(day)+')')}
@@ -618,7 +623,7 @@ let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;S.play+=dt;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();
- if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(120e3+Math.random()*120e3)*(has(kurLm.id)?.6:1)*(am('a2')?.5:1)*evKur()}
+ if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(KC.every[0]+Math.random()*(KC.every[1]-KC.every[0]))*(has(kurLm.id)?KC.ptujEvery:1)*(am('a2')?.5:1)*evKur()}
  if(kurPos&&t>kurGone){kurPos=null;drawMap(true)}
  if((achT+=dt)>1){achT=0;checkAch()}
  if((evT+=dt)>60){evT=0;eventToasts()}

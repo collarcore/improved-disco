@@ -124,8 +124,8 @@ with sync_playwright() as p:
     pg.evaluate("__dbg.boost('kur',0);__dbg.boost('clk',60000)"); clk = rings(20, 40)
     jk = sum(1 for f in kur if 900 <= f < 1400); jc = sum(1 for f in clk if 2400 <= f < 4200)
     check('every ring sounds a bell (20 fast rings)', len(plain) >= 20 * 9, len(plain))
-    check('Kurentovanje ×7: cowbells on every ring', jk >= 20 * 2, jk)
-    check('zvonci ×77: jingles on every ring', jc >= 20 * 3, jc)
+    check('Kurentovanje: cowbells on every ring', jk >= 20 * 2, jk)
+    check('zvonci: jingles on every ring', jc >= 20 * 3, jc)
     vmax = 0
     for _ in range(40): pg.keyboard.press('Space'); vmax = max(vmax, pg.evaluate("__dbg.voices"))
     check('bell voices stay within the cap while spamming', vmax <= 10, vmax)

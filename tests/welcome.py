@@ -25,5 +25,18 @@ with sync_playwright() as p:
     pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(800)
     seen = 'DOBRODOŠEL' in toast(pg) or nudge(pg); print('existing player: welcome or blinking =', seen)
     if seen: bad.append('existing')
+    # the hint line walks a new player through the first steps, then goes away
+    c = b.new_context(viewport={'width': 1600, 'height': 900}); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
+    head = lambda: pg.evaluate("document.getElementById('head').innerText")
+    h0 = 'klikaj ZVONI' in head(); pg.keyboard.press('Space'); pg.wait_for_timeout(300); h1 = 'zvoni do' in head()
+    reg = pg.evaluate("document.getElementById('p-list').innerText"); names = all(n in reg for n in ('Osilnica', 'Hodoš', 'Solčava', 'Kobilje'))
+    print('hint before first ring:', h0, '| after:', h1, '| register names the next one and the three sledijo:', names)
+    if not (h0 and h1 and names): bad.append('hints')
+    c.close()
+    c = b.new_context(viewport={'width': 1600, 'height': 900})
+    c.add_init_script("localStorage.setItem('obcine-v2',JSON.stringify({v:5,runV:5,sit:50,life:1e5,all:1e5,n:5,own:[3,0,0,0,0,0,0,0,0,0,0,0],clicks:120,sound:0}));localStorage.setItem('obcine-hi','1')")
+    pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
+    gone = 'namig:' not in pg.evaluate("document.getElementById('head').innerText"); print('hint gone after the first few unlocks:', gone)
+    if not gone: bad.append('hint-gone')
 assert not bad, bad
 print('ALL PASSED')

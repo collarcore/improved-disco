@@ -11,7 +11,9 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `flicker.py` | spamming the bell keeps the button steady |
 | `taps.py` | phone: 30 quick taps ring 30 times, drumming pays at most 10 a second, 5 fast [KUPI] taps buy 5, no zoom, the page stays put |
 | `multitouch.py` | 2-3 finger drumming on a phone: never more than 10 paid rings in any second |
-| `welcome.py` | a first visit gets one welcome pop-up and a blinking ZVONI button until the first ring; never again, never for existing players |
+| `dragon.py` | the dragon flies only through empty header space at every size and number length; its sound; click, tap or Z finds the Ljubljana secret, later it only waves; reduced motion holds it still |
+| `boat.py` | the boat on the map's sea (sailboat or hull); its horn; click, tap or J finds the Piran secret, later it only sails off |
+| `welcome.py` | a first visit gets one welcome pop-up, a blinking ZVONI button and step-by-step hints; never again, never for existing players; the register names the same three as "sledijo" |
 | `copy.py` | copy buttons work by mouse and touch, with the old copy method or the clipboard API; if the clipboard refuses or never answers, the code ends up selected in the paste field |
 | `update.py` | an open tab notices a new version: a notice with [kasneje] and [osveži] (a tap elsewhere on it does nothing), or a quiet reload in the background; no reload loop |
 | `honeypot.py` | the debugger traps (a "developer mode" switch, an "unlock all" function, a dev flag in the save) earn the cap; the console greets whoever opens it; honest play never trips them |

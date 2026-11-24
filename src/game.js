@@ -346,7 +346,7 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>S.ach.includes('zmaj')?tr('zmaj z Zmajskega mostu','the dragon of the Dragon Bridge'):tr('skrivnost: prestolnica ima čuvaja','secret: the capital has a guardian'),()=>false],
  ['obala',()=>tr('47 km obale','47 km of coast'),()=>S.ach.includes('obala')?tr('galeb, burek in 47 km obale','a seagull, a burek and 47 km of coast'):tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
  ['poldne',()=>tr('Poldne','Noon'),()=>S.ach.includes('poldne')?tr('zvonil si opoldne','you rang at noon'):tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false],
- ['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>S.ach.includes('piran')?tr('obiskal si Piran ob sončnem zahodu','you visited Piran at sunset'):tr('skrivnost: najlepše mesto ob najlepši uri','secret: the prettiest town at the prettiest hour'),()=>false],
+ ['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>S.ach.includes('piran')?tr('obiskal si Piran ob sončnem zahodu','you visited Piran at sunset'):tr('skrivnost: najlepše mesto ob najlepši uri, ali pa pridi z morja','secret: the prettiest town at the prettiest hour, or come by sea'),()=>false],
  ['sam',()=>tr('Samostojna','Independent'),()=>S.ach.includes('sam')?tr('pozvonil si 1991-krat','you rang 1991 times'):tr('skrivnost: zvoni do leta, ko se je vse začelo','secret: ring up to the year it all began'),()=>false]);
 const SECRET=new Set(['tri','hac','zmaj','obala','poldne','piran','sam']);
 /* each secret has one pop-up with its own drawing; the first time it also counts as an achievement */
@@ -356,7 +356,7 @@ const SEC={
  zmaj:['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>tr('Z Zmajskega mostu pazi na prestolnico. Nanj se lahko zaneseš.','From the Dragon Bridge it watches over the capital. You can count on it.')],
  obala:['galeb',()=>tr('Galeb in burek','A seagull and a burek'),()=>tr('Galeb ti je pojedel burek. Na vseh 47 km obale je našel ravno tebe.','A seagull ate your burek. 47 km of coast, and it found you.')],
  poldne:['poldne',()=>tr('Poldne','Noon'),()=>tr('Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.','Every parish rings noon. Yours too.')],
- piran:['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>tr('Sonce tone v morje za Tartinijevim trgom. Lepšega zahoda ni.','The sun sinks into the sea behind Tartini Square. There is no finer sunset.')],
+ piran:['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>piranVia==='boat'?tr('Jadrnica te je pripeljala v Piran ravno ob zahodu. Lepšega pristanka ni.','The sailboat brought you to Piran just at sunset. There is no finer landing.'):tr('Sonce tone v morje za Tartinijevim trgom. Lepšega zahoda ni.','The sun sinks into the sea behind Tartini Square. There is no finer sunset.')],
  sam:['grb',()=>tr('25. junij 1991','25 June 1991'),()=>tr('1991 zvonov za samostojno Slovenijo. Vsi so zvonili s teboj.','1991 rings for an independent Slovenia. Every bell rang with you.')]};
 function secret(id,sound){const s=SEC[id];const first=!S.ach.includes(id);const a=ACH.find(a=>a[0]===id);
  if(first&&a){S.ach.push(id);S.achT[id]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
@@ -457,12 +457,16 @@ function pHead(){const w=HW;const ban0=w>=70?BAN_BIG:BAN_SMALL;const hcol=ban0[0
  const unit=tr('tolarji','tolars');const rate='+'+fmt(ips(),1)+' SIT/s';const sub=tr('212 občin, od Osilnice do Ljubljane','212 municipalities, from Osilnica to Ljubljana');const lines=[];
  const fallen=hRow>=ban.length?' '.repeat(hcol)+hg:'';
  if(w>=100){const left=[...ban,fallen,sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L))+2;
-  for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<2+dg.length?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>'}:padR(left[i]||'',w-rw)+r)}}
- else lines.push(...ban,fallen,...wrap(sub,w),'',unit,'',...dg.map(d=>({h:'<b>'+esc(padR(d,w))+'</b>'})),'',rate);
- lines.push('='.repeat(w));lines.push(cut(headStatus(w),w));lines.push(...headEvents(w));
+  for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<2+dg.length?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>',p:padR(left[i]||'',w-rw)+r,b:w-rw}:padR(left[i]||'',w-rw)+r)}}
+ else lines.push(...ban,fallen,...wrap(sub,w),'',unit,'',...dg.map(d=>({h:'<b>'+esc(padR(d,w))+'</b>',p:padR(d,w),b:0})),'',rate);
+ const eq=lines.length;lines.push('='.repeat(w));lines.push(cut(headStatus(w),w));const tip=tipLine();if(tip)wrap(tip,w).forEach(l=>lines.push(l));lines.push(...headEvents(w));
  const html=lines.map(l=>typeof l==='object'?l.h:esc(padR(l,w)));
+ /* the dragon, if it's out: drawn only into three fully empty rows above the double line, never over text or the number */
+ const zd=zmaj?dragonPlace(lines.slice(0,eq).map(l=>typeof l==='object'?l.p:padR(l,w)),w):null;
+ if(zd)for(let k=0;k<3;k++){const r=zd.row+k,l=lines[r],plain=typeof l==='object'?l.p:padR(l,w),bf=typeof l==='object'?l.b:w;
+  html[r]=dragonRow(plain,bf,zd.x,zd.spr[k],r===hRow?hcol:-1,hg)}
  /* the háček is clickable where it is: on top of the C, or fallen just below the banner (no hover hint) */
- html[hRow]=html[hRow].slice(0,hcol)+'<span data-a="hacek" class="hk">'+esc(hg)+'</span>'+html[hRow].slice(hcol+2);
+ if(!(zd&&hRow>=zd.row&&hRow<zd.row+3))html[hRow]=html[hRow].slice(0,hcol)+'<span data-a="hacek" class="hk">'+esc(hg)+'</span>'+html[hRow].slice(hcol+2);
  return html.join('\n')}
 function srSummary(){const n=S.n<O.length?O[S.n]:null;
  return tr('Tolarji: ','Tolars: ')+fmt(Math.floor(S.sit))+'. '+tr('Na sekundo: ','Per second: ')+fmt(ips(),1)+'. '+tr('Občine: ','Municipalities: ')+S.n+tr(' od 212.',' of 212.')+
@@ -528,18 +532,19 @@ function mapFor(w){return w-4>=MAPS.big.W?MAPS.big:MAPS.small}
 const KUR=['\\  /','(oo)','/##\\'];
 /* Triglav's summit (46.378 N, 13.837 E) on this map, for the touch route to the Triglav secret */
 function triglavCell(M){return [Math.floor((13.8369-13.36)/(16.64-13.36)*M.W),Math.floor((46.90-46.3783)/(46.90-45.40)*M.H)]}
-function mapGridHTML(M,iw){const n=S.n;const tg=triglavCell(M);const pad=Math.floor((iw-M.W)/2);let h='';
+function mapGridHTML(M,iw){const n=S.n;const tg=triglavCell(M);const bt=boat?boatPlace(M):null;const pad=Math.floor((iw-M.W)/2);let h='';
  for(let y=0;y<M.H;y++){let row='| '+' '.repeat(pad);for(let x=0;x<M.W;x++){
   if(kurPos&&y>=kurPos[1]&&y<kurPos[1]+3&&x>=kurPos[0]&&x<kurPos[0]+4){row+=`<span class="kur" data-a="kurent">${esc(KUR[y-kurPos[1]][x-kurPos[0]])}</span>`;continue}
   const near=kurPos&&y>=kurPos[1]-1&&y<=kurPos[1]+3&&x>=kurPos[0]-1&&x<=kurPos[0]+4;const da=near?' data-a="kurent"':'';
-  const i=M.g[y][x];if(i===-2){/* the sea is drawn as loose, staggered waves so it never reads as land */const ch=(x+y)%2?' ':'~';row+=near?`<span data-a="kurent">${ch}</span>`:`<span class="sea">${ch}</span>`;continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
+  const i=M.g[y][x];const bc=bt&&boatCell(bt,x,y);if(bc!==null&&bc!==undefined){row+=`<span class="boat" data-a="boat">${esc(bc)}</span>`;continue}
+  if(i===-2){/* the sea is drawn as loose, staggered waves so it never reads as land */const ch=(x+y)%2?' ':'~';row+=near?`<span data-a="kurent">${ch}</span>`:`<span class="sea">${ch}</span>`;continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
   const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i+' r'+O[i].r+(i<n?' u':'')+(Math.abs(x-tg[0])<=1&&Math.abs(y-tg[1])<=1?' tg':'');
   if(i<n)ch=seat?(O[i].n==='Ljubljana'?'@':O[i].u?'O':'o'):REG[O[i].r][3];else if(i===n){ch='?';cls+=' q'}else ch='.';
   row+=`<i class="${cls}"${da}>${esc(ch)}</i>`}
   h+=row+' '.repeat(iw-pad-M.W)+' |\n'}
  return h}
 let mapKey='';
-function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElementById('p-map');if(!el)return;const M=mapFor(w);const k=S.n+'|'+(kurPos?kurPos.join():'')+'|'+w+'|'+LANG;
+function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElementById('p-map');if(!el)return;const M=mapFor(w);const bp=boat?boatPlace(M):null;const k=S.n+'|'+(kurPos?kurPos.join():'')+'|'+w+'|'+LANG+'|'+(bp?bp.x+','+bp.y+','+bp.f:'');
  if(!force&&k===mapKey)return;mapKey=k;const iw=w-4;const T=tr('ZEMLJEVID','MAP');const right='[ '+S.n+'/212 ]';
  el.innerHTML=fit([H('+-'),{t:'[ ',c:'bold',hid:true},{t:T,c:'bold',head:true},{t:' ]',c:'bold',hid:true},H('-'.repeat(w-L('+-[ '+T+' ]')-L(right)-2)),right,H('-+')],w)+'\n'+seg(H('| '+' '.repeat(iw)+' |'))+'\n'+
   `<span id="mapgrid" aria-hidden="true">${mapGridHTML(M,iw)}</span><span id="mapinfo"></span>`+seg(H('+'+'-'.repeat(w-2)+'+'));
@@ -553,7 +558,7 @@ function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo
   a=rname(r)+' · '+rc+'/'+RN[r]+' '+obc(RN[r])+' · '+num(pu)+tr(' od ',' of ')+num(pt)+tr(' prebivalcev',' residents');
   b=rc===RN[r]?tr('cela regija: vse ','region complete: everything ')+xv(REGB()):tr('polno: odklenjeno · utripa: še zaklenjeno','solid: unlocked · blinking: still locked')}
  else if(i<0){a=tr('premakni miško ali tapni občino.','hover over or tap a municipality.');b=tr('o sedež  O mestna občina  @ Ljubljana  ? naslednja  . zaklenjena','o seat  O city municipality  @ Ljubljana  ? next  . locked')}
- else{const o=O[i];const known=i<=S.n+2;const mo=o.u&&known?MO():'';const res=tr(' preb.',' res.');
+ else{const o=O[i];const known=i<=S.n+3;const mo=o.u&&known?MO():'';const res=tr(' preb.',' res.');
   a=(known?o.n:'??????')+mo+' · '+num(o.p)+res+' · '+o.a+' km² · '+rname(o.r);if(L(a)>iw)a=(known?ab(o.n,18):'??????')+mo+' · '+num(o.p)+res+' · '+o.a+' km² · '+ab(rname(o.r),14);
   b=i<S.n?tr('odklenjena · #','unlocked · #')+(i+1)+(LMAT[i]?' · '+tr('znamenitost: ','landmark: ')+lname(LMAT[i]):''):i===S.n?tr('naslednja · ','next · ')+fmt(ocost(i))+' SIT':tr('zaklenjena · #','locked · #')+(i+1)}
  const k=a+b+!!kurPos;if(!force&&k===infoKey)return;infoKey=k;
@@ -585,7 +590,7 @@ function pReg(w){const iw=w-4;const rc=regCount();const ls=[];const bw=Math.max(
   ls.push([{t:r[3]+' '+padR(nm,iw-bw-12),c:'hv',data:d},{t:bar(rc[i]/RN[i],bw-2),hid:true,c:'hv',data:d},{t:' ',c:'hv',data:d},done?{t:padL(xv(REGB()),8),c:'bold hv',data:d}:{t:padL(rc[i]+'/'+RN[i],8),c:'hv',data:d}])});
  return box(tr('REGIJE','REGIONS'),ls,w,['[ '+tr('cela = ','complete = ')+xv(REGB())+' ]'])}
 function pList(w){const iw=w-4;const rows=MODE.startsWith('1')?10:16;if(regPage===null)regPage=Math.max(0,Math.min(O.length-rows,S.n-Math.floor(rows/2)));
- const ls=[];for(let i=regPage;i<Math.min(O.length,regPage+rows);i++){const o=O[i];const known=i<=S.n+2;
+ const ls=[];for(let i=regPage;i<Math.min(O.length,regPage+rows);i++){const o=O[i];const known=i<=S.n+3;
   const nm='?'.repeat(Math.min(12,L(o.n)));const mark=i<S.n?'x':i===S.n?'>':' ';const lm=LMAT[i]&&known?' *':'';const mo=o.u?MO():'';
   const pre=mark+' '+String(i+1).padStart(3,'0')+' ',room=iw-11-L(pre);const nmF=known?ab(o.n,room-L(mo)-L(lm))+mo+lm:nm;
   const line=padR(pre+nmF,iw-10)+padL(num(o.p),10);ls.push([{t:line,c:i===S.n?'on hv':'hv',data:'data-o="'+i+'"'}])}
@@ -683,6 +688,8 @@ function act(a){if(!a)return;
  if(a==='share'){copyText(shareText(),()=>{copiedT=Date.now()+2500;render(true)});return}
  if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log(tr('odklenjenih ','unlocked ')+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
  if(a==='kurent')return catchKurent();
+ if(a==='dragon')return catchDragon();
+ if(a==='boat')return catchBoat();
  if(a==='hacek'){if(hacAnim)return;const down=!S.noHacek;hacAnim={dir:down?1:-1,t0:Date.now()};
   [0,1,2,3,4,5].forEach(k=>tone(down?1320-k*130:700+k*130,{p:HAND,dur:.15,vol:.035,when:k*HAC_FRAME/1000,jingle:true}));return}
  if(a.startsWith('amt')){S.amt=a==='amtmax'?'max':+a.slice(3);return}
@@ -725,7 +732,7 @@ function mapSecret(el){if(!el||!el.closest)return;
   secret('zmaj',regionChime)}
  if(c&&c.classList.contains('c'+IDX['Piran'])&&S.n>IDX['Piran']){const d=new Date(window.__date||Date.now());if(Math.abs(d-piranSunset(d))<=30*6e4)secret('piran',regionChime)}}
 document.addEventListener('pointerdown',e=>{if(!e.isTrusted)return;mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
- if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
+ if(t.dataset.a==='ring'||t.dataset.a==='kurent'||t.dataset.a==='dragon'||t.dataset.a==='boat'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
 document.addEventListener('pointerup',e=>{if(!e.isTrusted||!downA)return;const a=downA;downA=null;let t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY);
  if(t&&t.dataset.a===a&&!CLIP.has(a)){act(a);render(true)}});
 document.addEventListener('pointercancel',()=>{downA=null});
@@ -753,6 +760,8 @@ document.addEventListener('keydown',e=>{if(!e.isTrusted||e.target.id==='impin')r
  if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render(true)}return}
  if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render(true)}return}
  if(e.key==='n'||e.key==='N'){unlock();render(true)}
+ if((e.key==='z'||e.key==='Z')&&zmaj){catchDragon()}
+ if((e.key==='j'||e.key==='J')&&boat){catchBoat()}
  typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri'))secret('tri')});
 /* hovering (or tapping) a map cell, a register row or a region row highlights it on the map */
 const hoverTarget=el=>{if(!el||!el.closest)return null;const c=el.closest('#mapgrid i');if(c)return{i:+c.className.match(/c(\d+)/)[1],r:-1};
@@ -780,6 +789,10 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
  const t=Date.now();
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(KC.every[0]+Math.random()*(KC.every[1]-KC.every[0]))*(has(kurLm.id)?KC.ptujEvery:1)*(am('a2')?.5:1)*evKur()}
  if(kurPos&&t>kurGone){kurPos=null;drawMap(true)}
+ if(!boat&&t>boatNext)spawnBoat();if(boat&&boat.away&&!document.hidden){boat.away=false;if(t-boat.t0<60e3)boat.t0=t}
+ if(boat&&(!boat.away&&t>boat.t0+BC.stay||boat.away&&t>boat.t0+60e3)){boat=null;boatNext=t+BC.every[0]+Math.random()*(BC.every[1]-BC.every[0]);drawMap(true)}
+ if(!zmaj&&t>zmajNext)spawnDragon();if(zmaj&&zmaj.away&&!document.hidden){zmaj.away=false;if(t-zmaj.t0<60e3)zmaj.t0=t}
+ if(zmaj&&!zmaj.away&&t>zmaj.t0+ZC.stay||zmaj&&zmaj.away&&t>zmaj.t0+60e3){zmaj=null;zmajNext=t+ZC.every[0]+Math.random()*(ZC.every[1]-ZC.every[0])}
  if((achT+=dt)>1){achT=0;checkAch()}
  if((evT+=dt)>60){evT=0;eventToasts()}
  if((saveT+=dt)>5){saveT=0;save()}
@@ -787,7 +800,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 
 /* ================= TEST HOOK ================= */
 /* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
-if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
    player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */
@@ -834,6 +847,60 @@ loadCheck();
 
 /* a word for whoever opens the console */
 try{console.log('%c          ^\n         /O\\\n        /SEL\\\n      =========\n\n'+tr('Živjo, goljuf. Kapa te že čaka.','Hello, cheater. The cap is waiting for you.')+'\n'+tr('Vsa koda je na github.com/collarcore/improved-disco, če te zanima, kako deluje.','All the code is at github.com/collarcore/improved-disco if you want to see how it works.'),'font-family:monospace')}catch(e){}
+
+/* ================= DRAGON ================= */
+/* now and then the Dragon Bridge dragon flies across the header, through whatever empty space there is. Catching it
+   is a second way to the Ljubljana secret; after that it still drops by, for the company. It gives no income. */
+const ZM=[['    /\\  /\\  ','   /  \\/  \\ ',' ~<====(o)>= '],[' ~<====(o)>= ','   \\  /\\  / ','    \\/  \\/  ']],ZW=13;
+const ZC={first:[10*60e3,20*60e3],every:[20*60e3,40*60e3],stay:16e3};
+let zmaj=null,zmajNext=Date.now()+ZC.first[0]+Math.random()*(ZC.first[1]-ZC.first[0]);
+function dragonPlace(rows,w){/* the highest three empty rows with room to fly (the gap beside the title on wide screens);
+ a dragon already flying keeps its rows while they stay free */
+ const runAt=r=>{let a=-1,b=null;for(let x=0;x<=w;x++){const free=x<w&&rows[r][x]===' '&&rows[r+1][x]===' '&&rows[r+2][x]===' ';
+  if(free&&a<0)a=x;if(!free&&a>=0){if(x-a>=ZW+10&&(!b||x-a>b.len))b={row:r,a,len:x-a};a=-1}}return b};
+ let best=zmaj.row>=0&&zmaj.row+2<rows.length?runAt(zmaj.row):null;
+ for(let r=0;!best&&r+2<rows.length;r++)best=runAt(r);
+ if(!best)return null;const a=best.a+1,span=best.len-2-ZW;const el=Date.now()-zmaj.t0;
+ const still=REDUCED.matches;const x=a+(still?Math.floor(span/2):Math.floor(Math.min(1,el/ZC.stay)*span));zmaj.row=best.row;
+ return {row:best.row,x,spr:ZM[still?0:Math.floor(el/300)%2]}}
+function dragonRow(plain,boldFrom,x,spr,hk,hg){let h='',cur='',open=null;const flush=()=>{if(!cur)return;h+=open==='z'?'<span class="zm" data-a="dragon">'+esc(cur)+'</span>':open==='b'?'<b>'+esc(cur)+'</b>':esc(cur);cur=''};
+ for(let i=0;i<plain.length;i++){if(i===hk){flush();open=null;h+='<span data-a="hacek" class="hk">'+esc(hg)+'</span>';i++;continue}
+  const inZ=i>=x-1&&i<x+ZW+1;const ch=inZ&&i>=x&&i<x+ZW?(spr[i-x]||' '):plain[i];const k=inZ?'z':i>=boldFrom?'b':'n';if(k!==open){flush();open=k}cur+=ch}
+ flush();return h}
+/* the first few minutes: one line under the header says what to do next, then goes away for good */
+const TOUCH=matchMedia('(pointer:coarse)');
+function tipLine(){if(S.n>=4||S.refs>0||S.osel)return '';const t=TOUCH.matches,p=tr('namig: ','tip: ');
+ if(S.clicks===0)return p+(t?tr('tapkaj ZVONI za prve tolarje.','tap RING for your first tolars.'):tr('klikaj ZVONI ali pritiskaj preslednico za prve tolarje.','click RING or press space for your first tolars.'));
+ if(S.n===0)return p+(S.sit>=ocost(0)?(t?tr('odkleni Osilnico z gumbom ODKLENI.','unlock Osilnica with the UNLOCK button.'):tr('odkleni Osilnico: gumb ODKLENI ali tipka N.','unlock Osilnica: the UNLOCK button or the N key.')):tr('zvoni do '+fmt(ocost(0))+' SIT, nato odkleni Osilnico.','ring up '+fmt(ocost(0))+' SIT, then unlock Osilnica.'));
+ if(S.own[0]===0)return p+tr('kupi njivo v PROIZVODNJI: prinaša tolarje, tudi ko ne zvoniš.','buy a field under PRODUCTION: it earns even when you are not ringing.');
+ return p+tr('odklepaj naprej; vsaka občina dvigne dohodek. Zemljevid kaže, kje si.','keep unlocking; every municipality raises income. The map shows where you are.')}
+function say(m){const sr=document.getElementById('srlog');if(sr)sr.textContent=m}
+function dragonSound(){[[98,GREAT,1.3,.06,0],[147,CHURCH,1,.045,.22],[73,GREAT,1.6,.05,.5],[1976,HAND,.5,.03,.85],[2637,HAND,.4,.025,1]].forEach(([f,p,dur,vol,when])=>tone(f,{p,dur,vol,when,jingle:true}))}
+function spawnDragon(){zmaj={t0:Date.now(),row:-1,away:document.hidden};dragonSound();say(tr('Nad naslovom leti zmaj. Pritisni Z, da ga ujameš.','A dragon is flying over the title. Press Z to catch it.'))}
+function catchDragon(){if(!zmaj)return;zmaj=null;zmajNext=Date.now()+ZC.every[0]+Math.random()*(ZC.every[1]-ZC.every[0]);
+ if(!S.ach.includes('zmaj'))secret('zmaj',regionChime);else{regionChime();log(tr('zmaj ti je pomahal in odletel.','the dragon waved and flew off.'))}render(true)}
+
+/* ================= BOAT ================= */
+/* now and then a sailboat crosses the sea in the map's corner. Tapping it sails you to Piran: a second way to the
+   Piran secret, without waiting for sunset or for Piran itself. Afterwards it still sails by, for the view. */
+const BOATS=[[' |\\','\\_/'],['\\_/']];/* a sailboat where the sea is big enough, a hull where it isn't */
+const BC={first:[8*60e3,15*60e3],every:[15*60e3,30*60e3],stay:25e3};
+let boat=null,boatNext=Date.now()+BC.first[0]+Math.random()*(BC.first[1]-BC.first[0]),piranVia='';
+const boatSpots=new Map();
+function boatRoute(M){if(boatSpots.has(M))return boatSpots.get(M);let best=null;
+ for(const spr of BOATS){const h=spr.length,w=Math.max(...spr.map(l=>l.length));for(let y=0;y+h<=M.H;y++){const xs=[];
+  for(let x=0;x+w<=M.W;x++){let ok=true;for(let r=0;r<h&&ok;r++)for(let c=0;c<w;c++)if(M.g[y+r][x+c]!==-2){ok=false;break}if(ok)xs.push(x)}
+  if(xs.length&&(!best||xs.length>best.xs.length))best={spr,y,xs,w}}if(best)break}
+ boatSpots.set(M,best);return best}
+function boatPlace(M){const r=boatRoute(M);if(!r)return null;const el=Date.now()-boat.t0;const p=Math.min(1,el/BC.stay);
+ const x=REDUCED.matches?r.xs[Math.floor(r.xs.length/2)]:r.xs[Math.min(r.xs.length-1,Math.floor(p*r.xs.length))];return {spr:r.spr,x,y:r.y,w:r.w,f:Math.floor(el/700)%2}}
+function boatCell(b,x,y){/* the boat's own cells, and the sea right around it (so a thumb can hit it) */
+ const r=y-b.y,c=x-b.x;if(r>=0&&r<b.spr.length&&c>=0&&c<b.w){const ch=b.spr[r][c]||' ';return ch===' '?((x+y+b.f)%2?' ':'~'):ch}
+ if(r>=-1&&r<=b.spr.length&&c>=-1&&c<=b.w){const M=mapFor(PW.map||48);if(M.g[y]&&M.g[y][x]===-2)return (x+y)%2?' ':'~'}return null}
+function boatSound(){tone(110,{p:CHURCH,dur:1.6,vol:.045,jingle:true});tone(82.5,{p:CHURCH,dur:1.8,vol:.035,when:.05,jingle:true});tone(1568,{p:HAND,dur:.3,vol:.02,when:1.2,jingle:true})}
+function spawnBoat(){boat={t0:Date.now(),away:document.hidden};boatSound();say(tr('Na morju je jadrnica. Pritisni J, da se vkrcaš.','There is a sailboat on the sea. Press J to go aboard.'));drawMap(true)}
+function catchBoat(){if(!boat)return;boat=null;boatNext=Date.now()+BC.every[0]+Math.random()*(BC.every[1]-BC.every[0]);
+ if(!S.ach.includes('piran')){piranVia='boat';secret('piran',regionChime);piranVia=''}else{regionChime();log(tr('jadrnica je odplula proti Piranu.','the sailboat sailed off towards Piran.'))}drawMap(true);render(true)}
 
 /* ================= NEW VERSION ================= */
 /* every few minutes (and when the tab comes back) the game asks the server which version is current. A tab in the

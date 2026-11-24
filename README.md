@@ -34,6 +34,8 @@ Black and white, one font, one character grid. Slovenian and English.
   a region row lights up its unlocked občine and makes the rest of the region blink.
 - **Znamenitosti**: 44 municipalities carry a landmark upgrade, such as Idrija's mercury mine,
   Krško's power plant, Planica in Kranjska Gora or kremšnita in Bled.
+- **Zmaj in jadrnica**: now and then the Dragon Bridge dragon flies across the header, and a sailboat crosses the sea
+  on the map. Each has its own sound; catching them is a second way to two of the secrets.
 - **Kurent**: shows up on the map every 4–8 minutes for 13 seconds. Catch him for ×3 income (30 s),
   a pustni krof worth 3 minutes of income, or clicks ×7 (10 s). A pop-up says what you got. A nice bonus, not an engine.
 - **Referendum**: prestige. Reset your run for votes (each +5 % income for good) and adopt one of

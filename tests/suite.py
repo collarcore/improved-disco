@@ -109,7 +109,7 @@ with sync_playwright() as p:
       const lh=parseFloat(getComputedStyle(document.body).lineHeight);const o=((t.top-r.top)%lh+lh)%lh;return Math.min(o,lh-o)}""")
     check('pop-up settles onto the line grid when scrolling stops', off < 0.6, off)
     # after a reset the page changes under a pop-up that is already showing; it must stay on the grid
-    pg.evaluate("act('rst');act('rstyes');render(true)"); pg.wait_for_timeout(1200)
+    pg.evaluate("__dbg.act('rst');__dbg.act('rstyes');__dbg.render(true)"); pg.wait_for_timeout(1200)
     off = pg.evaluate("""()=>{const t=document.getElementById('toast');if(t.hidden)return 0;const b=t.getBoundingClientRect();const r=document.getElementById('root').getBoundingClientRect();
       const lh=parseFloat(getComputedStyle(document.body).lineHeight);const o=((b.top-r.top)%lh+lh)%lh;return Math.min(o,lh-o)}""")
     check('pop-up on the line grid after a reset', off < 0.6, off)

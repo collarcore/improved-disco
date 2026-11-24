@@ -15,7 +15,7 @@ with sync_playwright() as p:
     pg=c.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)[:80]))
     pg.goto('http://localhost:8765/');pg.wait_for_timeout(700)
     for a in ('g0','unlock'):
-      pg.evaluate(f"try{{act('{a}')}}catch(e){{}}")
+      pg.evaluate(f"try{{__dbg.act('{a}')}}catch(e){{}}")
     pg.keyboard.press('Space');pg.wait_for_timeout(700)
     pw=pg.evaluate("window.__pwned||0");imgs=pg.evaluate("document.querySelectorAll('img').length")
     alive=pg.evaluate("document.getElementById('p-bell')&&document.getElementById('p-bell').innerText.length>50")

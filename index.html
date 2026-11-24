@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-0rPOffYBVMdwr3y8xNPOh1ZPfr9tPDK6f5E+Qisw55c='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-GK2AQe9HnDrPiPIt0Al3cGcuhY78dKhIxyTI41T3vJs='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Občine: kliker</title>
 <meta name="description" content="Tekstovni kliker: odkleni vseh 212 slovenskih občin, od Osilnice do Ljubljane.">
 <meta name="theme-color" content="#000000">
@@ -69,6 +69,7 @@ html,body,*{touch-action:manipulation}
 <style id="hov"></style>
 <pre id="toast" hidden role="status" aria-live="polite"></pre>
 <script>
+(()=>{'use strict';
 {
 /* ================= LANGUAGE =================
    Every string is written as a Slovenian/English pair: tr('…','…'). */
@@ -153,11 +154,11 @@ const WEEK=[
 const PDIV=20000,GROW=1.15;
 
 /* ================= STATE ================= */
-const KEY='obcine-v2',VERSION=4;
+const KEY='obcine-v2',VERSION=5;
 const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
  lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[]});
 /* saves carry a version; each step upgrades an older shape */
-function migrate(s){if(!s||!Array.isArray(s.own))return null;const v=s.v||2,first=s.first||s.t0;s=Object.assign(fresh(),s);
+function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2,first=s.first||s.t0;s=Object.assign(fresh(),s);s.__v=v;
  if(v<3){s.first=first||Date.now()}
  /* v4: new unlock prices and the ringing meter; nothing in the save needs converting */
  s.v=VERSION;return clean(s)}
@@ -165,7 +166,7 @@ function migrate(s){if(!s||!Array.isArray(s.own))return null;const v=s.v||2,firs
    crash the game (and then crash it again on every reload). Bad values fall back to a fresh game's. */
 function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>=0?v:d},strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.length<40):[];
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
- for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play'])s[k]=num(s[k],f[k]);
+ for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel'])s[k]=num(s[k],0||f[k]||0);
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
  s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
@@ -173,7 +174,13 @@ function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>
  for(const k of ['sound','light','noHacek'])s[k]=k==='sound'?(s[k]===0||s[k]===false?0:1):(s[k]?1:0);
  return s}
 let S=fresh();
-try{const s=migrate(JSON.parse(localStorage.getItem(KEY)||'null'));if(s)S=s}catch(e){}
+/* every legitimate change to the money goes through earn/spend, which also keep a hidden second copy (led).
+   If S.sit ever differs from it, something outside the game changed it: the belfry gets a dunce cap. */
+let led=0;
+function earn(g){S.sit+=g;S.life+=g;S.all+=g;led+=g}
+function spend(c){S.sit-=c;led-=c}
+let loadedV=VERSION;try{const s=migrate(JSON.parse(localStorage.getItem(KEY)||'null'));if(s){S=s;loadedV=s.__v}}catch(e){}
+delete S.__v;led=S.sit;
 LANG=S.lang||'sl';
 const has=id=>S.ups.includes(id);
 const am=id=>S.amends.includes(id);
@@ -351,14 +358,14 @@ const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
 const ART={triglav:['    /\\    ',' /\\/  \\/\\ ','/  \\  /  \\','  2864 m  '],hacek:['  \\/   ','  ____ ',' /     ',' \\____ '],zmaj:['   _/\\_/\\  ','  / o    \\ ',' <_,-\\  /~~','    /_/\\_\\ '],galeb:[' \\_ v _/ ','  ,---.  ',' (_@@@_) ','  \' . \' '],poldne:['    +    ','   /_\\   ',' |(O)(O)|',' |__(O)_|'],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
 const EVART={"pust": ["\\  /", "(oo)", "/##\\ ", " /\\ "], "kultura": [" ____ ____ ", "|~~~ | ~~~|", "|~~~ | ~~~|", "|____|____|"], "zima": [" *   o   * ", "    <|\\    ", "  * / >    ", " ========  "], "drzava": ["o_______ ", "|  /^\\  |", "|=======|", "|-------'", "|        "], "poletje": ["  \\ | /  ", " -- O -- ", "~~~~~~~~~", " ~ ~ ~ ~ "], "trgatev": ["   \\_/   ", "  ooooo  ", "   ooo   ", "    o    "], "martin": ["  _      ", " | |  \\~/", " |#|   | ", " |_|  _|_"], "bozic": ["    *    ", "   /o\\   ", "  /_o_\\  ", " /o__o_\\ "], "d0": ["    +    ", "   /^\\   ", "  /___\\  ", "  |_n_|  "], "d1": [" /=====\\ ", " |-|-|-| ", " |-|-|-| ", " | | | | "], "d2": [" .--+--. ", "/   |   \\", "    |    ", "    |    "], "d3": ["      || ", " /\\/\\/|| ", " | [] []|", " |__[]__|"], "d4": ["  ) ) )  ", " ( ( (   ", "~~~~~~~~~", " ~~~~~~~ "], "d5": ["  ____   ", " |~~~~|_ ", " |    | |", " |____|- "], "d6": [".-------.", "|=|||||=|", "|=|||||=|", "'-------'"]};
 const BELLART=[["   _   ", "  (_)  ", "  / \\  ", " /___\\ "], ["  /^\\    ", " |o o o| ", " | | | | ", " |_|_|_| "], ["   _|_   ", "  /   \\  ", " /     \\ ", "/___o___\\"], ["    +    ", "   |O|   ", "  _|_|_  ", " /     \\ "], ["    _|_    ", "   /   \\   ", "  /     \\  ", " /       \\ ", "/____@____\\"], [" +   +   + ", "|O| |O| |O|", "|_| |_| |_|", " ~ ~ ~ ~ ~ "]];
-Object.assign(ART,{"piran": ["  \\ | /  ", "-- (_) --", "~~~~~~~~~", " ~ ~ ~ ~ "], "grb": ["._______.", "| * * * |", "|  /^\\  |", "|~/~~~\\~|", " \\_____/ "], "win": ["  \\   /  ", "   \\_/   ", "  /212\\  ", "  \\___/  "]});
+Object.assign(ART,{osel:['    ^    ','   /O\\   ','  /SEL\\  ','=========']},{"piran": ["  \\ | /  ", "-- (_) --", "~~~~~~~~~", " ~ ~ ~ ~ "], "grb": ["._______.", "| * * * |", "|  /^\\  |", "|~/~~~\\~|", " \\_____/ "], "win": ["  \\   /  ", "   \\_/   ", "  /212\\  ", "  \\___/  "]});
 const SECK=['triglav','hacek','zmaj','galeb','poldne','piran','grb'];
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
 function toast(kind,title,text,sound,art){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
   m.title=tr('in še ','and ')+m.more+' '+tr('','more ')+ach4(m.more);m.text=tr('Vse najdeš v panelu Dosežki.','You will find them all under Achievements.');return}
  /* pop-ups that answer something you just did (Kurent, amendment, new bell, a found secret) show at once */
- if(['kur','ref','new','win',...SECK].includes(kind)&&toastQ.length){toastQ.splice(1,0,{kind,title,text,art});if(sound)sound();nextToast();return}
+ if(['kur','ref','new','win','osel',...SECK].includes(kind)&&toastQ.length){toastQ.splice(1,0,{kind,title,text,art});if(sound)sound();nextToast();return}
  toastQ.push({kind,title,text,art});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
  drawToast(q);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
@@ -369,7 +376,7 @@ function drawToast(q){const el=document.getElementById('toast');
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];/* every pop-up is the same height (5 rows inside), so each covers the same lines of the page */
  const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
- const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
+ const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{osel:tr('GOLJUF','CHEATER'),win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.dataset.w=w+'.'+LANG}
 let toastMs=6000;const TOAST_ROWS=5;let lastScrollT=0;
 function nextToast(){toastQ.shift();showToast()}
@@ -436,7 +443,7 @@ function statsText(){const lines=[];const days=ms=>(ms/864e5).toLocaleString(LOC
  return lines.join('\n')}
 
 /* ================= ACTIONS ================= */
-function unlock(quiet){if(S.n>=O.length)return false;const c=ocost(S.n);if(S.sit<c)return false;S.sit-=c;const o=O[S.n];const rc0=regCount()[o.r];S.n++;
+function unlock(quiet){if(S.n>=O.length)return false;const c=ocost(S.n);if(S.sit<c)return false;spend(c);const o=O[S.n];const rc0=regCount()[o.r];S.n++;
  if(MILES.includes(S.n)&&!S.mile.some(m=>m.k==='o'&&m.v===S.n&&m.run===S.refs+1))mark('o',S.n);
  if(!quiet)log(tr('odklenjena ','unlocked ')+o.n+' ('+num(o.p)+tr(' preb.)',' res.)'));
  if(rc0+1===RN[o.r]){log(tr('cela regija ','region complete: ')+rname(o.r)+': '+tr('vse ','everything ')+xv(REGB()));
@@ -446,8 +453,8 @@ function unlock(quiet){if(S.n>=O.length)return false;const c=ocost(S.n);if(S.sit
  if(S.n===O.length&&!S.won){S.won=Date.now();log('*** '+tr('vsa Slovenija je tvoja','all of Slovenia is yours')+' ***');regionChime();setTimeout(fanfare,900);
   toast('win',tr('Vsa Slovenija je tvoja','All of Slovenia is yours'),tr('Vseh 212 občin. Tvoja listina je v panelu Naslednja občina.','All 212 municipalities. Your certificate is in the Next municipality panel.'),null)}
  if(!quiet)ding(660,.05);regPage=null;return true}
-function buyGen(k){if(S.n<greq(k))return;let a=S.amt==='max'?gmax(k):S.amt;if(a<1)return;const c=gcost(k,a);if(S.sit<c)return;S.sit-=c;S.own[k]+=a;ding(990,.03,.3)}
-function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log(tr('kupljeno: ','bought: ')+u.name+' ('+u.desc.split(' · ')[0]+')');
+function buyGen(k){if(S.n<greq(k))return;let a=S.amt==='max'?gmax(k):S.amt;if(a<1)return;const c=gcost(k,a);if(S.sit<c)return;spend(c);S.own[k]+=a;ding(990,.03,.3)}
+function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;spend(u.cost);S.ups.push(id);log(tr('kupljeno: ','bought: ')+u.name+' ('+u.desc.split(' · ')[0]+')');
  if(id[0]==='k'){strike=0;toast('new',bellName().toUpperCase(),tr('Tvoj zvon zdaj zveni drugače. Pozvoni!','Your bell sounds different now. Ring it!'),null,BELLART[bellTier()]);bellSound()}else ding(1175,.05)}
 let swing=0,pslot=0;const parts=[];
 let noonDay='';
@@ -459,21 +466,21 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
 const RATE=10;const paidT=[];
 function ring(){noonCheck();lastRingT=Date.now();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
  swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){bellSound();return}paidT.push(now);
- meter=Math.min(1,meter+FILL*evFill());const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
+ meter=Math.min(1,meter+FILL*evFill());const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
  let title,text;
  if(r<.5){const ms=KC.multS*lx;kurUntil=Date.now()+ms;title=tr('Kurentovanje','Kurentovanje');text=tr('Dohodek ×','Income ×')+KC.mult+tr(' za ',' for ')+ms/1000+' s.'}
- else if(r<.8){const g=baseIps()*KC.krofS+25;S.sit+=g;S.life+=g;S.all+=g;title=tr('Pustni krof','Carnival doughnut');text='+'+fmt(g)+' SIT'+tr(' (3 minute dohodka).',' (3 minutes of income).')}
+ else if(r<.8){const g=baseIps()*KC.krofS+25;earn(g);title=tr('Pustni krof','Carnival doughnut');text='+'+fmt(g)+' SIT'+tr(' (3 minute dohodka).',' (3 minutes of income).')}
  else{const ms=KC.clickS*lx;clkUntil=Date.now()+ms;title=tr('Zvonci','Jingle bells');text=tr('Klik ×','Clicks ×')+KC.click+tr(' za ',' for ')+ms/1000+tr(' s. Zvoni zdaj!',' s. Ring now!')}
  log(tr('kurent: ','Kurent: ')+title.toLowerCase()+' · '+text);toast('kur',title,text,null);
  ding(523,.06);ding(784,.05);drawMap(true)}
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
  const keep={all:S.all,votes:S.votes+g,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
-  amends:pick?[...S.amends,pick]:S.amends,first:S.first,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days};
- const bells=S.ups.filter(id=>id[0]==='k');S=Object.assign(fresh(),keep);
+  amends:pick?[...S.amends,pick]:S.amends,first:S.first,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel};
+ const bells=S.ups.filter(id=>id[0]==='k');S=Object.assign(fresh(),keep);led=S.sit;
  if(am('a10'))S.ups=bells;if(am('a4')){S.own[0]=10;S.own[1]=10;S.own[2]=5}
  log(tr('referendum: +','referendum: +')+g+tr(' glasov. Nova Slovenija se začne.',' votes. A new Slovenia begins.'));
  if(pick)toast('ref',amName(pick),amDesc(pick)+'.',fanfare);
@@ -525,9 +532,10 @@ function pHead(){const w=HW;const ban0=w>=70?BAN_BIG:BAN_SMALL;const hcol=ban0[0
 function srSummary(){const n=S.n<O.length?O[S.n]:null;
  return tr('Tolarji: ','Tolars: ')+fmt(Math.floor(S.sit))+'. '+tr('Na sekundo: ','Per second: ')+fmt(ips(),1)+'. '+tr('Občine: ','Municipalities: ')+S.n+tr(' od 212.',' of 212.')+
   (n?' '+tr('Naslednja: ','Next: ')+n.n+', '+tr('cena ','cost ')+fmt(ocost(S.n))+' SIT.':'')}
+const OSELBELL=['          ^','         /O\\','        /SEL\\','      =========','       /_____\\','       | ___ |','       ||%%%||','       ||_%_||','       |     |','       |  _  |','       | | | |','   ____|_|_|_|____'];
 const BELL=['          +','          |','         /^\\','        /   \\','       /_____\\','       | ___ |','       ||%%%||','       ||_%_||','       |     |','       |  _  |','       | | | |','   ____|_|_|_|____'];
 function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0?(swing%2?'/'+bg+')':'('+bg+'\\'):'('+bg+')';const cl=swing>0?(swing%2?'/':'\\'):'|';
- const art=BELL.map(l=>l.replace('%%%',sw).replace('%',cl));const aw=Math.max(...art.map(L));const AX=10;const off=Math.floor((iw-1)/2)-AX;
+ const art=(S.osel?OSELBELL:BELL).map(l=>l.replace('%%%',sw).replace('%',cl));const aw=Math.max(...art.map(L));const AX=10;const off=Math.floor((iw-1)/2)-AX;
  const grid=art.map(l=>[...padR(' '.repeat(off)+l,iw)]);
  for(const p of parts){const y=p.y0-Math.floor(p.age/2);if(y<0)continue;const x=p.x<.5?Math.max(0,off-L(p.t)-1-Math.floor(p.x*4)):Math.min(iw-L(p.t),off+aw+1+Math.floor((p.x-.5)*4));
   [...p.t].forEach((ch,j)=>{if(grid[y][x+j]!==undefined)grid[y][x+j]=ch})}
@@ -555,9 +563,9 @@ let copiedT=0;
 const secFound=()=>[...SECRET].filter(id=>S.ach.includes(id)).length;
 function certRows(){return [[tr('čas te igre','this run'),dur((S.won-S.t0)/1000)],[tr('igraš od','playing since'),new Date(S.first).toLocaleDateString(LANG==='en'?'en-GB':'sl-SI')],
  [tr('zvonjenj','bell rings'),num(S.clicks)],[tr('ujetih kurentov','Kurents caught'),num(S.kur)],[tr('referendumov','referendums'),String(S.refs)],
- [tr('skrivnosti','secrets'),secFound()+'/'+SECRET.size]]}
+ [tr('skrivnosti','secrets'),secFound()+'/'+SECRET.size],...(S.osel?[[tr('žig','stamp'),tr('PONAREDEK','COUNTERFEIT')]]:[])]}
 function shareText(){return tr('Občine: vseh 212 v ','Občine: all 212 in ')+dur((S.won-S.t0)/1000)+' · '+num(S.clicks)+tr(' zvonjenj',' rings')+' · '+S.kur+tr(' kurentov',' Kurents')+' · '+
- tr('referendumov ','referendums ')+S.refs+' · '+tr('skrivnosti ','secrets ')+secFound()+'/'+SECRET.size+'\nhttps://collarcore.github.io/improved-disco/'}
+ tr('referendumov ','referendums ')+S.refs+' · '+tr('skrivnosti ','secrets ')+secFound()+'/'+SECRET.size+(S.osel?tr(' · PONAREDEK',' · COUNTERFEIT'):'')+'\nhttps://collarcore.github.io/improved-disco/'}
 function ipsAfterUnlock(){const o=O[S.n];const rc=regCount();const done=rc[o.r]+1===RN[o.r];return (1+(pop()+o.p)/PDIV)/popMult()*(done?REGB():1)}
 function pNext(w){const iw=w-4;const ls=[];const T=tr('NASLEDNJA OBČINA','NEXT MUNICIPALITY');
  if(S.n>=O.length){BRAVO.forEach(l=>ls.push(H(' '.repeat(Math.max(0,Math.floor((iw-L(l))/2)))+l)));ls.push('');
@@ -721,7 +729,7 @@ function act(a){if(!a)return;
   [0,1,2,3,4,5].forEach(k=>tone(down?1320-k*130:700+k*130,{p:HAND,dur:.15,vol:.035,when:k*HAC_FRAME/1000,jingle:true}));return}
  if(a.startsWith('amt')){S.amt=a==='amtmax'?'max':+a.slice(3);return}
  if(/^g\d+$/.test(a))return buyGen(+a.slice(1));
- if(a==='upall'){let k=0;for(const u of upgrades()){if(u.cost<=S.sit){S.sit-=u.cost;S.ups.push(u.id);k++}}if(k){log(tr('kupljenih izboljšav: ','upgrades bought: ')+k);ding(1175,.05)}return}
+ if(a==='upall'){let k=0;for(const u of upgrades()){if(u.cost<=S.sit){spend(u.cost);S.ups.push(u.id);k++}}if(k){log(tr('kupljenih izboljšav: ','upgrades bought: ')+k);ding(1175,.05)}return}
  if(a.startsWith('ama'))return referendum(a.slice(2));
  if(a[0]==='u')return buyUp(a.slice(1));
  if(a.startsWith('pg')){const v=+a.slice(2);const rows=MODE.startsWith('1')?10:16;if(v===0)regPage=null;else regPage=Math.max(0,Math.min(O.length-rows,(regPage===null?Math.max(0,Math.min(O.length-rows,S.n-Math.floor(rows/2))):regPage)+v));return}
@@ -733,9 +741,9 @@ function act(a){if(!a)return;
  if(a==='lng'){LANG=S.lang=LANG==='en'?'sl':'en';document.documentElement.lang=LANG;PH={};full();return}
  if(a==='exp')return copy(signSave(btoa(unescape(encodeURIComponent(JSON.stringify(S))))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
  if(a==='stats')return copy(statsText(),tr('statistika je kopirana.','stats copied.'));
- if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const raw=unsign(v.trim());if(!raw)throw 0;const s=migrate(JSON.parse(decodeURIComponent(escape(atob(raw)))));if(!s)throw 0;S=s;flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
+ if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const raw=unsign(v.trim());if(!raw)throw 0;const s=migrate(JSON.parse(decodeURIComponent(escape(atob(raw)))));if(!s)throw 0;const os=S.osel,sv=s.__v;delete s.__v;S=s;S.osel=S.osel||os;led=S.sit;loadCheck(sv);flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
  if(a==='rst'){resetArm=Date.now()+4000;return}
- if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang};S=Object.assign(fresh(),keep);resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
+ if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang,osel:S.osel};S=Object.assign(fresh(),keep);led=S.sit;resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
 /* a finger is wider than a line of text: a touch just off a button (up to ~half a line above or below,
    or a character to the side) goes to the nearest button; a touch on something else's own text never does */
 const at=(x,y)=>{const el=document.elementFromPoint(x,y);return el&&el.closest&&el.closest('[data-a]')};
@@ -798,7 +806,7 @@ function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.g
  for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime,EVART[e.id]);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
 let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;
- if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;S.play+=dt;
+ if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);if(S.sit!==led)caught();const g=ips()*dt;earn(g);S.play+=dt;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(KC.every[0]+Math.random()*(KC.every[1]-KC.every[0]))*(has(kurLm.id)?KC.ptujEvery:1)*(am('a2')?.5:1)*evKur()}
@@ -810,7 +818,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 
 /* ================= TEST HOOK ================= */
 /* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
-if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
    player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */
@@ -819,9 +827,24 @@ const SALT='obcine~zvon~1991';
 function signSave(b64){return 'OB1.'+fnv(SALT+b64+SALT.length)+fnv(b64+SALT)+'.'+b64}
 function unsign(code){const m=/^OB1\.([0-9a-z]+)\.(.+)$/.exec(code.replace(/\s+/g,''));if(!m)return null;return signSave(m[2])===code.replace(/\s+/g,'')?m[2]:null}
 
+/* ================= DUNCE CAP ================= */
+/* a save is checked when it loads: you can't hold more than you earned this run, nor have spent more than you
+   earned (counted at this run's prices, so only for saves from this version on: older ones bought at older prices).
+   Bought upgrades aren't counted, so the spending check is a lower bound and never accuses an honest player. */
+const OSEL='obcine-osel';
+function spentMin(){let t=0;GEN.forEach((g,k)=>{const n=Math.max(0,S.own[k]-(am('a4')?[10,10,5][k]||0:0));t+=gcostBase(k)*GD()*(GROW**n-1)/(GROW-1)});
+ for(let i=0;i<S.n;i++)t+=ocost(i);return t}
+function loadCheck(v){if(S.sit>S.life*1.001+1000||(v>=5&&spentMin()>S.life*1.001+1000))caught()}
+function caught(){led=S.sit;if(S.osel)return;S.osel=Date.now();try{localStorage.setItem(OSEL,String(S.osel))}catch(e){}
+ log(tr('zvonik nosi oslovsko kapo.','the belfry wears a dunce cap.'));
+ toast('osel',tr('Ponarejeni tolarji','Counterfeit tolars'),tr('Teh tolarjev nisi prizvonil. Zvonik bo zdaj za vedno nosil oslovsko kapo.','You did not ring up these tolars. From now on the belfry wears a dunce cap.'),()=>tone(196,{p:CHURCH,dur:1.2,vol:.06}));save()}
+try{const o=+localStorage.getItem(OSEL);if(o&&!S.osel)S.osel=o}catch(e){}
+if(S.osel)try{localStorage.setItem(OSEL,String(S.osel))}catch(e){}
+loadCheck(loadedV);
+
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;
-{const away=(Date.now()-S.save)/1000;if(away>60&&baseIps()>0){const full_=am('a9');const g=baseIps()*Math.min(away,(full_?12:8)*3600)*(full_?1:.5);S.sit+=g;S.life+=g;S.all+=g;
+{const away=(Date.now()-S.save)/1000;if(away>60&&baseIps()>0){const full_=am('a9');const g=baseIps()*Math.min(away,(full_?12:8)*3600)*(full_?1:.5);earn(g);
  log(tr('med odsotnostjo (','while away (')+dur(away)+'): +'+fmt(g)+' SIT')}}
 if(!S.log.length)log(tr('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.','welcome. ring the bell, buy a field, unlock Osilnica.'));
 const ro=new ResizeObserver(()=>{layout();render();placeToast()});ro.observe(document.documentElement);
@@ -834,6 +857,7 @@ layout();full();setInterval(tick,100);setTimeout(eventToasts,1500);
 addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('pagehide',save);
 }
 
+})();
 </script>
 </body>
 </html>

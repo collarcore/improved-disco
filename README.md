@@ -95,6 +95,7 @@ stays for anyone who needs bigger text; a tap that lands just off a button still
 | `tools/mapgen.py` | regenerates the maps from coordinates (weighted Voronoi) |
 | `tools/econ.py` | game data for the simulator |
 | `tools/balance.py` | balance simulator: active and casual players, prices in one place |
+| *(cheating)* | the game runs in a closure and checks its own money; unearned tolarji earn the belfry a permanent dunce cap |
 | `tools/shots.py` | renders the README screenshot and the link-preview image from the game |
 | `fonts/` | IBM Plex Mono, self-hosted |
 | `docs/` | README images |

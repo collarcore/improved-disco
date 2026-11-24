@@ -31,6 +31,7 @@
 :root.light{--bg:#fff;--fg:#000}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg)}
+html{overflow-anchor:none}
 body{font:400 14px/1.25 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-ligatures:none;-webkit-font-smoothing:antialiased;overflow-x:hidden;user-select:none;-webkit-user-select:none}
 #root{margin:0 auto;padding:1.25em 0 2.5em;display:flex;flex-direction:column;align-items:center}
 #cols{display:flex;gap:0 2ch;align-items:flex-start}
@@ -40,6 +41,8 @@ pre{margin:0 0 1.25em;font:inherit;white-space:pre;overflow:hidden}
 .b:focus-visible,.b:active,.on{background:var(--fg);color:var(--bg)}
 @media(hover:hover){.b:hover{background:var(--fg);color:var(--bg)}}
 .bell{cursor:pointer}.b.bell:hover,.b.bell:active{background:none;color:inherit}
+.b.ring:active{background:none;color:inherit}
+@media(hover:hover){.b.ring:hover:active{background:var(--fg);color:var(--bg)}}
 .bold{font-weight:700}
 .q{animation:bl 1s steps(1) infinite}
 @keyframes bl{50%{background:var(--fg);color:var(--bg)}}
@@ -51,6 +54,7 @@ input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;pa
 #dock{position:fixed;left:0;right:0;bottom:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 100vw var(--bg);clip-path:inset(0 -100vw -100px -100vw);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 #dock[hidden]{display:none}
 body.docked #root{padding-bottom:7em}
+html:has(body.docked){scroll-padding-bottom:7em}
 #toast{position:fixed;margin:0;background:var(--bg);padding:1.25em 0;z-index:20;cursor:pointer}
 #toast[hidden]{display:none}#toast.pop{animation:tp .9s steps(1)}@keyframes tp{0%,30%,60%{background:var(--fg);color:var(--bg)}15%,45%,75%{background:var(--bg);color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}
@@ -271,7 +275,7 @@ const bar=(f,w)=>{const k=Math.round(Math.max(0,Math.min(1,f))*w);return '['+'#'
 
 /* ================= BIG DIGITS / BANNERS ================= */
 const FIG={big:{"0": ["  ___  ", " / _ \\ ", "| | | |", "| |_| |", " \\___/ ", "       "], "1": [" _ ", "/ |", "| |", "| |", "|_|", "   "], "2": [" ____  ", "|___ \\ ", "  __) |", " / __/ ", "|_____|", "       "], "3": [" _____ ", "|___ / ", "  |_ \\ ", " ___) |", "|____/ ", "       "], "4": [" _  _   ", "| || |  ", "| || |_ ", "|__   _|", "   |_|  ", "        "], "5": [" ____  ", "| ___| ", "|___ \\ ", " ___) |", "|____/ ", "       "], "6": ["  __   ", " / /_  ", "| '_ \\ ", "| (_) |", " \\___/ ", "       "], "7": [" _____ ", "|___  |", "   / / ", "  / /  ", " /_/   ", "       "], "8": ["  ___  ", " ( _ ) ", " / _ \\ ", "| (_) |", " \\___/ ", "       "], "9": ["  ___  ", " / _ \\ ", "| (_) |", " \\__, |", "   /_/ ", "       "], ".": ["   ", "   ", "   ", " _ ", "(_)", "   "], ",": ["   ", "   ", "   ", " _ ", "( )", "|/ "], "-": ["       ", "       ", " _____ ", "|_____|", "       ", "       "], "+": ["       ", "   _   ", " _| |_ ", "|_   _|", "  |_|  ", "       "], "e": ["      ", "  ___ ", " / _ \\", "|  __/", " \\___|", "      "]},small:{"0": ["  __  ", " /  \\ ", "| () |", " \\__/ ", "      "], "1": [" _ ", "/ |", "| |", "|_|", "   "], "2": [" ___ ", "|_  )", " / / ", "/___|", "     "], "3": [" ____", "|__ /", " |_ \\", "|___/", "     "], "4": [" _ _  ", "| | | ", "|_  _|", "  |_| ", "      "], "5": [" ___ ", "| __|", "|__ \\", "|___/", "     "], "6": ["  __ ", " / / ", "/ _ \\", "\\___/", "     "], "7": [" ____ ", "|__  |", "  / / ", " /_/  ", "      "], "8": [" ___ ", "( _ )", "/ _ \\", "\\___/", "     "], "9": [" ___ ", "/ _ \\", "\\_, /", " /_/ ", "     "], ".": ["   ", "   ", " _ ", "(_)", "   "], ",": ["   ", "   ", " _ ", "( )", "|/ "], "-": ["     ", " ___ ", "|___|", "     ", "     "], "+": ["   _   ", " _| |_ ", "|_   _|", "  |_|  ", "       "], "e": ["     ", " ___ ", "/ -_)", "\\___|", "     "]}};
-function big(str,f){const F=FIG[f];const h=F['0'].length;const r=Array(h).fill('');for(const ch of [...str]){const g=F[ch];if(!g)continue;for(let i=0;i<h;i++)r[i]+=(r[i]?' ':'')+g[i]}while(r.length&&!r[r.length-1].trim())r.pop();return r}
+function big(str,f){const F=FIG[f];const h=F['0'].length;const r=Array(h).fill('');for(const ch of [...str]){const g=F[ch];if(!g)continue;for(let i=0;i<h;i++)r[i]+=(r[i]?' ':'')+g[i]}return r}
 const BAN_BIG=['               \\/','  ___  ____   ____ ___ _   _ _____',' / _ \\| __ ) / ___|_ _| \\ | | ____|','| | | |  _ \\| |    | ||  \\| |  _|','| |_| | |_) | |___ | || |\\  | |___',' \\___/|____/ \\____|___|_| \\_|_____|'];
 const BAN_SMALL=['             \\/','  ___  ___  ___ ___ _  _ ___',' / _ \\| _ )/ __|_ _| \\| | __|','| (_) | _ \\ (__ | || .` | _|',' \\___/|___/\\___|___|_|\\_|___|'];
 const BRAVO=[' ___ ___    ___   _____  _ ','| _ ) _ \\  /_\\ \\ / / _ \\| |','| _ \\   / / _ \\ V / (_) |_|','|___/_|_\\/_/ \\_\\_/ \\___/(_)'];
@@ -285,14 +289,14 @@ function audio(){if(ac)return ac;ac=new (window.AudioContext||window.webkitAudio
  echoIn=ac.createGain();const d=ac.createDelay(1);d.delayTime.value=.31;const fb=ac.createGain();fb.gain.value=.38;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;
  echoIn.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);lp.connect(master);return ac}
 /* at most MAXV bells ring at once; a new strike fades out the oldest instead of being dropped */
-const MAXV=10,voices=[];let gestured=false;
-function tone(f,{p=[[1,1,1]],dur=.7,vol=.05,when=0,echo=0}={}){if(!S.sound||!gestured)return;try{const a=audio();if(a.state==='suspended')a.resume();
- const now=a.currentTime;while(voices.length&&voices[0].end<now)voices.shift();
- while(voices.length>=MAXV){const v=voices.shift();v.g.gain.cancelScheduledValues(now);v.g.gain.setValueAtTime(Math.max(v.g.gain.value,.0001),now);v.g.gain.exponentialRampToValueAtTime(.0001,now+.06);v.os.forEach(o=>{try{o.stop(now+.07)}catch(e){}})}
+const MAXV=10,voices=[],jvoices=[];let gestured=false;
+function tone(f,{p=[[1,1,1]],dur=.7,vol=.05,when=0,echo=0,jingle=false}={}){if(!S.sound||!gestured)return;try{const a=audio();if(a.state==='suspended')a.resume();
+ const now=a.currentTime;const pool=jingle?jvoices:voices,cap=jingle?8:MAXV;for(let i=pool.length-1;i>=0;i--)if(pool[i].end<now)pool.splice(i,1);
+ while(pool.length>=cap){const v=pool.shift();v.g.gain.cancelScheduledValues(now);v.g.gain.setValueAtTime(Math.max(v.g.gain.value,.0001),now);v.g.gain.exponentialRampToValueAtTime(.0001,now+.06);v.os.forEach(o=>{try{o.stop(now+.07)}catch(e){}})}
  const t0=now+when;const g=a.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.004);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);const os=[];
  for(const [r,amp,dm] of p){const o=a.createOscillator(),og=a.createGain();o.frequency.value=f*r;og.gain.setValueAtTime(amp,t0);og.gain.exponentialRampToValueAtTime(.0001,t0+dur*(dm||1));o.connect(og);og.connect(g);o.start(t0);o.stop(t0+dur+.05);os.push(o)}
  g.connect(master);if(echo){const e=a.createGain();e.gain.value=echo;g.connect(e);e.connect(echoIn)}
- voices.push({g,os,end:t0+dur})}catch(e){}}
+ pool.push({g,os,end:t0+dur})}catch(e){}}
 /* browsers only allow sound after the player has touched the page; sounds before that are skipped, not queued */
 for(const ev of ['pointerdown','keydown'])addEventListener(ev,()=>{gestured=true},{capture:true});
 const HAND=[[1,1,1],[2.76,.35,.45],[5.4,.12,.25]];
@@ -314,7 +318,9 @@ let strike=0;
 function bellSound(){const B=BELLS[bellTier()];const note=B.notes.length>1?B.notes[PRITRK[strike++%PRITRK.length]]:B.notes[0]*(1+(Math.random()-.5)*.01);
  tone(note,{p:B.p,dur:B.dur,vol:B.vol,echo:B.echo});
  if(B.all){const other=[[784,CHURCH,1.6],[523,CHURCH,2.2],[1568,HAND,.5]][strike%3];tone(other[0]*(PRITRK[strike%12]===0?1:.89),{p:other[1],dur:other[2],vol:.03,when:.09,echo:.4})}
- if(Date.now()<clkUntil)for(let i=0;i<3;i++)tone(2400+Math.random()*1800,{p:HAND,dur:.18,vol:.025,when:i*.045})}
+ const now=Date.now();
+ if(now<clkUntil)for(let i=0;i<3;i++)tone(2400+Math.random()*1800,{p:HAND,dur:.18,vol:.03,when:i*.045,jingle:true});
+ else if(now<kurUntil)for(let i=0;i<2;i++)tone(900+Math.random()*500,{p:HAND,dur:.3,vol:.03,when:i*.06,jingle:true})}
 function ding(f=880,v=.06,d=.7){tone(f,{p:HAND,dur:d,vol:v})}
 function fanfare(){[[784,0],[988,.12],[1175,.24],[1568,.36]].forEach(([f,w])=>tone(f,{p:CHURCH,dur:1.4,vol:.045,when:w,echo:.3}))}
 function regionChime(){[[392,0],[523,.18],[659,.36],[784,.54]].forEach(([f,w])=>tone(f,{p:CHURCH,dur:2.2,vol:.05,when:w,echo:.4}))}
@@ -338,7 +344,7 @@ function showToast(){const el=document.getElementById('toast');const q=toastQ[0]
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
  const T={ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
- clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,4500)}
+ clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,3500)}
 function nextToast(){toastQ.shift();showToast()}
 /* the pop-up borrows one column: the right one on 3 columns, else the left/only one */
 function toastCol(){const cs=document.querySelectorAll('#cols .col');const three=MODE.startsWith('3');return {el:cs[three?2:0],w:three?W.c:W.a}}
@@ -348,7 +354,6 @@ function placeToast(){const el=document.getElementById('toast');if(el.hidden)ret
  const d=document.getElementById('dock');const db=d.hidden?0:d.getBoundingClientRect().height;
  let bottom=db?db-1:lh;if(!db){const top=innerHeight-bottom-el.offsetHeight;const rootTop=document.getElementById('root').getBoundingClientRect().top;const off=((top-rootTop)%lh+lh)%lh;bottom+=off}
  el.style.left=Math.max(0,x)+'px';el.style.bottom=bottom+'px'}
-addEventListener('scroll',()=>placeToast(),{passive:true});
 
 /* ================= ACHIEVEMENTS =================
    [id, name(), description(), test()] */
@@ -436,15 +441,15 @@ function layout(){const vw=document.documentElement.clientWidth-16;const mz=docu
  document.getElementById('cols').innerHTML=cols.map((c,ci)=>`<div class="col">${c.map(id=>`<pre id="p-${id}"></pre>`).join('')}</div>`).join('');
  PW={};cols.forEach((c,ci)=>c.forEach(id=>PW[id]=wOf(ci)));
  HW=mode==='3'?W.a+W.b+W.c+4:mode==='2'?W.a+W.b+2:W.a;
- cache={};drawMap(true)}
+ cache={};PH={};for(const k in lineCache)delete lineCache[k];drawMap(true)}
 
 /* ================= PANELS ================= */
 function headStatus(w){if(S.n>=O.length)return '*** '+tr('VSA SLOVENIJA JE TVOJA','ALL OF SLOVENIA IS YOURS')+' ***   212/212';const c=ocost(S.n),f=c?Math.min(1,S.sit/c):1,v=ips();
  const tail=' '+pc(Math.floor(f*100))+(f<1&&v>0?' · '+tr('še ~','~')+dur((c-S.sit)/v):' · '+tr('lahko odkleneš','ready'));const head=tr('občine ','')+S.n+'/212 · '+tr('naslednja: ','next: ')+ab(O[S.n].n,16)+' ';
  const bw=Math.max(6,Math.min(30,w-L(head)-L(tail)-2));return L(head)+bw+2+L(tail)<=w?head+bar(f,bw)+tail:tr('naslednja: ','next: ')+ab(O[S.n].n,w-11-L(tail))+tail}
 function headEvents(w){const ev=eventsNow();return wrapItems(ev.map((e,i)=>(i?'':tr('* danes: ','* today: '))+evName(e)+' ('+evDesc(e)+')'),' · ',w)}
-function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))>w)dg=big(m?m[1]:s,'small');
- if(m&&m[2]){const last=dg.length-1;dg=dg.map((r,i)=>r+(i===last?' '+m[2]:' '.repeat(L(m[2])+1)))}
+function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))+6>w)dg=big(m?m[1]:s,'small');
+ {const base=dg.length-2,u=m&&m[2]?m[2]:'';dg=dg.map((r,i)=>r+(i===base&&u?' '+u:' '.repeat(u?L(u)+1:0)))}
  const unit=tr('tolarji','tolars');const rate='+'+fmt(ips(),1)+' SIT/s';const sub=tr('212 občin, od Osilnice do Ljubljane','212 municipalities, from Osilnica to Ljubljana');const lines=[];
  if(w>=100){const left=[...ban,'',sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L))+2;
   for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<2+dg.length?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>'}:padR(left[i]||'',w-rw)+r)}}
@@ -462,7 +467,7 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
   [...p.t].forEach((ch,j)=>{if(grid[y][x+j]!==undefined)grid[y][x+j]=ch})}
  const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell',hid:true}]);
  lines.push(['']);
- const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',lab:tr('Pozvoni','Ring the bell')}]);
+ const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',c:'ring',lab:tr('Pozvoni','Ring the bell')}]);
  lines.push(['']);{const x=xf(meterMult()),lab=tr('zvonjenje ','ringing ');lines.push([lab,H(bar(meter,iw-L(lab)-L(x)-3)),' ',x])}
  lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click'),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
@@ -597,21 +602,36 @@ function pSet(w){const iw=w-4;const ls=[];
 
 /* ================= RENDER ================= */
 const PAN={bell:pBell,stat:pStat,next:pNext,gen:pGen,ups:pUps,reg:pReg,list:pList,ach:pAch,ref:pRef,log:pLog,set:pSet};
-function put(id,html){if(cache[id]===html)return;const el=document.getElementById(id);if(!el)return;
- const act=document.activeElement;const fa=act&&el.contains(act)&&act.dataset?act.dataset.a:null;
- if(act&&act.id==='impin'&&id==='p-set')return;
- el.innerHTML=html;cache[id]=html;if(fa){const n=el.querySelector(`[data-a="${fa}"]`);if(n)n.focus({preventScroll:true})}}
+let PH={};
+function padPanel(id,html){const p=id.slice(2);if(!PW[p]||p==='map')return html;const rows=html.split('\n');const n=rows.length;
+ if(n>=(PH[id]||0)){PH[id]=n;return html}const blank=seg(H('| '))+' '.repeat(PW[p]-4)+seg(H(' |'));return [...rows.slice(0,-1),...Array(PH[id]-n).fill(blank),rows[n-1]].join('\n')}
+/* panels update line by line: only lines whose content changed are replaced, so a button
+   that didn't change stays the same element (keeps hover, focus and a press in progress) */
+const lineCache={};
+function put(id,html){html=padPanel(id,html);if(cache[id]===html)return;const el=document.getElementById(id);if(!el)return;
+ const act=document.activeElement;const inp=el.querySelector('#impin');
+ const rows=html.split('\n'),old=lineCache[id];
+ if(old&&old.length===rows.length&&el.children.length===rows.length){for(let i=0;i<rows.length;i++)if(rows[i]!==old[i]&&!(inp&&el.children[i].contains(inp)))el.children[i].innerHTML=rows[i]}
+ else{const fa=act&&el.contains(act)&&act.dataset?act.dataset.a:null;el.innerHTML=rows.map(r=>'<span class="ln">'+r+'</span>').join('\n');
+  /* keep the paste box itself (its text and focus) across a full redraw */
+  if(inp){const ni=el.querySelector('#impin');if(ni){ni.replaceWith(inp);if(act===inp)inp.focus({preventScroll:true})}}
+  if(fa){const n=el.querySelector(`[data-a="${fa}"]`);if(n)n.focus({preventScroll:true})}}
+ lineCache[id]=rows;cache[id]=html}
 let lastTitle='';function title(){const s=(kurPos?(Date.now()%1000<500?'(!) KURENT · ':'(.) KURENT · '):'')+fmt(Math.floor(S.sit))+' SIT · Občine';if(s!==lastTitle){document.title=s;lastTitle=s}}
 let srKey='';function sr(){const s=srSummary();if(s!==srKey){document.getElementById('srsum').textContent=s;srKey=s}}
-function render(){put('head',pHead());title();sr();renderDock();for(const id in PAN)if(PW[id])put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
-function full(){cache={};mapKey='';infoKey='';render()}
+const FAST={bell:1};let lastSlow=0;
+function render(force){const now=performance.now();const slow=force||now-lastSlow>250;if(slow)lastSlow=now;
+ put('head',pHead());title();sr();renderDock();for(const id in PAN)if(PW[id]&&(slow||FAST[id]))put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
+function full(){cache={};for(const k in lineCache)delete lineCache[k];mapKey='';infoKey='';render(true)}
 let dockHTML='',bellSeen=true;const bellIO=new IntersectionObserver(es=>{for(const e of es)bellSeen=e.isIntersecting});let bellObserved=null;
 function renderDock(){const d=document.getElementById('dock');const be=document.getElementById('p-bell');if(be&&be!==bellObserved){bellIO.disconnect();bellIO.observe(be);bellObserved=be}
  const on=MODE.startsWith('1')&&!bellSeen;d.hidden=!on;document.body.classList.toggle('docked',on);if(!on)return;
  const w=PW.bell||49;const left=tr('tolarji ','tolars ')+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT=tr('[  Z V O N I  ]','[  R I N G  ]');
- const mx=xf(meterMult()),mlab=tr('zvonjenje ','ringing ');const h='<span aria-hidden="true">'+esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n'+esc('| '+mlab+bar(meter,w-L(mlab)-L(mx)-7)+' '+mx+' |')+'\n</span><span class="b" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+
-  esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
- if(h!==dockHTML){d.innerHTML=h;dockHTML=h}placeToast()}
+ const mx=xf(meterMult()),mlab=tr('zvonjenje ','ringing ');
+ const top=esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n'+esc('| '+mlab+bar(meter,w-L(mlab)-L(mx)-7)+' '+mx+' |')+'\n';
+ const btn_='<span class="b ring" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+esc(' '.repeat(w))+'\n'+esc(padR(' '.repeat(Math.floor((w-L(btnT))/2))+btnT,w))+'\n'+esc(' '.repeat(w))+'</span>';
+ if(btn_!==dockHTML){d.innerHTML='<span aria-hidden="true" id="dockstat"></span>'+btn_;dockHTML=btn_}
+ const ds=document.getElementById('dockstat');if(ds.innerHTML!==top)ds.innerHTML=top;placeToast()}
 
 /* ================= INPUT ================= */
 function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok,()=>flash=tr('kopiranje ni uspelo.','copying failed.'))}catch(e){flash=tr('kopiranje ni uspelo.','copying failed.')}}
@@ -631,21 +651,27 @@ function act(a){if(!a)return;
  if(a==='refno'){refArm=0;refPick=null;return}if(a==='refyes'){refArm=0;return referendum(null)}
  if(a==='snd'){S.sound=S.sound?0:1;return}
  if(a==='thm'){S.light=S.light?0:1;document.documentElement.classList.toggle('light',!!S.light);return}
- if(a==='lng'){LANG=S.lang=LANG==='en'?'sl':'en';document.documentElement.lang=LANG;full();return}
+ if(a==='lng'){LANG=S.lang=LANG==='en'?'sl':'en';document.documentElement.lang=LANG;PH={};full();return}
  if(a==='exp')return copy(btoa(unescape(encodeURIComponent(JSON.stringify(S)))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
  if(a==='stats')return copy(statsText(),tr('statistika je kopirana.','stats copied.'));
  if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const s=migrate(JSON.parse(decodeURIComponent(escape(atob(v.trim())))));if(!s)throw 0;S=s;flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
  if(a==='rst'){resetArm=Date.now()+4000;return}
  if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang};S=Object.assign(fresh(),keep);resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
 const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){const el=document.elementFromPoint(e.clientX,e.clientY);t=el&&el.closest&&el.closest('[data-a]')}return t};
-document.addEventListener('pointerdown',e=>{const t=target(e);if(t&&(t.dataset.a==='ring'||t.dataset.a==='kurent')){e.preventDefault();act(t.dataset.a);render()}});
+let downA=null;
+document.addEventListener('pointerdown',e=>{const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
+ if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
+document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest&&el.closest('[data-a]');
+ if(t&&t.dataset.a===a){act(a);render(true)}});
+document.addEventListener('pointercancel',()=>{downA=null});
 document.getElementById('toast').addEventListener('click',()=>nextToast());
-document.addEventListener('click',e=>{const t=target(e);if(!t||t.dataset.a==='ring'||(t.dataset.a==='kurent'&&e.detail!==0))return;act(t.dataset.a);render()});
+/* clicks without a pointer (screen readers, keyboard-synthesised) */
+document.addEventListener('click',e=>{if(e.detail!==0)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;act(t.dataset.a);render(true)});
 let typed='';
 document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
- if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render()}return}
- if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render()}return}
- if(e.key==='n'||e.key==='N'){unlock();render()}
+ if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render(true)}return}
+ if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render(true)}return}
+ if(e.key==='n'||e.key==='N'){unlock();render(true)}
  typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri'))gotAch(ACH.find(a=>a[0]==='tri'))});
 document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('#mapgrid i');if(!c)return;const i=+c.className.match(/c(\d+)/)[1];
  if(i!==hover){hover=i;document.getElementById('hov').textContent=`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`;mapInfo()}});
@@ -668,6 +694,9 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
  if((evT+=dt)>60){evT=0;eventToasts()}
  if((saveT+=dt)>5){saveT=0;save()}
  render()}
+
+/* ================= TEST HOOK ================= */
+window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()}};
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;

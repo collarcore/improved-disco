@@ -31,6 +31,7 @@
 :root.light{--bg:#fff;--fg:#000}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg)}
+html{overflow-anchor:none}
 body{font:400 14px/1.25 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-ligatures:none;-webkit-font-smoothing:antialiased;overflow-x:hidden;user-select:none;-webkit-user-select:none}
 #root{margin:0 auto;padding:1.25em 0 2.5em;display:flex;flex-direction:column;align-items:center}
 #cols{display:flex;gap:0 2ch;align-items:flex-start}
@@ -40,6 +41,8 @@ pre{margin:0 0 1.25em;font:inherit;white-space:pre;overflow:hidden}
 .b:focus-visible,.b:active,.on{background:var(--fg);color:var(--bg)}
 @media(hover:hover){.b:hover{background:var(--fg);color:var(--bg)}}
 .bell{cursor:pointer}.b.bell:hover,.b.bell:active{background:none;color:inherit}
+.b.ring:active{background:none;color:inherit}
+@media(hover:hover){.b.ring:hover:active{background:var(--fg);color:var(--bg)}}
 .bold{font-weight:700}
 .q{animation:bl 1s steps(1) infinite}
 @keyframes bl{50%{background:var(--fg);color:var(--bg)}}
@@ -51,6 +54,7 @@ input{font:inherit;color:var(--fg);background:var(--bg);border:0;outline:none;pa
 #dock{position:fixed;left:0;right:0;bottom:0;width:max-content;margin:0 auto;background:var(--bg);box-shadow:0 0 0 100vw var(--bg);clip-path:inset(0 -100vw -100px -100vw);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 #dock[hidden]{display:none}
 body.docked #root{padding-bottom:7em}
+html:has(body.docked){scroll-padding-bottom:7em}
 #toast{position:fixed;margin:0;background:var(--bg);padding:1.25em 0;z-index:20;cursor:pointer}
 #toast[hidden]{display:none}#toast.pop{animation:tp .9s steps(1)}@keyframes tp{0%,30%,60%{background:var(--fg);color:var(--bg)}15%,45%,75%{background:var(--bg);color:var(--fg)}}
 @media(prefers-reduced-motion:reduce){.q,.kur{animation:none}}

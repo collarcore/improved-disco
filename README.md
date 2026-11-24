@@ -87,6 +87,7 @@ users catch the Kurent. Animations stop under *prefers-reduced-motion*.
 | `tools/balance.py` | balance simulator: active and casual players, prices in one place |
 | `fonts/` | IBM Plex Mono, self-hosted |
 | `docs/` | README images |
+| `tests/` | browser tests (see `tests/README.md`) |
 
 Rebuild after editing: `python3 tools/build.py`
 

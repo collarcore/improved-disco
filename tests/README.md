@@ -11,6 +11,7 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `flicker.py` | spamming the bell keeps the button steady |
 | `taps.py` | phone: 30 quick taps ring 30 times, drumming pays at most 10 a second, 5 fast [KUPI] taps buy 5, no zoom, the page stays put |
 | `multitouch.py` | 2-3 finger drumming on a phone: never more than 10 paid rings in any second |
+| `copy.py` | copy buttons copy once per press by mouse and touch; if the clipboard is refused, the code ends up selected in the paste field |
 | `update.py` | an open tab notices a new version: a notice with [kasneje] and [osveži] (a stray tap only hides it), or a quiet reload in the background; no reload loop |
 | `honeypot.py` | the debugger traps (a "developer mode" switch, an "unlock all" function, a dev flag in the save) earn the cap; the console greets whoever opens it; honest play never trips them |
 | `console_script.py` | a friend's real console script (rewrite save, delete the cap marker, block save handlers, reload) gets the cap in every variant |

@@ -653,13 +653,22 @@ function render(force){const now=performance.now();const slow=force||now-lastSlo
 function full(){cache={};for(const k in lineCache)delete lineCache[k];mapKey='';infoKey='';render(true)}
 
 /* ================= INPUT ================= */
-function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok,()=>flash=tr('kopiranje ni uspelo.','copying failed.'))}catch(e){flash=tr('kopiranje ni uspelo.','copying failed.')}}
+/* copying must happen inside the tap itself (iOS refuses the clipboard otherwise), so copy buttons run on 'click'.
+   If the clipboard API is missing or refuses, an older copy method is tried; if that fails too, the text is put in
+   the paste field, selected, for copying by hand. */
+function copyText(text,done){const manual=()=>{const i=document.getElementById('impin');if(i){i.value=text;i.focus({preventScroll:true});i.select();try{i.setSelectionRange(0,text.length)}catch(e){}}
+  flash=tr('koda je spodaj označena: kopiraj jo ročno.','the code is selected below: copy it by hand.');render(true)};
+ const legacy=()=>{try{const t=document.createElement('textarea');t.value=text;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.appendChild(t);t.focus({preventScroll:true});t.select();t.setSelectionRange(0,text.length);const ok=document.execCommand('copy');t.remove();return ok}catch(e){return false}};
+ try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,()=>{if(!legacy())manual();else done()});return}}catch(e){}
+ if(legacy())done();else manual()}
+function copy(text,ok){copyText(text,()=>{flash=ok;render(true)})}
 function act(a){if(!a)return;
  if(a==='ring')return ring();
  if(a==='unlock'){unlock();return}
  if(a==='updnow'){if(updAvail)reloadFresh(updAvail);return}
  if(a==='updlater'){updLater();return}
- if(a==='share'){try{navigator.clipboard.writeText(shareText()).then(()=>{copiedT=Date.now()+2500;render(true)},()=>{})}catch(e){}return}
+ if(a==='share'){copyText(shareText(),()=>{copiedT=Date.now()+2500;render(true)});return}
  if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log(tr('odklenjenih ','unlocked ')+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
  if(a==='kurent')return catchKurent();
  if(a==='hacek'){if(hacAnim)return;const down=!S.noHacek;hacAnim={dir:down?1:-1,t0:Date.now()};
@@ -704,7 +713,7 @@ function mapSecret(el){if(!el||!el.closest)return;if(el.closest('#mapgrid .sea')
 document.addEventListener('pointerdown',e=>{if(!e.isTrusted)return;mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
  if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
 document.addEventListener('pointerup',e=>{if(!e.isTrusted||!downA)return;const a=downA;downA=null;let t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY);
- if(t&&t.dataset.a===a){act(a);render(true)}});
+ if(t&&t.dataset.a===a&&!CLIP.has(a)){act(a);render(true)}});
 document.addEventListener('pointercancel',()=>{downA=null});
 /* phones: a second tap within ~0.35 s must never zoom the page. touch-action covers most browsers; iOS Safari
    can still zoom on fast taps, so the second touchend is cancelled. Actions run on pointer events, so nothing is lost. */
@@ -723,7 +732,8 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&
  /* reading time: the pop-up waits while the mouse rests on it */
  te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden&&!(toastQ[0]&&toastQ[0].kind==='upd'))toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */
-document.addEventListener('click',e=>{if(!e.isTrusted||e.detail!==0)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;act(t.dataset.a);render(true)});
+const CLIP=new Set(['exp','share']);
+document.addEventListener('click',e=>{if(!e.isTrusted)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;if(e.detail!==0&&!CLIP.has(t.dataset.a))return;act(t.dataset.a);render(true)});
 let typed='';
 document.addEventListener('keydown',e=>{if(!e.isTrusted||e.target.id==='impin')return;
  if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render(true)}return}

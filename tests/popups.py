@@ -5,7 +5,15 @@ import os, json
 from playwright.sync_api import sync_playwright
 st = {"sit": 4e9, "n": 120, "own": [60, 50, 40, 30, 20, 10, 5, 2, 0, 0, 0, 0], "save": 9e15, "sound": 0, "ach": ["o1"]}
 KINDS = {
- 'sl': [('ach', 'Cela regija: Primorsko-notranjska', 'odkleni vse občine regije. Dohodek +1 %.'),
+ 'sl': [
+        ('ev', 'Prešernov dan', 'klik ×3.'),
+        ('ev', 'Dan državnosti', 'vse ×1,25.'),
+        ('new', 'VELIKI ZVON', 'Tvoj zvon zdaj zveni drugače. Pozvoni!'),
+        ('new', 'ZVONOVI VSEH FAR', 'Tvoj zvon zdaj zveni drugače. Pozvoni! '),
+        ('piran', 'Zahod v Piranu', 'Sonce tone v morje za Tartinijevim trgom. Lepšega zahoda ni. Dosežek:\u00a0+1 %.'),
+        ('grb', '25. junij 1991', '1991 zvonov za samostojno Slovenijo. Vsi so zvonili s teboj. Dosežek:\u00a0+1 %.'),
+        ('win', 'Vsa Slovenija je tvoja', 'Vseh 212 občin. Tvoja listina je v panelu Naslednja občina.'),
+        ('ach', 'Cela regija: Primorsko-notranjska', 'odkleni vse občine regije. Dohodek +1 %.'),
         ('reg', 'Jugovzhodna Slovenija', 'Vseh 21 občin je tvojih. Dohodek ×1,25.'),
         ('ev', 'Danes: Gasilska veselica', 'vse ×1,1, kurent pogosteje.'),
         ('kur', 'Pustni krof', '+999,99 kvadd SIT (3 minute dohodka).'),
@@ -16,7 +24,15 @@ KINDS = {
         ('poldne', 'Poldne', 'Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.'),
         ('triglav', 'Na vrhu', 'Triglav, 2864 m. Vsak Slovenec mora vsaj enkrat gor. Dosežek: +1 %.'),
         ('hacek', 'Strešica', 'Strešica je padla s črke Č. Brez nje so Občine samo Obcine. Klikni jo, da jo vrneš. Dosežek: +1 %.')],
- 'en': [('ach', 'Region complete: Littoral-Inner Carniola', 'unlock every municipality in the region. Income +1%.'),
+ 'en': [
+        ('ev', 'Prešeren Day', 'clicks ×3.'),
+        ('ev', 'Statehood Day', 'everything ×1.25.'),
+        ('new', 'GREAT BELL', 'Your bell sounds different now. Ring it!'),
+        ('new', 'BELLS OF EVERY PARISH', 'Your bell sounds different now. Ring it! '),
+        ('piran', 'Sunset in Piran', 'The sun sinks into the sea behind Tartini Square. There is no finer sunset. Achievement:\u00a0+1%.'),
+        ('grb', '25 June 1991', '1991 rings for an independent Slovenia. Every bell rang with you. Achievement:\u00a0+1%.'),
+        ('win', 'All of Slovenia is yours', 'All 212 municipalities. Your certificate is in the Next municipality panel.'),
+        ('ach', 'Region complete: Littoral-Inner Carniola', 'unlock every municipality in the region. Income +1%.'),
         ('reg', 'Littoral-Inner Carniola', 'All 6 municipalities are yours. Income ×1.25.'),
         ('ev', "Today: Firefighters' party", 'everything ×1.1, the Kurent comes more often.'),
         ('kur', 'Carnival doughnut', '+999.99 Oc SIT (3 minutes of income).'),
@@ -27,6 +43,8 @@ KINDS = {
         ('poldne', 'Noon', 'Every parish rings noon. Yours too.'),
         ('triglav', 'On top', 'Triglav, 2,864 m. Every Slovene has to climb it at least once. Achievement: +1%.'),
         ('hacek', 'The háček', 'The háček fell off the Č. Without it, Občine is just Obcine. Click it to put it back. Achievement: +1%.')]}
+ART = {('sl','ev','Prešernov dan'):'kultura',('sl','ev','Dan državnosti'):'drzava',('sl','new','VELIKI ZVON'):'b4',('sl','new','ZVONOVI VSEH FAR'):'b5',
+       ('en','ev','Prešeren Day'):'kultura',('en','ev','Statehood Day'):'drzava',('en','new','GREAT BELL'):'b4',('en','new','BELLS OF EVERY PARISH'):'b5'}
 fails = []
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROME') or None)
@@ -41,7 +59,7 @@ with sync_playwright() as p:
                 pg.evaluate(f"scrollTo(0,{sy})"); pg.wait_for_timeout(250)
                 for kind, ti, tx in KINDS[lang]:
                     pg.evaluate("window.__trunc.length=0")
-                    pg.evaluate(f"__dbg.toast({json.dumps(kind)},{json.dumps(ti)},{json.dumps(tx)})"); pg.wait_for_timeout(120)
+                    pg.evaluate("([k,ti,tx,a])=>__dbg.toast(k,ti,tx,a?(a[0]==='b'?__dbg.art.BELLART[+a.slice(1)]:__dbg.art.EVART[a]):undefined)",[kind,ti,tx,ART.get((lang,kind,ti))]); pg.wait_for_timeout(120)
                     r = pg.evaluate("""()=>{const t=document.getElementById('toast');const b=t.getBoundingClientRect();
                       const three=document.querySelectorAll('#cols .col').length===3;const host=document.querySelectorAll('#cols .col')[three?2:0].getBoundingClientRect();
                       const d=document.getElementById('dock');const db=d.hidden?null:d.getBoundingClientRect();
@@ -60,4 +78,4 @@ with sync_playwright() as p:
             c.close()
     b.close()
 for f in fails[:25]: print('FAIL', f)
-print(f'{len(fails)} problems' if fails else 'ALL PASSED: 11 kinds x 10 sizes x 3 scroll positions x 2 languages')
+print(f'{len(fails)} problems' if fails else 'ALL PASSED: 18 kinds x 10 sizes x 3 scroll positions x 2 languages')

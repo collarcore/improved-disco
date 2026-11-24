@@ -340,18 +340,22 @@ function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2
 const toastQ=[];let toastTimer=0;
 const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
 const ART={triglav:['    /\\    ',' /\\/  \\/\\ ','/  \\  /  \\','  2864 m  '],hacek:['  \\/   ','  ____ ',' /     ',' \\____ '],zmaj:['   _/\\_/\\  ','  / o    \\ ',' <_,-\\  /~~','    /_/\\_\\ '],galeb:[' \\_ v _/ ','  ,---.  ',' (_@@@_) ','  \' . \' '],poldne:['    +    ','   /_\\   ',' |(O)(O)|',' |__(O)_|'],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
+const EVART={"pust": ["\\  /", "(oo)", "/##\\ ", " /\\ "], "kultura": [" ____ ____ ", "|~~~ | ~~~|", "|~~~ | ~~~|", "|____|____|"], "zima": [" *   o   * ", "    <|\\    ", "  * / >    ", " ========  "], "drzava": ["o_______ ", "|  /^\\  |", "|=======|", "|-------'", "|        "], "poletje": ["  \\ | /  ", " -- O -- ", "~~~~~~~~~", " ~ ~ ~ ~ "], "trgatev": ["   \\_/   ", "  ooooo  ", "   ooo   ", "    o    "], "martin": ["  _      ", " | |  \\~/", " |#|   | ", " |_|  _|_"], "bozic": ["    *    ", "   /o\\   ", "  /_o_\\  ", " /o__o_\\ "], "d0": ["    +    ", "   /^\\   ", "  /___\\  ", "  |_n_|  "], "d1": [" /=====\\ ", " |-|-|-| ", " |-|-|-| ", " | | | | "], "d2": [" .--+--. ", "/   |   \\", "    |    ", "    |    "], "d3": ["      || ", " /\\/\\/|| ", " | [] []|", " |__[]__|"], "d4": ["  ) ) )  ", " ( ( (   ", "~~~~~~~~~", " ~~~~~~~ "], "d5": ["  ____   ", " |~~~~|_ ", " |    | |", " |____|- "], "d6": [".-------.", "|=|||||=|", "|=|||||=|", "'-------'"]};
+const BELLART=[["   _   ", "  (_)  ", "  / \\  ", " /___\\ "], ["  /^\\    ", " |o o o| ", " | | | | ", " |_|_|_| "], ["   _|_   ", "  /   \\  ", " /     \\ ", "/___o___\\"], ["    +    ", "   |O|   ", "  _|_|_  ", " /     \\ "], ["    _|_    ", "   /   \\   ", "  /     \\  ", " /       \\ ", "/____@____\\"], [" +   +   + ", "|O| |O| |O|", "|_| |_| |_|", " ~ ~ ~ ~ ~ "]];
+Object.assign(ART,{"piran": ["  \\ | /  ", "-- (_) --", "~~~~~~~~~", " ~ ~ ~ ~ "], "grb": ["._______.", "| * * * |", "|  /^\\  |", "|~/~~~\\~|", " \\_____/ "], "win": ["  \\   /  ", "   \\_/   ", "  /212\\  ", "  \\___/  "]});
+const SECK=['triglav','hacek','zmaj','galeb','poldne','piran','grb'];
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
-function toast(kind,title,text,sound){
+function toast(kind,title,text,sound,art){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
   m.title=tr('in še ','and ')+m.more+' '+tr('','more ')+ach4(m.more);m.text=tr('Vse najdeš v panelu Dosežki.','You will find them all under Achievements.');return}
  /* pop-ups that answer something you just did (Kurent, amendment, new bell, a found secret) show at once */
- if(['kur','ref','new','zmaj','galeb','poldne','triglav','hacek'].includes(kind)&&toastQ.length){toastQ.splice(1,0,{kind,title,text});if(sound)sound();nextToast();return}
- toastQ.push({kind,title,text});if(sound)sound();if(toastQ.length===1)showToast()}
+ if(['kur','ref','new','win',...SECK].includes(kind)&&toastQ.length){toastQ.splice(1,0,{kind,title,text,art});if(sound)sound();nextToast();return}
+ toastQ.push({kind,title,text,art});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
- const w=toastCol().w;const iw=w-4;const art=ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
+ const w=toastCol().w;const iw=w-4;const art=q.art||ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];const rows=Math.max(art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
- const T={triglav:tr('SKRIVNOST','SECRET'),hacek:tr('SKRIVNOST','SECRET'),zmaj:tr('SKRIVNOST','SECRET'),galeb:tr('SKRIVNOST','SECRET'),poldne:tr('SKRIVNOST','SECRET'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
+ const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
  clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
 let toastMs=6000;
@@ -387,15 +391,19 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['hac',()=>tr('Strešica','The háček'),()=>S.ach.includes('hac')?tr('strešica je padla s črke Č','the háček fell off the Č'):tr('skrivnost: nekaj v naslovu ni dobro pritrjeno','secret: something in the title is loose'),()=>false],
  ['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>S.ach.includes('zmaj')?tr('zmaj z Zmajskega mostu','the dragon of the Dragon Bridge'):tr('skrivnost: prestolnica ima čuvaja','secret: the capital has a guardian'),()=>false],
  ['obala',()=>tr('47 km obale','47 km of coast'),()=>S.ach.includes('obala')?tr('galeb, burek in 47 km obale','a seagull, a burek and 47 km of coast'):tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
- ['poldne',()=>tr('Poldne','Noon'),()=>S.ach.includes('poldne')?tr('zvonil si opoldne','you rang at noon'):tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false]);
-const SECRET=new Set(['tri','hac','zmaj','obala','poldne']);
+ ['poldne',()=>tr('Poldne','Noon'),()=>S.ach.includes('poldne')?tr('zvonil si opoldne','you rang at noon'):tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false],
+ ['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>S.ach.includes('piran')?tr('obiskal si Piran ob sončnem zahodu','you visited Piran at sunset'):tr('skrivnost: najlepše mesto ob najlepši uri','secret: the prettiest town at the prettiest hour'),()=>false],
+ ['sam',()=>tr('Samostojna','Independent'),()=>S.ach.includes('sam')?tr('pozvonil si 1991-krat','you rang 1991 times'):tr('skrivnost: zvoni do leta, ko se je vse začelo','secret: ring up to the year it all began'),()=>false]);
+const SECRET=new Set(['tri','hac','zmaj','obala','poldne','piran','sam']);
 /* each secret has one pop-up with its own drawing; the first time it also counts as an achievement */
 const SEC={
  tri:['triglav',()=>tr('Na vrhu','On top'),()=>tr('Triglav, 2864 m. Vsak Slovenec mora vsaj enkrat gor.','Triglav, 2,864 m. Every Slovene has to climb it at least once.')],
  hac:['hacek',()=>tr('Strešica','The háček'),()=>tr('Strešica je padla s črke Č. Brez nje so Občine samo Obcine. Klikni jo, da jo vrneš.','The háček fell off the Č. Without it, Občine is just Obcine. Click it to put it back.')],
  zmaj:['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>tr('Z Zmajskega mostu pazi na prestolnico. Nanj se lahko zaneseš.','From the Dragon Bridge it watches over the capital. You can count on it.')],
  obala:['galeb',()=>tr('Galeb in burek','A seagull and a burek'),()=>tr('Galeb ti je pojedel burek. Na vseh 47 km obale je našel ravno tebe.','A seagull ate your burek. 47 km of coast, and it found you.')],
- poldne:['poldne',()=>tr('Poldne','Noon'),()=>tr('Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.','Every parish rings noon. Yours too.')]};
+ poldne:['poldne',()=>tr('Poldne','Noon'),()=>tr('Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.','Every parish rings noon. Yours too.')],
+ piran:['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>tr('Sonce tone v morje za Tartinijevim trgom. Lepšega zahoda ni.','The sun sinks into the sea behind Tartini Square. There is no finer sunset.')],
+ sam:['grb',()=>tr('25. junij 1991','25 June 1991'),()=>tr('1991 zvonov za samostojno Slovenijo. Vsi so zvonili s teboj.','1991 rings for an independent Slovenia. Every bell rang with you.')]};
 function secret(id,sound){const s=SEC[id];const first=!S.ach.includes(id);const a=ACH.find(a=>a[0]===id);
  if(first&&a){S.ach.push(id);S.achT[id]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
  toast(s[0],s[1](),s[2]()+(first?tr(' Dosežek:\u00a0+',' Achievement:\u00a0+')+pc(ACHP()*100)+'.':''),sound||(first?fanfare:null))}
@@ -423,17 +431,18 @@ function unlock(quiet){if(S.n>=O.length)return false;const c=ocost(S.n);if(S.sit
   toast('reg',rname(o.r),tr('Vseh '+RN[o.r]+' občin je tvojih. Dohodek ','All '+RN[o.r]+' municipalities are yours. Income ')+xv(REGB())+'.',regionChime)}
  GEN.forEach((g,k)=>{if(greq(k)===S.n)log(tr('nova proizvodnja: ','new producer: ')+gname(k))});
  if(LMAT[S.n-1])log(tr('znamenitost: ','landmark: ')+lname(LMAT[S.n-1])+' ('+o.n+')');
- if(S.n===O.length&&!S.won){S.won=Date.now();log('*** '+tr('vsa Slovenija je tvoja','all of Slovenia is yours')+' ***');regionChime();setTimeout(fanfare,900)}
+ if(S.n===O.length&&!S.won){S.won=Date.now();log('*** '+tr('vsa Slovenija je tvoja','all of Slovenia is yours')+' ***');regionChime();setTimeout(fanfare,900);
+  toast('win',tr('Vsa Slovenija je tvoja','All of Slovenia is yours'),tr('Vseh 212 občin. Tvoja listina je v panelu Naslednja občina.','All 212 municipalities. Your certificate is in the Next municipality panel.'),null)}
  if(!quiet)ding(660,.05);regPage=null;return true}
 function buyGen(k){if(S.n<greq(k))return;let a=S.amt==='max'?gmax(k):S.amt;if(a<1)return;const c=gcost(k,a);if(S.sit<c)return;S.sit-=c;S.own[k]+=a;ding(990,.03,.3)}
 function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log(tr('kupljeno: ','bought: ')+u.name+' ('+u.desc.split(' · ')[0]+')');
- if(id[0]==='k'){strike=0;toast('new',bellName().toUpperCase(),tr('Tvoj zvon zdaj zveni drugače. Pozvoni!','Your bell sounds different now. Ring it!'),null);bellSound()}else ding(1175,.05)}
+ if(id[0]==='k'){strike=0;toast('new',bellName().toUpperCase(),tr('Tvoj zvon zdaj zveni drugače. Pozvoni!','Your bell sounds different now. Ring it!'),null,BELLART[bellTier()]);bellSound()}else ding(1175,.05)}
 let swing=0,pslot=0;const parts=[];
 let noonDay='';
 function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()!==12||d.getMinutes()!==0||noonDay===d.toDateString())return;noonDay=d.toDateString();
  [[196,0],[262,.7],[220,1.4]].forEach(([f,w])=>tone(f,{p:GREAT,dur:3.4,vol:.06,when:w,echo:.45}));
  secret('poldne',()=>{})}
-function ring(){noonCheck();meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;
+function ring(){noonCheck();meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);swing=6;
  pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
@@ -525,11 +534,20 @@ function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
  row(tr('  skupaj','  total'),xf(allMult()*kurMult()*meterMult()));tl.push('');
  row(tr('čas te igre','this run'),dur((Date.now()-S.t0)/1000));row(tr('vsega zasluženo','earned in total'),fmt(S.all));
  return box(tr('STANJE','STATUS'),tl,w)}
+let copiedT=0;
+const secFound=()=>[...SECRET].filter(id=>S.ach.includes(id)).length;
+function certRows(){return [[tr('čas te igre','this run'),dur((S.won-S.t0)/1000)],[tr('igraš od','playing since'),new Date(S.first).toLocaleDateString(LANG==='en'?'en-GB':'sl-SI')],
+ [tr('zvonjenj','bell rings'),num(S.clicks)],[tr('ujetih kurentov','Kurents caught'),num(S.kur)],[tr('referendumov','referendums'),String(S.refs)],
+ [tr('skrivnosti','secrets'),secFound()+'/'+SECRET.size]]}
+function shareText(){return tr('Občine: vseh 212 v ','Občine: all 212 in ')+dur((S.won-S.t0)/1000)+' · '+num(S.clicks)+tr(' zvonjenj',' rings')+' · '+S.kur+tr(' kurentov',' Kurents')+' · '+
+ tr('referendumov ','referendums ')+S.refs+' · '+tr('skrivnosti ','secrets ')+secFound()+'/'+SECRET.size+'\nhttps://collarcore.github.io/improved-disco/'}
 function ipsAfterUnlock(){const o=O[S.n];const rc=regCount();const done=rc[o.r]+1===RN[o.r];return (1+(pop()+o.p)/PDIV)/popMult()*(done?REGB():1)}
 function pNext(w){const iw=w-4;const ls=[];const T=tr('NASLEDNJA OBČINA','NEXT MUNICIPALITY');
  if(S.n>=O.length){BRAVO.forEach(l=>ls.push(H(' '.repeat(Math.max(0,Math.floor((iw-L(l))/2)))+l)));ls.push('');
-  wrap(tr('Vseh 212 občin in '+num(TOTAL)+' prebivalcev je tvojih. Čas te igre: ','All 212 municipalities and '+num(TOTAL)+' residents are yours. This run took ')+dur((S.won-S.t0)/1000)+'.',iw).forEach(l=>ls.push(l));
-  wrap(tr('Razpiši referendum: dobiš glasove in začneš znova, hitreje.','Call a referendum: you get votes and start again, faster.'),iw).forEach(l=>ls.push(l));return box(T,ls,w,['[N]'])}
+  wrap(tr('Vseh 212 občin in '+num(TOTAL)+' prebivalcev je tvojih.','All 212 municipalities and '+num(TOTAL)+' residents are yours.'),iw).forEach(l=>ls.push(l));ls.push('');
+  certRows().forEach(([a,b])=>ls.push(lr(a,b,iw)));ls.push('');
+  ls.push([btn(Date.now()<copiedT?tr(' KOPIRANO ',' COPIED '):tr(' KOPIRAJ REZULTAT ',' COPY RESULT '),'share',true,tr('Kopiraj rezultat','Copy your result'))]);
+  wrap(tr('Razpiši referendum: dobiš glasove in začneš znova, hitreje.','Call a referendum: you get votes and start again, faster.'),iw).forEach(l=>ls.push(l));return box(tr('LISTINA','CERTIFICATE'),ls,w,['[N]'])}
  const o=O[S.n],c=ocost(S.n),can=S.sit>=c,v=ips();
  {const id='#'+String(S.n+1).padStart(3,'0')+'  ',mo=o.u?MO():'';const rg=ab(rname(o.r),Math.max(10,iw-L(id)-L(mo)-L(o.n)-2));
   ls.push(lr(id+ab(o.n,iw-L(id)-L(mo)-L(rg)-2).toUpperCase()+mo,rg,iw))}
@@ -687,6 +705,7 @@ function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok
 function act(a){if(!a)return;
  if(a==='ring')return ring();
  if(a==='unlock'){unlock();return}
+ if(a==='share'){try{navigator.clipboard.writeText(shareText()).then(()=>{copiedT=Date.now()+2500;render(true)},()=>{})}catch(e){}return}
  if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log(tr('odklenjenih ','unlocked ')+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
  if(a==='kurent')return catchKurent();
  if(a==='hacek'){if(hacAnim)return;const down=!S.noHacek;hacAnim={dir:down?1:-1,t0:Date.now()};
@@ -710,12 +729,18 @@ function act(a){if(!a)return;
  if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang};S=Object.assign(fresh(),keep);resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
 const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){const el=document.elementFromPoint(e.clientX,e.clientY);t=el&&el.closest&&el.closest('[data-a]')}return t};
 let downA=null;
-/* map secrets: the capital's guardian and the coast */
+/* sunset in Piran (45.53 N, 13.57 E), to within a few minutes: solar noon plus the hour angle at -0.83 degrees */
+function piranSunset(d){const y0=new Date(Date.UTC(d.getUTCFullYear(),0,1));const n=Math.floor((d-y0)/864e5)+1;const r=Math.PI/180,lat=45.53,lon=13.57;
+ const dec=23.44*Math.sin(2*Math.PI*(284+n)/365)*r;const B=2*Math.PI*(n-81)/364;const eot=9.87*Math.sin(2*B)-7.53*Math.cos(B)-1.5*Math.sin(B);
+ const H=Math.acos((Math.sin(-.83*r)-Math.sin(lat*r)*Math.sin(dec))/(Math.cos(lat*r)*Math.cos(dec)))/r;
+ return new Date(+y0+(n-1)*864e5+(720-4*lon-eot+4*H)*6e4)}
+/* map secrets: the capital's guardian, the coast and Piran at sunset */
 let seaClicks=0;
 function mapSecret(el){if(!el||!el.closest)return;if(el.closest('#mapgrid .sea')){if(++seaClicks===10){seaClicks=0;
   tone(1760,{p:HAND,dur:.2,vol:.04});tone(1568,{p:HAND,dur:.2,vol:.04,when:.12});secret('obala')}return}
  const c=el.closest('#mapgrid i');if(c&&c.classList.contains('c'+IDX['Ljubljana'])&&S.n>IDX['Ljubljana']){
-  secret('zmaj',regionChime)}}
+  secret('zmaj',regionChime)}
+ if(c&&c.classList.contains('c'+IDX['Piran'])&&S.n>IDX['Piran']){const d=new Date(window.__date||Date.now());if(Math.abs(d-piranSunset(d))<=30*6e4)secret('piran',regionChime)}}
 document.addEventListener('pointerdown',e=>{mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
  if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
 document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest&&el.closest('[data-a]');
@@ -749,8 +774,8 @@ const COW=[[1,1,1],[1.48,.7,.6],[2.37,.35,.4],[3.2,.15,.25]];
 function kurentBells(){for(let i=0;i<8;i++)tone(560+Math.random()*420,{p:COW,dur:.5,vol:.055,when:i*.1+Math.random()*.03,jingle:true})}
 function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.getMonth()+1)*100+d.getDate();
  const day=WEEK[d.getDay()];if(!S.days.includes(d.getDay()))S.days.push(d.getDay());const dk=d.toDateString();
- if(S.evSeen.day!==dk){S.evSeen.day=dk;toast('ev',tr('Danes: ','Today: ')+evName(day),evDesc(day)+'.',null);log(tr('danes: ','today: ')+evName(day)+' ('+evDesc(day)+')')}
- for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
+ if(S.evSeen.day!==dk){S.evSeen.day=dk;toast('ev',tr('Danes: ','Today: ')+evName(day),evDesc(day)+'.',null,EVART[day.id]);log(tr('danes: ','today: ')+evName(day)+' ('+evDesc(day)+')')}
+ for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime,EVART[e.id]);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
 let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;
  if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);const g=ips()*dt;S.sit+=g;S.life+=g;S.all+=g;S.play+=dt;
@@ -764,7 +789,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
  render()}
 
 /* ================= TEST HOOK ================= */
-window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx){toastQ.length=0;toast(k,ti,tx,null)},get noHacek(){return !!S.noHacek}};
+window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;

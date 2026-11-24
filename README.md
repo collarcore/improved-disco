@@ -91,6 +91,7 @@ users catch the Kurent. Animations stop under *prefers-reduced-motion*.
 | `tools/mapgen.py` | regenerates the maps from coordinates (weighted Voronoi) |
 | `tools/econ.py` | game data for the simulator |
 | `tools/balance.py` | balance simulator: active and casual players, prices in one place |
+| `tools/shots.py` | renders the README screenshot and the link-preview image from the game |
 | `fonts/` | IBM Plex Mono, self-hosted |
 | `docs/` | README images |
 | `tests/` | browser tests (see `tests/README.md`) |

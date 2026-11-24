@@ -8,7 +8,7 @@ with sync_playwright() as p:
         c.add_init_script("localStorage.setItem('obcine-v2',JSON.stringify(%s))"%json.dumps(st))
         pg=c.new_page();errs=[];pg.on('pageerror',lambda e:errs.append(str(e)));pg.goto('http://localhost:8765/');pg.wait_for_timeout(900)
         sel='#p-bell .ring'
-        if touch: pg.evaluate("scrollTo(0,1500)");pg.wait_for_timeout(400);sel='#dock .ring'
+        if touch: pg.evaluate("document.querySelector('#p-bell .ring').scrollIntoView({block:'center'})");pg.wait_for_timeout(400);sel='#p-bell .ring'
         pg.evaluate(f"window.__btn=document.querySelector('{sel}')")
         bb=pg.locator(sel).bounding_box();x,y=bb['x']+bb['width']/2,bb['y']+bb['height']/2
         pg.mouse.move(x,y);bgs=[];same=True

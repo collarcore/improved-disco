@@ -76,7 +76,9 @@ every referendum) was reached. Testers can paste it into a message. Nothing is s
 The ASCII art, the map and the big counter are hidden from screen readers. Instead there is
 a text summary (balance, income, next občina and its cost), panel titles are headings, buttons
 carry plain labels, new log entries are announced, and a hidden button lets screen-reader
-users catch the Kurent. Animations stop under *prefers-reduced-motion*.
+users catch the Kurent. Animations stop under *prefers-reduced-motion* (a hovered region is underlined
+instead of blinking). On touch screens double-tap zoom is off, so fast taps all ring, while pinch-zoom
+stays for anyone who needs bigger text; a tap that lands just off a button still counts.
 
 ## Files
 

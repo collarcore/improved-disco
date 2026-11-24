@@ -1,6 +1,5 @@
 """Pop-ups: every kind, the longest texts, at many screen sizes and scroll positions.
-Each must be fully on screen, the width of its column and aligned with it, clear of the
-phone's bell dock, and drawn as an intact box with nothing cut off."""
+Each must be fully on screen, the width of its column and aligned with it, and drawn as an intact box with nothing cut off."""
 import os, json
 from playwright.sync_api import sync_playwright
 st = {"sit": 4e9, "n": 120, "own": [60, 50, 40, 30, 20, 10, 5, 2, 0, 0, 0, 0], "save": 9e15, "sound": 0, "ach": ["o1"]}
@@ -62,14 +61,13 @@ with sync_playwright() as p:
                     pg.evaluate("([k,ti,tx,a])=>__dbg.toast(k,ti,tx,a?(a[0]==='b'?__dbg.art.BELLART[+a.slice(1)]:__dbg.art.EVART[a]):undefined)",[kind,ti,tx,ART.get((lang,kind,ti))]); pg.wait_for_timeout(120)
                     r = pg.evaluate("""()=>{const t=document.getElementById('toast');const b=t.getBoundingClientRect();
                       const three=document.querySelectorAll('#cols .col').length===3;const host=document.querySelectorAll('#cols .col')[three?2:0].getBoundingClientRect();
-                      const d=document.getElementById('dock');const db=d.hidden?null:d.getBoundingClientRect();
+                      const db=null;
                       const ls=t.innerText.replace(/\\n$/,'').split('\\n');const pre=[...ls[0]].length;
                       return {l:b.left,r:b.right,t:b.top,bo:b.bottom,hl:host.left,hr:host.right,dock:db&&db.top,lines:ls.map(x=>[...x].length),w0:pre,tr:window.__trunc.length,hidden:t.hidden}}""")
                     problems = []
                     if r['hidden']: problems.append('not shown')
                     if r['l'] < -0.5 or r['r'] > w + 0.5 or r['t'] < -0.5 or r['bo'] > h + 0.5: problems.append(f"off screen {round(r['l'])},{round(r['t'])}-{round(r['r'])},{round(r['bo'])}")
                     if abs(r['l'] - r['hl']) > 1 or abs(r['r'] - r['hr']) > 1: problems.append(f"not on its column ({round(r['l'])}-{round(r['r'])} vs {round(r['hl'])}-{round(r['hr'])})")
-                    if r['dock'] is not None and r['bo'] > r['dock'] + 1.5: problems.append(f"overlaps the dock by {round(r['bo']-r['dock'])}px")
                     if len(set(r['lines'])) != 1: problems.append(f"box lines differ {sorted(set(r['lines']))}")
                     if r['tr']: problems.append('text cut off')
                     if problems:

@@ -293,8 +293,7 @@ function toastCol(){const cs=document.querySelectorAll('#cols .col');const three
 function placeToast(){const el=document.getElementById('toast');if(el.hidden)return;
  const cols=document.getElementById('cols').getBoundingClientRect();const lh=parseFloat(getComputedStyle(document.body).lineHeight)||16;
  const host=toastCol().el;const x=host?host.getBoundingClientRect().left:cols.left;
- const d=document.getElementById('dock');const db=d.hidden?0:d.getBoundingClientRect().height;
- let bottom=db?db-1:lh;if(!db){const top=innerHeight-bottom-el.offsetHeight;const rootTop=document.getElementById('root').getBoundingClientRect().top;const off=((top-rootTop)%lh+lh)%lh;bottom+=off}
+ let bottom=lh;{const top=innerHeight-bottom-el.offsetHeight;const rootTop=document.getElementById('root').getBoundingClientRect().top;const off=((top-rootTop)%lh+lh)%lh;bottom+=off}
  el.style.left=Math.max(0,x)+'px';el.style.bottom=bottom+'px'}
 
 /* ================= ACHIEVEMENTS =================
@@ -416,9 +415,9 @@ function headStatus(w){if(S.n>=O.length)return '*** '+tr('VSA SLOVENIJA JE TVOJA
  const tail=' '+pc(Math.floor(f*100))+(f<1&&v>0?' · '+tr('še ~','~')+dur((c-S.sit)/v):' · '+tr('lahko odkleneš','ready'));const head=tr('občine ','')+S.n+'/212 · '+tr('naslednja: ','next: ')+ab(O[S.n].n,16)+' ';
  const bw=Math.max(6,Math.min(30,w-L(head)-L(tail)-2));return L(head)+bw+2+L(tail)<=w?head+bar(f,bw)+tail:tr('naslednja: ','next: ')+ab(O[S.n].n,w-11-L(tail))+tail}
 function headEvents(w){const ev=eventsNow();return wrapItems(ev.map((e,i)=>(i?'':tr('* danes: ','* today: '))+evName(e)+' ('+evDesc(e)+')'),' · ',w)}
-let hacAnim=null;const HAC_FRAME=90;
+let hacAnim=null;const HAC_FRAME=90;const REDUCED=matchMedia('(prefers-reduced-motion: reduce)');
 function hacekRow(nb){if(hacAnim){const f=Math.min(nb,Math.floor((Date.now()-hacAnim.t0)/HAC_FRAME));return hacAnim.dir>0?f:nb-f}return S.noHacek?nb:0}
-function hacekGlyph(){if(hacAnim||S.noHacek)return '\\/';const ph=Date.now()%40000;return ph<1500?['\\_','\\/','_/','\\/'][Math.floor(ph/375)%4]:'\\/'}
+function hacekGlyph(){if(hacAnim||S.noHacek)return '\\/';if(REDUCED.matches)return '\\/';const ph=Date.now()%40000;return ph<1500?['\\_','\\/','_/','\\/'][Math.floor(ph/375)%4]:'\\/'}
 function pHead(){const w=HW;const ban0=w>=70?BAN_BIG:BAN_SMALL;const hcol=ban0[0].indexOf('\\/');
  const ban=[ban0[0].replace('\\/','  '),...ban0.slice(1)];const hRow=hacekRow(ban.length),hg=hacekGlyph();
  if(hRow<ban.length){const r=padR(ban[hRow],hcol+2);ban[hRow]=r.slice(0,hcol)+hg+r.slice(hcol+2)}const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))+6>w)dg=big(m?m[1]:s,'small');
@@ -513,7 +512,7 @@ function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElement
 let infoKey='',hoverReg=-1;
 /* highlight on the map: one občina in inverse, or a whole region: unlocked part solid, the rest blinking */
 function setHover(i,r){if(i===hover&&r===hoverReg)return;hover=i;hoverReg=r;const st=document.getElementById('hov');
- st.textContent=i>=0?`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`:r>=0?`#mapgrid .r${r}.u{background:var(--fg);color:var(--bg)}#mapgrid .r${r}:not(.u){animation:bl 1.2s steps(1) infinite}`:'';mapInfo()}
+ st.textContent=i>=0?`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`:r>=0?`#mapgrid .r${r}.u{background:var(--fg);color:var(--bg)}#mapgrid .r${r}:not(.u){animation:bl 1.2s steps(1) infinite}@media(prefers-reduced-motion:reduce){#mapgrid .r${r}:not(.u){text-decoration:underline}}`:'';mapInfo()}
 function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo');if(!el)return;const iw=w-4;const i=hover;
  let a,b;if(i<0&&hoverReg>=0){const r=hoverReg,rc=regCount()[r];let pu=0,pt=0;O.forEach((o,j)=>{if(o.r===r){pt+=o.p;if(j<S.n)pu+=o.p}});
   a=rname(r)+' · '+rc+'/'+RN[r]+' '+obc(RN[r])+' · '+num(pu)+tr(' od ',' of ')+num(pt)+tr(' prebivalcev',' residents');
@@ -616,18 +615,8 @@ let lastTitle='';function title(){const s=(kurPos?(Date.now()%1000<500?'(!) KURE
 let srKey='';function sr(){const s=srSummary();if(s!==srKey){document.getElementById('srsum').textContent=s;srKey=s}}
 const FAST={bell:1};let lastSlow=0;
 function render(force){const now=performance.now();const slow=force||now-lastSlow>250;if(slow)lastSlow=now;
- put('head',pHead());title();sr();renderDock();for(const id in PAN)if(PW[id]&&(slow||FAST[id]))put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
+ put('head',pHead());title();sr();for(const id in PAN)if(PW[id]&&(slow||FAST[id]))put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
 function full(){cache={};for(const k in lineCache)delete lineCache[k];mapKey='';infoKey='';render(true)}
-let dockHTML='',bellSeen=true;const bellIO=new IntersectionObserver(es=>{for(const e of es)bellSeen=e.isIntersecting});let bellObserved=null;
-function renderDock(){const d=document.getElementById('dock');const be=document.getElementById('p-bell');if(be&&be!==bellObserved){bellIO.disconnect();bellIO.observe(be);bellObserved=be}
- const on=MODE.startsWith('1')&&!bellSeen;d.hidden=!on;document.body.classList.toggle('docked',on);if(!on)return;
- const w=PW.bell||49;const left=tr('tolarji ','tolars ')+fmt(Math.floor(S.sit));const right='+'+fmt(ips(),1)+'/s';const btnT=tr('[  Z V O N I  ]','[  R I N G  ]');
- const mx=xf(meterMult()),mlab=tr('zvonjenje ','ringing ');
- const top=esc('+'+'-'.repeat(w-2)+'+')+'\n'+esc('| '+padR(left,w-L(right)-4)+right+' |')+'\n'+esc('| '+mlab+bar(meter,w-L(mlab)-L(mx)-7)+' '+mx+' |')+'\n';
- const btn_='<span class="b ring" data-a="ring" role="button" tabindex="0" aria-label="'+esc(tr('Pozvoni','Ring the bell'))+'">'+esc('+'+'-'.repeat(w-2)+'+\n|'+' '.repeat(w-2)+'|')+'\n'+esc('|'+padR(' '.repeat(Math.floor((w-2-L(btnT))/2))+btnT,w-2)+'|')+'\n'+esc('|'+' '.repeat(w-2)+'|\n+'+'-'.repeat(w-2)+'+')+'</span>';
- if(btn_!==dockHTML){d.innerHTML='<span aria-hidden="true" id="dockstat"></span>'+btn_;dockHTML=btn_}
- const ds=document.getElementById('dockstat');if(ds.innerHTML!==top)ds.innerHTML=top;
- const dh=d.offsetHeight+'px';if(document.documentElement.style.getPropertyValue('--dockh')!==dh)document.documentElement.style.setProperty('--dockh',dh);placeToast()}
 
 /* ================= INPUT ================= */
 function copy(text,ok){try{navigator.clipboard.writeText(text).then(()=>flash=ok,()=>flash=tr('kopiranje ni uspelo.','copying failed.'))}catch(e){flash=tr('kopiranje ni uspelo.','copying failed.')}}
@@ -656,7 +645,13 @@ function act(a){if(!a)return;
  if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const s=migrate(JSON.parse(decodeURIComponent(escape(atob(v.trim())))));if(!s)throw 0;S=s;flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
  if(a==='rst'){resetArm=Date.now()+4000;return}
  if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang};S=Object.assign(fresh(),keep);resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
-const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){const el=document.elementFromPoint(e.clientX,e.clientY);t=el&&el.closest&&el.closest('[data-a]')}return t};
+/* a finger is wider than a line of text: a touch just off a button (up to ~half a line above or below,
+   or a character to the side) goes to the nearest button; a touch on something else's own text never does */
+const at=(x,y)=>{const el=document.elementFromPoint(x,y);return el&&el.closest&&el.closest('[data-a]')};
+function nearBtn(x,y){const base=document.elementFromPoint(x,y);if(base&&base.closest&&base.closest('.hv,#mapgrid,.hk,input,#toast'))return null;const lh=parseFloat(getComputedStyle(document.body).lineHeight)||16;const cw=lh*.5;
+ for(const [dx,dy] of [[0,-.35],[0,.35],[-1,0],[1,0],[0,-.6],[0,.6],[-1,-.35],[1,-.35],[-1,.35],[1,.35]]){const t=at(x+dx*cw,y+dy*lh);if(t&&t.classList.contains('b'))return t}return null}
+const touchy=e=>e.pointerType&&e.pointerType!=='mouse';
+const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY)}return t};
 let downA=null;
 /* sunset in Piran (45.53 N, 13.57 E), to within a few minutes: solar noon plus the hour angle at -0.83 degrees */
 function piranSunset(d){const y0=new Date(Date.UTC(d.getUTCFullYear(),0,1));const n=Math.floor((d-y0)/864e5)+1;const r=Math.PI/180,lat=45.53,lon=13.57;
@@ -672,7 +667,7 @@ function mapSecret(el){if(!el||!el.closest)return;if(el.closest('#mapgrid .sea')
  if(c&&c.classList.contains('c'+IDX['Piran'])&&S.n>IDX['Piran']){const d=new Date(window.__date||Date.now());if(Math.abs(d-piranSunset(d))<=30*6e4)secret('piran',regionChime)}}
 document.addEventListener('pointerdown',e=>{mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
  if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
-document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest&&el.closest('[data-a]');
+document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;let t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY);
  if(t&&t.dataset.a===a){act(a);render(true)}});
 document.addEventListener('pointercancel',()=>{downA=null});
 {const te=document.getElementById('toast');te.addEventListener('click',()=>nextToast());

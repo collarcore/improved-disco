@@ -1,5 +1,5 @@
 """Pop-ups: every kind, the longest texts, at many screen sizes and scroll positions.
-Each must be fully on screen, the width of its column and aligned with it, and drawn as an intact box with nothing cut off."""
+Each must be the same height (10 lines), fully on screen, the width of its column and aligned with it, and drawn as an intact box with nothing cut off."""
 import os, json
 from playwright.sync_api import sync_playwright
 st = {"sit": 4e9, "n": 120, "own": [60, 50, 40, 30, 20, 10, 5, 2, 0, 0, 0, 0], "save": 9e15, "sound": 0, "ach": ["o1"]}
@@ -70,6 +70,7 @@ with sync_playwright() as p:
                     if abs(r['l'] - r['hl']) > 1 or abs(r['r'] - r['hr']) > 1: problems.append(f"not on its column ({round(r['l'])}-{round(r['r'])} vs {round(r['hl'])}-{round(r['hr'])})")
                     if len(set(r['lines'])) != 1: problems.append(f"box lines differ {sorted(set(r['lines']))}")
                     if r['tr']: problems.append('text cut off')
+                    if len(r['lines']) != 10: problems.append(f"{len(r['lines'])} lines tall, not 10")
                     if problems:
                         fails.append((lang, w, h, sy, kind, problems))
             if errs: fails.append((lang, w, h, 'errors', errs))

@@ -351,12 +351,13 @@ function toast(kind,title,text,sound,art){
  toastQ.push({kind,title,text,art});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
  const w=toastCol().w;const iw=w-4;const art=q.art||ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
- const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];const rows=Math.max(art.length,tx.length);const lines=[''];
+ const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];/* every pop-up is the same height (5 rows inside), so each covers the same lines of the page */
+ const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
  const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
  clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
-let toastMs=6000;
+let toastMs=6000;const TOAST_ROWS=5;
 function nextToast(){toastQ.shift();showToast()}
 /* the pop-up borrows one column: the right one on 3 columns, else the left/only one */
 function toastCol(){const cs=document.querySelectorAll('#cols .col');const three=MODE.startsWith('3');return {el:cs[three?2:0],w:three?W.c:W.a}}

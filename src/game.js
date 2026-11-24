@@ -624,8 +624,11 @@ document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
 /* hovering (or tapping) a map cell, a register row or a region row highlights it on the map */
 const hoverTarget=el=>{if(!el||!el.closest)return null;const c=el.closest('#mapgrid i');if(c)return{i:+c.className.match(/c(\d+)/)[1],r:-1};
  const o=el.closest('[data-o]');if(o)return{i:+o.dataset.o,r:-1};const g=el.closest('[data-r]');if(g)return{i:-1,r:+g.dataset.r};return null};
-document.addEventListener('mouseover',e=>{const h=hoverTarget(e.target);if(h)setHover(h.i,h.r)});
-document.addEventListener('mouseout',e=>{if(hoverTarget(e.target)&&!hoverTarget(e.relatedTarget))setHover(-1,-1)});
+/* crossing a gap between cells (or rows) must not flash the legend: clearing waits a moment
+   and is cancelled when the pointer lands on another target */
+let hoverClear=0;
+document.addEventListener('mouseover',e=>{const h=hoverTarget(e.target);if(h){clearTimeout(hoverClear);setHover(h.i,h.r)}});
+document.addEventListener('mouseout',e=>{if(hoverTarget(e.target)&&!hoverTarget(e.relatedTarget)){clearTimeout(hoverClear);hoverClear=setTimeout(()=>setHover(-1,-1),350)}});
 
 /* ================= LOOP ================= */
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);

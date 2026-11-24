@@ -9,6 +9,7 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `layout.py` | every line of every panel is the same width, no sideways overflow, at 10 widths and 5 game stages |
 | `truncation.py` | no text is cut off anywhere (pages through the register and achievements, hovers every municipality) |
 | `flicker.py` | spamming the bell keeps the button steady |
+| `hover.py` | sweeping the mouse across the map never flashes the legend |
 | `extra.py` | two-column layouts, keyboard play, performance, offline income, meter drain, English UI, light theme, map highlighting, referendum |
 
 `LANGX=en python3 tests/layout.py` runs the layout and truncation checks in English.

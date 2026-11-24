@@ -100,10 +100,19 @@ with sync_playwright() as p:
     # ---- pop-up does not move while scrolling; dismisses on click; survives a layout change
     c, pg, errs = open_page(b, 1600, 900, dict(BASE, ach=[]))
     pg.evaluate("document.getElementById('toast').hidden=false")
-    pg.wait_for_timeout(300); bots = set()
+    pg.wait_for_timeout(800); bots = set()  # let it settle onto the grid first
     for _ in range(25):
         pg.mouse.wheel(0, 41); pg.wait_for_timeout(25); bots.add(round(pg.evaluate("document.getElementById('toast').getBoundingClientRect().bottom")))
     check('pop-up stays still while scrolling', len(bots) == 1, sorted(bots))
+    pg.wait_for_timeout(400)
+    off = pg.evaluate("""()=>{const t=document.getElementById('toast').getBoundingClientRect();const r=document.getElementById('root').getBoundingClientRect();
+      const lh=parseFloat(getComputedStyle(document.body).lineHeight);const o=((t.top-r.top)%lh+lh)%lh;return Math.min(o,lh-o)}""")
+    check('pop-up settles onto the line grid when scrolling stops', off < 0.6, off)
+    # after a reset the page changes under a pop-up that is already showing; it must stay on the grid
+    pg.evaluate("act('rst');act('rstyes');render(true)"); pg.wait_for_timeout(1200)
+    off = pg.evaluate("""()=>{const t=document.getElementById('toast');if(t.hidden)return 0;const b=t.getBoundingClientRect();const r=document.getElementById('root').getBoundingClientRect();
+      const lh=parseFloat(getComputedStyle(document.body).lineHeight);const o=((b.top-r.top)%lh+lh)%lh;return Math.min(o,lh-o)}""")
+    check('pop-up on the line grid after a reset', off < 0.6, off)
     pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(500)
     r = pg.evaluate("(()=>{const t=document.getElementById('toast');if(t.hidden)return 'hidden';const b=t.getBoundingClientRect();return [Math.round(b.left),Math.round(b.right),innerWidth]})()")
     check('pop-up fits the screen after switching to phone width', r == 'hidden' or (r[0] >= 0 and r[1] <= r[2]), r)

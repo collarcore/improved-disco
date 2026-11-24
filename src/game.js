@@ -287,7 +287,7 @@ function showToast(){const el=document.getElementById('toast');const q=toastQ[0]
  const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
  clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
-let toastMs=6000;const TOAST_ROWS=5;
+let toastMs=6000;const TOAST_ROWS=5;let lastScrollT=0;
 function nextToast(){toastQ.shift();showToast()}
 /* the pop-up borrows one column: the right one on 3 columns, else the left/only one */
 function toastCol(){const cs=document.querySelectorAll('#cols .col');const three=MODE.startsWith('3');return {el:cs[three?2:0],w:three?W.c:W.a}}
@@ -621,7 +621,8 @@ let lastTitle='';function title(){const s=(kurPos?(Date.now()%1000<500?'(!) KURE
 let srKey='';function sr(){const s=srSummary();if(s!==srKey){document.getElementById('srsum').textContent=s;srKey=s}}
 const FAST={bell:1};let lastSlow=0;
 function render(force){const now=performance.now();const slow=force||now-lastSlow>250;if(slow)lastSlow=now;
- put('head',pHead());title();sr();for(const id in PAN)if(PW[id]&&(slow||FAST[id]))put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo()}
+ put('head',pHead());title();sr();for(const id in PAN)if(PW[id]&&(slow||FAST[id]))put('p-'+id,PAN[id](PW[id]));drawMap();mapInfo();
+ if(slow&&Date.now()-lastScrollT>300)placeToast()}
 function full(){cache={};for(const k in lineCache)delete lineCache[k];mapKey='';infoKey='';render(true)}
 
 /* ================= INPUT ================= */
@@ -732,6 +733,10 @@ document.documentElement.classList.toggle('light',!!S.light);document.documentEl
  log(tr('med odsotnostjo (','while away (')+dur(away)+'): +'+fmt(g)+' SIT')}}
 if(!S.log.length)log(tr('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.','welcome. ring the bell, buy a field, unlock Osilnica.'));
 const ro=new ResizeObserver(()=>{layout();render();placeToast()});ro.observe(document.documentElement);
+/* the pop-up sits on the page's line grid, so it never cuts a line in half. It stays still while the page scrolls
+   (moving with it looked jittery) and settles onto the grid once scrolling stops, including the scroll a reload restores */
+{let st=0;addEventListener('scroll',()=>{lastScrollT=Date.now();clearTimeout(st);st=setTimeout(placeToast,140)},{passive:true});
+ addEventListener('load',()=>setTimeout(placeToast,50));if(document.fonts)document.fonts.ready.then(()=>placeToast())}
 (document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{MODE='';layout();full()});
 layout();full();setInterval(tick,100);setTimeout(eventToasts,1500);
 addEventListener('visibilitychange',()=>{if(document.hidden)save()});addEventListener('pagehide',save);

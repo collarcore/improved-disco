@@ -89,8 +89,18 @@ const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],cli
 function migrate(s){if(!s||!Array.isArray(s.own))return null;const v=s.v||2,first=s.first||s.t0;s=Object.assign(fresh(),s);
  if(v<3){s.first=first||Date.now()}
  /* v4: new unlock prices and the ringing meter; nothing in the save needs converting */
- s.v=VERSION;
- s.own=GEN.map((_,k)=>s.own[k]||0);return s}
+ s.v=VERSION;return clean(s)}
+/* a save comes from this browser or a pasted code: every field is checked, so a broken or hand-made save can't
+   crash the game (and then crash it again on every reload). Bad values fall back to a fresh game's. */
+function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>=0?v:d},strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.length<40):[];
+ const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
+ for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play'])s[k]=num(s[k],f[k]);
+ s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
+ s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
+ s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
+ s.achT=obj(s.achT);s.evSeen=obj(s.evSeen);s.amt=[1,10,100,'max'].includes(s.amt)?s.amt:1;s.lang=['sl','en'].includes(s.lang)?s.lang:null;
+ for(const k of ['sound','light','noHacek'])s[k]=k==='sound'?(s[k]===0||s[k]===false?0:1):(s[k]?1:0);
+ return s}
 let S=fresh();
 try{const s=migrate(JSON.parse(localStorage.getItem(KEY)||'null'));if(s)S=s}catch(e){}
 LANG=S.lang||'sl';

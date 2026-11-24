@@ -91,7 +91,7 @@ stays for anyone who needs bigger text; a tap that lands just off a button still
 | `src/game.js` | the game; every string is a `tr('slovensko','English')` pair |
 | `data/obcine.json` | name, population, area, founding year, region, coordinates |
 | `data/maps.json` | the ASCII maps (84 and 44 columns), one cell → one občina |
-| `tools/build.py` | fills the shell with the game, data and maps → `index.html` |
+| `tools/build.py` | fills the shell with the game, data and maps → `index.html` (comments stripped with terser, if installed) and `version.json` |
 | `tools/mapgen.py` | regenerates the maps from coordinates (weighted Voronoi) |
 | `tools/econ.py` | game data for the simulator |
 | `tools/balance.py` | balance simulator: active and casual players, prices in one place |
@@ -101,7 +101,7 @@ stays for anyone who needs bigger text; a tap that lands just off a button still
 | `docs/` | README images |
 | `tests/` | browser tests (see `tests/README.md`) |
 
-Rebuild after editing: `python3 tools/build.py`
+Rebuild after editing: `python3 tools/build.py` (`npm i -g terser` first, so the shipped page carries no comments)
 
 Saves carry a version number (`v`). When the save format changes, bump `VERSION` in
 `src/game.js` and add a step to `migrate()` so older saves are upgraded instead of broken.

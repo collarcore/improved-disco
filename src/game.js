@@ -656,12 +656,22 @@ function full(){cache={};for(const k in lineCache)delete lineCache[k];mapKey='';
 /* copying must happen inside the tap itself (iOS refuses the clipboard otherwise), so copy buttons run on 'click'.
    If the clipboard API is missing or refuses, an older copy method is tried; if that fails too, the text is put in
    the paste field, selected, for copying by hand. */
-function copyText(text,done){const manual=()=>{const i=document.getElementById('impin');if(i){i.value=text;i.focus({preventScroll:true});i.select();try{i.setSelectionRange(0,text.length)}catch(e){}}
+function copyText(text,done){let settled=false;const ok=()=>{if(!settled){settled=true;done()}};
+ const manual=()=>{if(settled)return;settled=true;const i=document.getElementById('impin');if(i){i.value=text;i.focus({preventScroll:true});i.select();try{i.setSelectionRange(0,text.length)}catch(e){}}
   flash=tr('koda je spodaj označena: kopiraj jo ročno.','the code is selected below: copy it by hand.');render(true)};
- const legacy=()=>{try{const t=document.createElement('textarea');t.value=text;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:0;left:0;opacity:0;font-size:16px';
-  document.body.appendChild(t);t.focus({preventScroll:true});t.select();t.setSelectionRange(0,text.length);const ok=document.execCommand('copy');t.remove();return ok}catch(e){return false}};
- try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,()=>{if(!legacy())manual();else done()});return}}catch(e){}
- if(legacy())done();else manual()}
+ /* the old way, while still inside the tap: a hidden text box, selected the way each browser needs (iOS wants a
+    range on an editable box; the page itself turns selection off, so the box turns it back on) */
+ const legacy=()=>{try{const t=document.createElement('textarea');t.value=text;t.setAttribute('readonly','');
+  t.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;-webkit-user-select:text;user-select:text';
+  document.body.appendChild(t);const sel=getSelection();
+  if(IOS){t.contentEditable='true';const r=document.createRange();r.selectNodeContents(t);sel.removeAllRanges();sel.addRange(r);t.setSelectionRange(0,text.length)}
+  else{t.focus({preventScroll:true});t.select()}
+  const res=document.execCommand('copy');sel.removeAllRanges();t.remove();return res}catch(e){return false}};
+ const L=legacy();
+ /* and the clipboard API; whichever works counts. Some browsers never answer it, so it isn't waited on forever. */
+ try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(ok,()=>L?ok():manual());setTimeout(()=>L?ok():manual(),1500);return}}catch(e){}
+ L?ok():manual()}
+const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function copy(text,ok){copyText(text,()=>{flash=ok;render(true)})}
 function act(a){if(!a)return;
  if(a==='ring')return ring();

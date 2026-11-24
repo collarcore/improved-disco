@@ -17,12 +17,27 @@ with sync_playwright() as p:
         # 1) clipboard works
         c = b.new_context(permissions=['clipboard-read', 'clipboard-write'], **kw); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
         pg.evaluate("navigator.clipboard.writeText('')")
-        pg.evaluate("window.__n=0;const w=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=t=>{window.__n++;return w(t)};0")
+        pg.evaluate("window.__n=0;const w=navigator.clipboard.writeText.bind(navigator.clipboard);navigator.clipboard.writeText=t=>{window.__n++;return w(t)};const x=document.execCommand.bind(document);document.execCommand=c=>{window.__n++;return x(c)};0")
         press(pg, '[data-a="exp"]', touch)
         clip = pg.evaluate("navigator.clipboard.readText()"); n = pg.evaluate("window.__n")
-        ok = clip.startswith('OB1.') and n == 1
+        ok = clip.startswith('OB1.') and n <= 2  # the old method and the clipboard API, once each
         print(f"{'touch' if touch else 'mouse'}: save code copied={clip.startswith('OB1.')} times={n}")
         if not ok: bad.append(('clip', touch))
+        c.close()
+        # 1b) the old method unavailable: the clipboard API takes over
+        c = b.new_context(permissions=['clipboard-read', 'clipboard-write'], **kw); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
+        pg.evaluate("navigator.clipboard.writeText('');document.execCommand=()=>false;0")
+        press(pg, '[data-a="exp"]', touch); clip = pg.evaluate("navigator.clipboard.readText()")
+        print(f"{'touch' if touch else 'mouse'}: old method off -> clipboard API copied={clip.startswith('OB1.')}")
+        if not clip.startswith('OB1.'): bad.append(('api', touch))
+        c.close()
+        # 1c) the clipboard API never answers (seen in some iPhone browsers): after 1.5 s the paste field takes over
+        c = b.new_context(**kw); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
+        pg.evaluate("document.execCommand=()=>false;navigator.clipboard.writeText=()=>new Promise(()=>{});0")
+        press(pg, '[data-a="exp"]', touch); pg.wait_for_timeout(1800)
+        v = pg.evaluate("(document.getElementById('impin')||{}).value||''")
+        print(f"{'touch' if touch else 'mouse'}: clipboard hangs -> code in paste field={v.startswith('OB1.')}")
+        if not v.startswith('OB1.'): bad.append(('hang', touch))
         c.close()
         # 2) clipboard refused (like a strict iPhone browser): the older method or the paste field takes over
         c = b.new_context(**kw); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)

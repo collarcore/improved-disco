@@ -8,15 +8,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OWN = [60, 50, 40, 30, 20, 10, 5, 2, 0, 0, 0, 0]
 # a Tuesday in November: crafts day and Martinovanje; the day's pop-up already seen, so the holiday shows
 DATE = '2026-11-24T15:00:00'
-MID = {"sit": 3.7e6, "n": 75, "own": [40, 30, 20, 12, 8, 4, 0, 0, 0, 0, 0, 0], "ups": [], "save": 9e15, "sound": 0, "lang": "sl",
+MID = {"sit": 3.7e6, "life": 4e9, "all": 4e9, "first": 1764010000000, "play": 50000, "n": 75, "own": [40, 30, 20, 12, 8, 4, 0, 0, 0, 0, 0, 0], "ups": [], "save": 9e15, "sound": 0, "lang": "sl",
        "ach": ["o1", "o10", "o25", "o50", "o75", "c100", "c1000", "tri", "ev"], "clicks": 1500, "evSeen": {"day": "Tue Nov 24 2026"}}
-LATE = {"sit": 4e12, "n": 128, "own": OWN, "ups": ["k1", "k2", "k3"], "ach": ["o1", "ev"], "save": 9e15, "sound": 0, "lang": "sl", "clicks": 9000,
+LATE = {"sit": 4e12, "life": 9e14, "all": 9e14, "votes": 40, "refs": 2, "first": 1764010000000, "play": 90000, "n": 128, "own": OWN, "ups": ["k1", "k2", "k3"], "ach": ["o1", "ev"], "save": 9e15, "sound": 0, "lang": "sl", "clicks": 9000,
         "evSeen": {"day": "Tue Nov 24 2026", "martin": 2026}}
 
 
 def page(b, state, w, h):
     c = b.new_context(viewport={'width': w, 'height': h})
-    c.add_init_script("window.__date='%s';localStorage.setItem('obcine-v2',JSON.stringify(%s))" % (DATE, json.dumps(state)))
+    c.add_init_script("window.__date='%s';localStorage.setItem('obcine-v2',JSON.stringify(%s));localStorage.setItem('obcine-hi','1')" % (DATE, json.dumps(state)))
     pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(1000)
     return c, pg
 
@@ -30,7 +30,8 @@ with sync_playwright() as p:
     # README: mid-run, with the Martinovanje pop-up and a few rings floating off the bell
     c, pg = page(b, MID, 1600, 1000)
     pg.wait_for_timeout(600)
-    for _ in range(12): pg.keyboard.press('Space'); pg.wait_for_timeout(60)
+    pg.evaluate("__dbg.dragon()"); pg.wait_for_timeout(6500)
+    for _ in range(12): pg.keyboard.press('Space'); pg.wait_for_timeout(130)
     pg.screenshot(path=os.path.join(ROOT, 'docs/screenshot.png'))
     c.close()
     # link preview: banner, bell tower with a full meter, the map at 128/212 with the Kurent on it
@@ -38,7 +39,7 @@ with sync_playwright() as p:
     pg.evaluate("document.getElementById('toast').hidden=true")
     for _ in range(80): pg.keyboard.press('Space'); pg.wait_for_timeout(15)
     pg.wait_for_timeout(2200)  # let the floating numbers fade
-    pg.evaluate("__dbg.spawn()"); pg.wait_for_timeout(300)
+    pg.evaluate("__dbg.spawn();__dbg.boat()"); pg.wait_for_timeout(9000)
     pg.evaluate("document.getElementById('toast').hidden=true")
     head = shot(pg.locator('#head'))
     bell = shot(pg.locator('#p-bell'))

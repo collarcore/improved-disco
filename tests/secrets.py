@@ -30,12 +30,12 @@ with sync_playwright() as p:
         tag = f'[{w}]'
         # strešica
         widths = lambda: {len(l) for l in pg.evaluate("document.getElementById('head').innerText").split('\n')}
-        w0 = widths(); pg.locator('[data-a="hacek"]').click(); pg.wait_for_timeout(200)
+        w0 = widths(); pg.locator('[data-a="hacek"]').click(); pg.wait_for_timeout(1100)
         head = pg.evaluate("document.getElementById('head').innerText").split('\n')
         check(f'{tag} háček knocked off: title Obcine, banner without it', pg.evaluate("__dbg.noHacek") and 'Obcine' in pg.title() and '\\/' not in head[0], head[0].strip())
         check(f'{tag} háček: secret found', 'hac' in ach(pg))
         check(f'{tag} háček: header keeps its width', widths() == w0, (w0, widths()))
-        pg.locator('[data-a="hacek"]').click(); pg.wait_for_timeout(200)
+        pg.locator('[data-a="hacek"]').click(); pg.wait_for_timeout(1100)
         check(f'{tag} háček put back', not pg.evaluate("__dbg.noHacek") and 'Občine' in pg.title() and '\\/' in pg.evaluate("document.getElementById('head').innerText").split('\n')[0])
         # 47 km obale
         pg.evaluate("document.getElementById('toast').hidden=true")

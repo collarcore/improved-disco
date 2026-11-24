@@ -12,8 +12,10 @@ KINDS = {
         ('ref', 'Zakon o lokalni samoupravi', 'odklep občin je 20 % cenejši.'),
         ('new', 'ZVONOVI VSEH FAR', 'Tvoj zvon zdaj zveni drugače. Pozvoni!'),
         ('zmaj', 'Ljubljanski zmaj', 'Z Zmajskega mostu pazi na prestolnico. Nanj se lahko zaneseš.'),
-        ('galeb', 'Galeb', 'ti je pojedel burek. Na vseh 47 km obale je našel ravno tebe.'),
-        ('poldne', 'Poldne', 'Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.')],
+        ('galeb', 'Galeb in burek', 'Galeb ti je pojedel burek. Na vseh 47 km obale je našel ravno tebe.'),
+        ('poldne', 'Poldne', 'Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.'),
+        ('triglav', 'Na vrhu', 'Triglav, 2864 m. Vsak Slovenec mora vsaj enkrat gor. Dosežek: +1 %.'),
+        ('hacek', 'Strešica', 'Strešica je padla s črke Č. Brez nje so Občine samo Obcine. Klikni jo, da jo vrneš. Dosežek: +1 %.')],
  'en': [('ach', 'Region complete: Littoral-Inner Carniola', 'unlock every municipality in the region. Income +1%.'),
         ('reg', 'Littoral-Inner Carniola', 'All 6 municipalities are yours. Income ×1.25.'),
         ('ev', "Today: Firefighters' party", 'everything ×1.1, the Kurent comes more often.'),
@@ -22,7 +24,9 @@ KINDS = {
         ('new', 'BELLS OF EVERY PARISH', 'Your bell sounds different now. Ring it!'),
         ('zmaj', 'The Ljubljana dragon', 'From the Dragon Bridge it watches over the capital. You can count on it.'),
         ('galeb', 'A seagull', 'stole your burek. 47 km of coast, and it found you.'),
-        ('poldne', 'Noon', 'Every parish rings noon. Yours too.')]}
+        ('poldne', 'Noon', 'Every parish rings noon. Yours too.'),
+        ('triglav', 'On top', 'Triglav, 2,864 m. Every Slovene has to climb it at least once. Achievement: +1%.'),
+        ('hacek', 'The háček', 'The háček fell off the Č. Without it, Občine is just Obcine. Click it to put it back. Achievement: +1%.')]}
 fails = []
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROME') or None)
@@ -56,4 +60,4 @@ with sync_playwright() as p:
             c.close()
     b.close()
 for f in fails[:25]: print('FAIL', f)
-print(f'{len(fails)} problems' if fails else 'ALL PASSED: 9 kinds x 10 sizes x 3 scroll positions x 2 languages')
+print(f'{len(fails)} problems' if fails else 'ALL PASSED: 11 kinds x 10 sizes x 3 scroll positions x 2 languages')

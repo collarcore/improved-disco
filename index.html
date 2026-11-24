@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RpfNdsr2bBDdXVbQ35+mD3YrewUn+nAl4h5LVVnfyyI='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-foYecIXXzF2OmuPY7OKeDjtztqmjCimTD5nXAiQK4Ro='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Občine: kliker</title>
 <meta name="description" content="Tekstovni kliker: odkleni vseh 212 slovenskih občin, od Osilnice do Ljubljane.">
 <meta name="theme-color" content="#000000">
@@ -843,11 +843,15 @@ function spentMin(){let t=0;GEN.forEach((g,k)=>{const n=Math.max(0,S.own[k]-(am(
 /* honest numbers are bounded by real time. Perfect nonstop play at the 10-ring cap reaches about 1e17 lifetime
    tolarji in 21 hours, 1e24 in 37 and 4e28 in 400 (tools/balance.py); the ceiling below allows 100x to 10000x that,
    counted from when you first played (never before the release), so away-time earnings can't trip it either. */
-function hoursIn(){const f=Math.max(S.first||0,RELEASE);return Math.max(S.play/3600,(Date.now()-f)/36e5,0)}
+/* time counts from when you first played; claimed play time helps only up to the real time since release,
+   so a save can't make every limit infinite by claiming 10^300 seconds of play */
+function hoursIn(){const now=Date.now(),f=Math.max(S.first||0,RELEASE),since=Math.max(0,now-RELEASE)/36e5;return Math.max(0,(now-f)/36e5,Math.min(S.play/3600,since))}
 function ceil10(h){return h<=40?9.5+.5*h:29.5+3*Math.log10(h/40)}
 function upsSpent(){let t=0;for(const id of S.ups){const m=/^t(\d+)_(\d+)$/.exec(id);if(m&&GEN[+m[1]]&&TIERS[+m[2]])t+=gcostBase(+m[1])*TIERS[+m[2]][1];
  else{const l=LM.find(l=>l.id===id);if(l)t+=lmcost(l)}}return t}
 function implausible(){const h=hoursIn(),sec=h*3600;
+ /* beyond 1e100 nothing is honest on any timescale, and huge values could overflow the comparisons below */
+ if(!(S.all<1e100&&S.life<1e100&&S.sit<1e100&&S.votes<1e30))return 'huge';
  if(S.all>10**ceil10(h))return 'all';if(S.life>S.all*1.001+1000)return 'life';if(S.sit>S.life*1.001+1000)return 'sit';
  if(S.votes>votesTotal()+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
  if(S.runV>=5&&spentMin()+upsSpent()>S.life*1.001+1000)return 'spent';return ''}

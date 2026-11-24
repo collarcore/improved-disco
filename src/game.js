@@ -529,7 +529,7 @@ function mapGridHTML(M,iw){const n=S.n;const pad=Math.floor((iw-M.W)/2);let h=''
  for(let y=0;y<M.H;y++){let row='| '+' '.repeat(pad);for(let x=0;x<M.W;x++){
   if(kurPos&&y>=kurPos[1]&&y<kurPos[1]+3&&x>=kurPos[0]&&x<kurPos[0]+4){row+=`<span class="kur" data-a="kurent">${esc(KUR[y-kurPos[1]][x-kurPos[0]])}</span>`;continue}
   const near=kurPos&&y>=kurPos[1]-1&&y<=kurPos[1]+3&&x>=kurPos[0]-1&&x<=kurPos[0]+4;const da=near?' data-a="kurent"':'';
-  const i=M.g[y][x];if(i===-2){row+=near?`<span data-a="kurent">~</span>`:'<span class="sea">~</span>';continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
+  const i=M.g[y][x];if(i===-2){/* the sea is drawn as loose, staggered waves so it never reads as land */const ch=(x+y)%2?' ':'~';row+=near?`<span data-a="kurent">${ch}</span>`:`<span class="sea">${ch}</span>`;continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
   const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i+' r'+O[i].r+(i<n?' u':'');
   if(i<n)ch=seat?(O[i].n==='Ljubljana'?'@':O[i].u?'O':'o'):REG[O[i].r][3];else if(i===n){ch='?';cls+=' q'}else ch='.';
   row+=`<i class="${cls}"${da}>${esc(ch)}</i>`}

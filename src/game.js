@@ -127,7 +127,7 @@ const regMult=()=>REGB()**regsDone();
 const achMult=()=>1+ACHP()*S.ach.length;
 const voteMult=()=>1+VOTEP()*S.votes;
 /* Kurent: comes every 4-8 min, stays 13 s. Catching him gives one of
-   ×3 income for 30 s (50 %), a doughnut worth 3 min of income, at most 10 % of your tolars (30 %),
+   ×3 income for 30 s (50 %), a doughnut worth 3 min of income (30 %),
    or clicks ×7 for 10 s (20 %). Ptuj's landmark: he comes 25 % more often and boosts last 1.5× longer.
    An attentive player gains roughly +20-25 % from him overall. */
 const KC={every:[240e3,480e3],stay:13e3,mult:3,multS:30e3,krofS:180,krofBank:.1,click:7,clickS:10e3,ptujEvery:.75,ptujLong:1.5};
@@ -194,7 +194,7 @@ function wrap(s,w){s=s.replace(/(\d) (%|SIT|km²|s\b|min\b|h\b|preb\.|res\.|dni\
 const sl=g=>L(typeof g==='string'?g:g.t);
 function seg(g){if(typeof g==='string')return esc(g);if(g.raw)return g.raw;const t=esc(g.t);
  if(g.a)return `<span class="b${g.c?' '+g.c:''}" data-a="${g.a}"`+(g.hid?' aria-hidden="true"':` role="button" tabindex="0" aria-label="${esc(g.lab||g.t.replace(/[\[\]()]/g,'').trim())}"`)+`>${t}</span>`;
- const at=(g.c?` class="${g.c}"`:'')+(g.hid?' aria-hidden="true"':'')+(g.head?' role="heading" aria-level="2"':'');return at?`<span${at}>${t}</span>`:t}
+ const at=(g.c?` class="${g.c}"`:'')+(g.hid?' aria-hidden="true"':'')+(g.head?' role="heading" aria-level="2"':'')+(g.data?' '+g.data:'');return at?`<span${at}>${t}</span>`:t}
 function fit(line,w){let h='',l=0;for(const g of line){const n=sl(g);if(l+n>w){TRUNC.push(line.map(x=>typeof x==='string'?x:x.t).join(''));if(typeof g==='string'){h+=esc([...g].slice(0,w-l).join(''));l=w}break}h+=seg(g);l+=n}return h+' '.repeat(w-l)}
 const btn=(t,a,on=true,lab)=>on?{t:'['+t+']',a,lab}:{t:'('+t.trim().toLowerCase()+')'};
 const two=(a,b,w)=>{const la=a.reduce((s,g)=>s+sl(g),0),lb=b.reduce((s,g)=>s+sl(g),0);return [...a,' '.repeat(Math.max(1,w-la-lb)),...b]};
@@ -267,17 +267,19 @@ function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2
 /* ================= TOASTS ================= */
 const toastQ=[];let toastTimer=0;
 const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
-const ART={ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
+const ART={kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
 function toast(kind,title,text,sound){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
   m.title=tr('in še ','and ')+m.more+' '+tr('','more ')+ach4(m.more);m.text=tr('Vse najdeš v panelu Dosežki.','You will find them all under Achievements.');return}
+ /* a Kurent catch is shown at once, ahead of anything waiting */
+ if(kind==='kur'&&toastQ.length){toastQ.splice(1,0,{kind,title,text});nextToast();return}
  toastQ.push({kind,title,text});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
  const w=toastCol().w;const iw=w-4;const art=ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];const rows=Math.max(art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
- const T={ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
+ const T={kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
  clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,3500)}
 function nextToast(){toastQ.shift();showToast()}
@@ -343,9 +345,11 @@ function ring(){meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const
  pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
- if(r<.5){const ms=KC.multS*lx;kurUntil=Date.now()+ms;log(tr('kurentovanje! dohodek ×','Kurentovanje! income ×')+KC.mult+tr(' za ',' for ')+ms/1000+' s')}
- else if(r<.8){const g=Math.min(S.sit*KC.krofBank,baseIps()*KC.krofS)+13;S.sit+=g;S.life+=g;S.all+=g;log(tr('pustni krof: +','carnival doughnut: +')+fmt(g)+' SIT')}
- else{const ms=KC.clickS*lx;clkUntil=Date.now()+ms;log(tr('zvonci! klik ×','jingle bells! clicks ×')+KC.click+tr(' za ',' for ')+ms/1000+' s')}
+ let title,text;
+ if(r<.5){const ms=KC.multS*lx;kurUntil=Date.now()+ms;title=tr('Kurentovanje','Kurentovanje');text=tr('Dohodek ×','Income ×')+KC.mult+tr(' za ',' for ')+ms/1000+' s.'}
+ else if(r<.8){const g=baseIps()*KC.krofS+25;S.sit+=g;S.life+=g;S.all+=g;title=tr('Pustni krof','Carnival doughnut');text='+'+fmt(g)+' SIT'+tr(' (3 minute dohodka).',' (3 minutes of income).')}
+ else{const ms=KC.clickS*lx;clkUntil=Date.now()+ms;title=tr('Zvonci','Jingle bells');text=tr('Klik ×','Clicks ×')+KC.click+tr(' za ',' for ')+ms/1000+tr(' s. Zvoni zdaj!',' s. Ring now!')}
+ log(tr('kurent: ','Kurent: ')+title.toLowerCase()+' · '+text);toast('kur',title,text,null);
  ding(523,.06);ding(784,.05);drawMap(true)}
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
@@ -446,10 +450,11 @@ const KUR=['\\  /','(oo)','/##\\'];
 function mapGridHTML(M,iw){const n=S.n;const pad=Math.floor((iw-M.W)/2);let h='';
  for(let y=0;y<M.H;y++){let row='| '+' '.repeat(pad);for(let x=0;x<M.W;x++){
   if(kurPos&&y>=kurPos[1]&&y<kurPos[1]+3&&x>=kurPos[0]&&x<kurPos[0]+4){row+=`<span class="kur" data-a="kurent">${esc(KUR[y-kurPos[1]][x-kurPos[0]])}</span>`;continue}
-  const i=M.g[y][x];if(i===-2){row+='~';continue}if(i<0){row+=' ';continue}
-  const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i;
+  const near=kurPos&&y>=kurPos[1]-1&&y<=kurPos[1]+3&&x>=kurPos[0]-1&&x<=kurPos[0]+4;const da=near?' data-a="kurent"':'';
+  const i=M.g[y][x];if(i===-2){row+=near?`<span data-a="kurent">~</span>`:'~';continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
+  const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i+' r'+O[i].r+(i<n?' u':'');
   if(i<n)ch=seat?(O[i].n==='Ljubljana'?'@':O[i].u?'O':'o'):REG[O[i].r][3];else if(i===n){ch='?';cls+=' q'}else ch='.';
-  row+=`<i class="${cls}">${esc(ch)}</i>`}
+  row+=`<i class="${cls}"${da}>${esc(ch)}</i>`}
   h+=row+' '.repeat(iw-pad-M.W)+' |\n'}
  return h}
 let mapKey='';
@@ -458,14 +463,20 @@ function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElement
  el.innerHTML=fit([H('+-'),{t:'[ ',c:'bold',hid:true},{t:T,c:'bold',head:true},{t:' ]',c:'bold',hid:true},H('-'.repeat(w-L('+-[ '+T+' ]')-L(right)-2)),right,H('-+')],w)+'\n'+seg(H('| '+' '.repeat(iw)+' |'))+'\n'+
   `<span id="mapgrid" aria-hidden="true">${mapGridHTML(M,iw)}</span><span id="mapinfo"></span>`+seg(H('+'+'-'.repeat(w-2)+'+'));
  mapInfo(true)}
-let infoKey='';
+let infoKey='',hoverReg=-1;
+/* highlight on the map: one občina in inverse, or a whole region: unlocked part solid, the rest blinking */
+function setHover(i,r){if(i===hover&&r===hoverReg)return;hover=i;hoverReg=r;const st=document.getElementById('hov');
+ st.textContent=i>=0?`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`:r>=0?`#mapgrid .r${r}.u{background:var(--fg);color:var(--bg)}#mapgrid .r${r}:not(.u){animation:bl 1.2s steps(1) infinite}`:'';mapInfo()}
 function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo');if(!el)return;const iw=w-4;const i=hover;
- let a,b;if(i<0){a=tr('premakni miško ali tapni občino.','hover over or tap a municipality.');b=tr('o sedež  O mestna občina  @ Ljubljana  ? naslednja  . zaklenjena','o seat  O city municipality  @ Ljubljana  ? next  . locked')}
+ let a,b;if(i<0&&hoverReg>=0){const r=hoverReg,rc=regCount()[r];let pu=0,pt=0;O.forEach((o,j)=>{if(o.r===r){pt+=o.p;if(j<S.n)pu+=o.p}});
+  a=rname(r)+' · '+rc+'/'+RN[r]+' '+obc(RN[r])+' · '+num(pu)+tr(' od ',' of ')+num(pt)+tr(' prebivalcev',' residents');
+  b=rc===RN[r]?tr('cela regija: vse ','region complete: everything ')+xv(REGB()):tr('polno: odklenjeno · utripa: še zaklenjeno','solid: unlocked · blinking: still locked')}
+ else if(i<0){a=tr('premakni miško ali tapni občino.','hover over or tap a municipality.');b=tr('o sedež  O mestna občina  @ Ljubljana  ? naslednja  . zaklenjena','o seat  O city municipality  @ Ljubljana  ? next  . locked')}
  else{const o=O[i];const known=i<=S.n+2;const mo=o.u&&known?MO():'';const res=tr(' preb.',' res.');
   a=(known?o.n:'??????')+mo+' · '+num(o.p)+res+' · '+o.a+' km² · '+rname(o.r);if(L(a)>iw)a=(known?ab(o.n,18):'??????')+mo+' · '+num(o.p)+res+' · '+o.a+' km² · '+ab(rname(o.r),14);
   b=i<S.n?tr('odklenjena · #','unlocked · #')+(i+1)+(LMAT[i]?' · '+tr('znamenitost: ','landmark: ')+lname(LMAT[i]):''):i===S.n?tr('naslednja · ','next · ')+fmt(ocost(i))+' SIT':tr('zaklenjena · #','locked · #')+(i+1)}
  const k=a+b+!!kurPos;if(!force&&k===infoKey)return;infoKey=k;
- const bl=i<0?wrapItems(b.split('  '),'  ',iw):wrap(b,iw);
+ const bl=i<0&&hoverReg<0?wrapItems(b.split('  '),'  ',iw):wrap(b,iw);
  const aw=wrap(a,iw);const lines=['',...aw.slice(0,2),...bl.slice(0,3-Math.min(2,aw.length))];while(lines.length<4)lines.push('');
  el.innerHTML=lines.map(l=>seg(H('| '))+esc(padR(cut(l,iw),iw))+seg(H(' |'))+'\n').join('')+
   (kurPos?`<span class="sr" data-a="kurent" role="button" tabindex="0">${esc(tr('Kurent je na zemljevidu. Ujemi ga.','The Kurent is on the map. Catch him.'))}</span>`:'')}
@@ -484,18 +495,19 @@ function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;const bg=bestGen();
 function pUps(w){const iw=w-4;const U=upgrades();const ls=[];const max=MODE.startsWith('3')?9:6;
  if(!U.length)ls.push(tr('ni novih izboljšav.','no new upgrades.'));
  U.slice(0,max).forEach(u=>{const can=S.sit>=u.cost;const nw=wrap(u.name,iw-L(fmt(u.cost))-2);nw.forEach((l,j)=>ls.push(j===0?lr(l,fmt(u.cost),iw):l));
-  const d=wrap(u.desc,iw-10);d.forEach((l,j)=>ls.push(j===d.length-1?two(['  '+l],[btn(tr(' KUPI ',' BUY '),'u'+u.id,can,tr('Kupi ','Buy ')+u.name)],iw):['  '+l]))});
+  const d=wrap(u.desc,iw-11);if(!d.length)d.push('');d.forEach((l,j)=>ls.push(j===0?two(['  '+l],[btn(tr(' KUPI ',' BUY '),'u'+u.id,can,tr('Kupi ','Buy ')+u.name)],iw):['  '+l]))});
  if(U.length>max)ls.push(tr('… in še ','… and ')+(U.length-max)+tr('',' more'));
  const nextLm=LM.find(l=>l.o>=S.n);if(nextLm){ls.push('');wrap(tr('naslednja znamenitost: čez ','next landmark: in ')+(nextLm.o-S.n+1)+' '+obc(nextLm.o-S.n+1),iw).forEach(l=>ls.push(l))}
  const aff=U.filter(u=>u.cost<=S.sit).length;return box(tr('IZBOLJŠAVE','UPGRADES'),ls,w,aff>1?[btn(tr(' KUPI VSE ',' BUY ALL '),'upall')]:['[ '+tr('kupljenih ','owned ')+S.ups.length+' ]'])}
 function pReg(w){const iw=w-4;const rc=regCount();const ls=[];const bw=Math.max(8,iw-31);
- REG.forEach((r,i)=>{const done=rc[i]===RN[i];const nm=ab(rname(i),iw-bw-12);ls.push([r[3]+' '+padR(nm,iw-bw-12),H(bar(rc[i]/RN[i],bw-2)),' ',done?{t:padL(xv(REGB()),8),c:'bold'}:padL(rc[i]+'/'+RN[i],8)])});
+ REG.forEach((r,i)=>{const done=rc[i]===RN[i];const nm=ab(rname(i),iw-bw-12);const d='data-r="'+i+'"';
+  ls.push([{t:r[3]+' '+padR(nm,iw-bw-12),c:'hv',data:d},{t:bar(rc[i]/RN[i],bw-2),hid:true,c:'hv',data:d},{t:' ',c:'hv',data:d},done?{t:padL(xv(REGB()),8),c:'bold hv',data:d}:{t:padL(rc[i]+'/'+RN[i],8),c:'hv',data:d}])});
  return box(tr('REGIJE','REGIONS'),ls,w,['[ '+tr('cela = ','complete = ')+xv(REGB())+' ]'])}
 function pList(w){const iw=w-4;const rows=MODE.startsWith('1')?10:16;if(regPage===null)regPage=Math.max(0,Math.min(O.length-rows,S.n-Math.floor(rows/2)));
  const ls=[];for(let i=regPage;i<Math.min(O.length,regPage+rows);i++){const o=O[i];const known=i<=S.n+2;
   const nm='?'.repeat(Math.min(12,L(o.n)));const mark=i<S.n?'x':i===S.n?'>':' ';const lm=LMAT[i]&&known?' *':'';const mo=o.u?MO():'';
   const pre=mark+' '+String(i+1).padStart(3,'0')+' ',room=iw-11-L(pre);const nmF=known?ab(o.n,room-L(mo)-L(lm))+mo+lm:nm;
-  const line=padR(pre+nmF,iw-10)+padL(num(o.p),10);ls.push(i===S.n?[{t:line,c:'on'}]:line)}
+  const line=padR(pre+nmF,iw-10)+padL(num(o.p),10);ls.push([{t:line,c:i===S.n?'on hv':'hv',data:'data-o="'+i+'"'}])}
  ls.push('');ls.push(two([btn('<<','pg-'+rows,true,tr('nazaj za stran','previous page')),' ',btn('<','pg-1',true,tr('nazaj','back')),' ',btn('>','pg1',true,tr('naprej','forward')),' ',btn('>>','pg'+rows,true,tr('naprej za stran','next page'))],
   [btn(tr(' NASLEDNJA ',' NEXT '),'pg0')],iw));
  ls.push(tr('x odklenjena  > naslednja  * znamenitost','x unlocked  > next  * landmark'));
@@ -608,9 +620,11 @@ document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
  if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render(true)}return}
  if(e.key==='n'||e.key==='N'){unlock();render(true)}
  typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri'))gotAch(ACH.find(a=>a[0]==='tri'))});
-document.addEventListener('mouseover',e=>{const c=e.target.closest&&e.target.closest('#mapgrid i');if(!c)return;const i=+c.className.match(/c(\d+)/)[1];
- if(i!==hover){hover=i;document.getElementById('hov').textContent=`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`;mapInfo()}});
-document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('#mapgrid')&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('#mapgrid'))){hover=-1;document.getElementById('hov').textContent='';mapInfo()}});
+/* hovering (or tapping) a map cell, a register row or a region row highlights it on the map */
+const hoverTarget=el=>{if(!el||!el.closest)return null;const c=el.closest('#mapgrid i');if(c)return{i:+c.className.match(/c(\d+)/)[1],r:-1};
+ const o=el.closest('[data-o]');if(o)return{i:+o.dataset.o,r:-1};const g=el.closest('[data-r]');if(g)return{i:-1,r:+g.dataset.r};return null};
+document.addEventListener('mouseover',e=>{const h=hoverTarget(e.target);if(h)setHover(h.i,h.r)});
+document.addEventListener('mouseout',e=>{if(hoverTarget(e.target)&&!hoverTarget(e.relatedTarget))setHover(-1,-1)});
 
 /* ================= LOOP ================= */
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);

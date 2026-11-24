@@ -28,10 +28,12 @@ Black and white, one font, one character grid. Slovenian and English.
   `*` marks the best price for the income.
 - **Občine**: unlock them in order of population. Every resident adds to your income
   (1 resident = +0.005 %), and finishing a statistical region gives ×1.25.
+- **Map links**: hovering (or tapping) a row in the register highlights that občina on the map;
+  a region row lights up its unlocked občine and makes the rest of the region blink.
 - **Znamenitosti**: 44 municipalities carry a landmark upgrade, such as Idrija's mercury mine,
   Krško's power plant, Planica in Kranjska Gora or kremšnita in Bled.
 - **Kurent**: shows up on the map every 4–8 minutes for 13 seconds. Catch him for ×3 income (30 s),
-  a pustni krof worth 3 minutes of income, or clicks ×7 (10 s). A nice bonus, not an engine.
+  a pustni krof worth 3 minutes of income, or clicks ×7 (10 s). A pop-up says what you got. A nice bonus, not an engine.
 - **Referendum**: prestige. Reset your run for votes (each +5 % income for good) and adopt one of
   12 **constitutional amendments**: cheaper producers, a more frequent Kurent, the first 25 občine free, and so on.
 - **Teden**: every weekday has its own bonus from village life: tržni dan (Monday), obrtni dan,

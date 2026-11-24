@@ -15,7 +15,7 @@ with sync_playwright() as p:
         for i in range(40):
             if touch: pg.touchscreen.tap(x,y)
             else: pg.mouse.down();pg.mouse.up()
-            pg.wait_for_timeout(45)
+            pg.wait_for_timeout(110)  # under the 10 paid rings a second
             same=same and pg.evaluate(f"document.querySelector('{sel}')===window.__btn")
             if i>2: bgs.append(pg.evaluate(f"getComputedStyle(document.querySelector('{sel}')).backgroundColor"))
         print(f'[{w}] ring button kept the same element: {same}; distinct backgrounds while spamming: {sorted(set(bgs))}; clicks counted: ',end='')

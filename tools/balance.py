@@ -63,6 +63,7 @@ class Game:
         return (cm * self.week('click') + self.pct * self.base())
 
     def second(self, cps):
+        cps = min(cps, RATE)  # the game pays for at most RATE rings a second
         m = self.meter(cps > 0)
         g = (self.base() + cps * self.click_val()) * m
         self.sit += g; self.life += g; self.clicks += cps
@@ -118,6 +119,9 @@ class Game:
 
 def referendum_due(g):
     return g.n >= REF_FROM and g.gain() >= max(10, g.votes)
+
+
+RATE = 10
 
 
 def active(price, cps=5, max_h=200):

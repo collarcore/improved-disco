@@ -10,9 +10,17 @@ with sync_playwright() as p:
   pg.evaluate("document.getElementById('toast').hidden=true")
   pg.evaluate("document.querySelector('#p-bell .ring').scrollIntoView({block:'center'})");pg.wait_for_timeout(300)
   y0=pg.evaluate("scrollY");bb=pg.locator('#p-bell .ring').bounding_box()
-  for i in range(30): pg.touchscreen.tap(bb['x']+bb['width']*random.random(),bb['y']+bb['height']*random.random()); pg.wait_for_timeout(60)
+  for i in range(30): pg.touchscreen.tap(bb['x']+bb['width']*random.random(),bb['y']+bb['height']*random.random()); pg.wait_for_timeout(110)
   pg.wait_for_timeout(200);pg.evaluate("dispatchEvent(new Event('pagehide'))")
   print('bell: 30 fast taps ->',pg.evaluate("JSON.parse(localStorage.getItem('obcine-v2')).clicks"),'rings; scale',pg.evaluate("visualViewport.scale"),'page moved',pg.evaluate("scrollY")-y0)
+  # drumming faster than 10 a second: every tap rings, only 10 a second pay
+  c0=pg.evaluate("(dispatchEvent(new Event('pagehide')),JSON.parse(localStorage.getItem('obcine-v2')).clicks)")
+  t0=pg.evaluate("performance.now()")
+  for i in range(40): pg.touchscreen.tap(bb['x']+bb['width']/2,bb['y']+bb['height']/2)
+  el_ms=pg.evaluate("performance.now()")-t0;pg.wait_for_timeout(100)
+  c1=pg.evaluate("(dispatchEvent(new Event('pagehide')),JSON.parse(localStorage.getItem('obcine-v2')).clicks)")
+  cap=10*(el_ms/1000+1)
+  print(f'drum: 40 taps in {el_ms:.0f} ms -> {c1-c0} paid (cap {cap:.0f})'); assert c1-c0<=cap and c1-c0>=8, 'rate cap'
   el=pg.locator('[data-a="g0"]').first;el.scroll_into_view_if_needed();pg.wait_for_timeout(200);y0=pg.evaluate("scrollY");bb=el.bounding_box()
   o0=pg.evaluate("(dispatchEvent(new Event('pagehide')),JSON.parse(localStorage.getItem('obcine-v2')).own[0])")
   for i in range(5): pg.touchscreen.tap(bb['x']+bb['width']/2,bb['y']+bb['height']/2); pg.wait_for_timeout(80)

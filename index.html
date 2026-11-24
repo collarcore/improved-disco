@@ -439,8 +439,13 @@ let noonDay='';
 function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()!==12||d.getMinutes()!==0||noonDay===d.toDateString())return;noonDay=d.toDateString();
  [[196,0],[262,.7],[220,1.4]].forEach(([f,w])=>tone(f,{p:GREAT,dur:3.4,vol:.06,when:w,echo:.45}));
  secret('poldne',()=>{})}
-function ring(){noonCheck();meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);swing=6;
- pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
+/* at most RATE paid rings a second, about a fast mouse finger: drumming with several fingers or an autoclicker
+   still rings, but anything faster earns nothing and counts towards nothing */
+const RATE=10;const paidT=[];
+function ring(){noonCheck();lastRingT=Date.now();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
+ swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){bellSound();return}paidT.push(now);
+ meter=Math.min(1,meter+FILL*evFill());const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
+ parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
  let title,text;

@@ -272,8 +272,8 @@ const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':
 function toast(kind,title,text,sound){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
   m.title=tr('in še ','and ')+m.more+' '+tr('','more ')+ach4(m.more);m.text=tr('Vse najdeš v panelu Dosežki.','You will find them all under Achievements.');return}
- /* a Kurent catch is shown at once, ahead of anything waiting */
- if(kind==='kur'&&toastQ.length){toastQ.splice(1,0,{kind,title,text});nextToast();return}
+ /* pop-ups that answer something you just did (Kurent, amendment, new bell) show at once */
+ if((kind==='kur'||kind==='ref'||kind==='new')&&toastQ.length){toastQ.splice(1,0,{kind,title,text});if(sound)sound();nextToast();return}
  toastQ.push({kind,title,text});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
  const w=toastCol().w;const iw=w-4;const art=ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
@@ -558,7 +558,8 @@ const lineCache={};
 function put(id,html){html=padPanel(id,html);if(cache[id]===html)return;const el=document.getElementById(id);if(!el)return;
  const act=document.activeElement;const inp=el.querySelector('#impin');
  const rows=html.split('\n'),old=lineCache[id];
- if(old&&old.length===rows.length&&el.children.length===rows.length){for(let i=0;i<rows.length;i++)if(rows[i]!==old[i]&&!(inp&&el.children[i].contains(inp)))el.children[i].innerHTML=rows[i]}
+ if(old&&old.length===rows.length&&el.children.length===rows.length){for(let i=0;i<rows.length;i++)if(rows[i]!==old[i]&&!(inp&&el.children[i].contains(inp))){const ln=el.children[i];
+  const fa=act&&ln.contains(act)&&act.dataset?act.dataset.a:null;ln.innerHTML=rows[i];if(fa){const n=ln.querySelector(`[data-a="${fa}"]`);if(n)n.focus({preventScroll:true})}}}
  else{const fa=act&&el.contains(act)&&act.dataset?act.dataset.a:null;el.innerHTML=rows.map(r=>'<span class="ln">'+r+'</span>').join('\n');
   /* keep the paste box itself (its text and focus) across a full redraw */
   if(inp){const ni=el.querySelector('#impin');if(ni){ni.replaceWith(inp);if(act===inp)inp.focus({preventScroll:true})}}

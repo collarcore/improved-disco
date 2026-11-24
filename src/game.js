@@ -398,9 +398,9 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
  secret('poldne',()=>{})}
 /* at most RATE paid rings a second, about a fast mouse finger: drumming with several fingers or an autoclicker
    still rings, but anything faster earns nothing and counts towards nothing */
-const RATE=10;const paidT=[];let lastSoft=0;
-function ring(){noonCheck();lastRingT=Date.now();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
- swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s */if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);
+const RATE=10;const paidT=[];let lastSoft=0,cappedT=-1e9;
+function ring(){noonCheck();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
+ swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s, nothing else */cappedT=now;if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);lastRingT=Date.now();
  meter=Math.min(1,meter+FILL*evFill());const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
@@ -478,7 +478,7 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
  lines.push(['']);
  const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',c:'ring',lab:tr('Pozvoni','Ring the bell')}]);
  lines.push(['']);{const x=xf(meterMult()),lab=tr('zvonjenje ','ringing ');lines.push([lab,H(bar(meter,iw-L(lab)-L(x)-3)),' ',x])}
- lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click'),fmt(clickVal(),1)+' SIT',iw));
+ lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click')+(performance.now()-cappedT<1000?' (max '+RATE+'/s)':''),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
  if(now<kurUntil)lines.push(lr(tr('KURENTOVANJE ×','KURENT ×')+KC.mult,Math.ceil((kurUntil-now)/1000)+' s',iw));
  if(now<clkUntil)lines.push(lr(tr('ZVONCI: klik ×','JINGLES: click ×')+KC.click,Math.ceil((clkUntil-now)/1000)+' s',iw));

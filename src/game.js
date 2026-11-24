@@ -184,7 +184,7 @@ const TRUNC=window.__trunc=[];const cut=(s,w)=>{if(L(s)<=w)return s;TRUNC.push(s
 function wrapItems(items,sep,w){const out=[];let cur='';for(const it of items){const add=cur?cur+sep+it:it;if(L(add)<=w){cur=add;continue}if(cur)out.push(cur);
  if(L(it)<=w)cur=it;else{const ws=wrap(it,w);out.push(...ws.slice(0,-1));cur=ws[ws.length-1]}}if(cur)out.push(cur);return out}
 /* wrap at spaces; never split a number from its unit */
-function wrap(s,w){s=s.replace(/(\d) (%|SIT|km²|s\b|min\b|h\b|preb\.|res\.|dni\b|days\b)/g,'$1\u00a0$2').replace(/ ×/g,'\u00a0×');const out=[];let line='';
+function wrap(s,w){s=s.replace(/(\d) (%|SIT|km²|km\b|s\b|min\b|h\b|preb\.|res\.|dni\b|days\b)/g,'$1\u00a0$2').replace(/ ×/g,'\u00a0×');const out=[];let line='';
  for(const word of s.split(' ')){if(L(line)+L(word)+(line?1:0)>w){if(line)out.push(line);line=word}else line=line?line+' '+word:word}
  if(line)out.push(line);return out.map(l=>l.replace(/\u00a0/g,' '))}
 
@@ -267,7 +267,7 @@ function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2
 /* ================= TOASTS ================= */
 const toastQ=[];let toastTimer=0;
 const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
-const ART={zmaj:[' __/^\\_ ','<_ o  _\\>','  \\/\\/  ',' /_/\\_\\ '],galeb:['  \\ /  ','   v    ',' ~~~~~~ ','  ~  ~  '],poldne:[' (O)(O) ','  (O)   ','  | |   ',' _|_|_  '],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
+const ART={zmaj:['   _/\\_/\\  ','  / o    \\ ',' <_,-\\  /~~','    /_/\\_\\ '],galeb:[' \\_ v _/ ','         ','  ,---.  ',' (_@@@_) '],poldne:['    +    ','   /_\\   ',' |(O)(O)|',' |__(O)_|'],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
 function toast(kind,title,text,sound){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
@@ -281,7 +281,8 @@ function showToast(){const el=document.getElementById('toast');const q=toastQ[0]
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
  const T={zmaj:tr('SKRIVNOST','SECRET'),galeb:tr('SKRIVNOST','SECRET'),poldne:tr('SKRIVNOST','SECRET'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
- clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,3500)}
+ clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
+let toastMs=6000;
 function nextToast(){toastQ.shift();showToast()}
 /* the pop-up borrows one column: the right one on 3 columns, else the left/only one */
 function toastCol(){const cs=document.querySelectorAll('#cols .col');const three=MODE.startsWith('3');return {el:cs[three?2:0],w:three?W.c:W.a}}
@@ -310,11 +311,11 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
  ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
  ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],
- ['tri',()=>tr('Na vrhu','On top'),()=>tr('skrivnost: natipkaj ime gore','secret: type the name of a mountain'),()=>false],
- ['hac',()=>tr('Strešica','The háček'),()=>tr('skrivnost: nekaj v naslovu ni dobro pritrjeno','secret: something in the title is loose'),()=>false],
- ['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>tr('skrivnost: prestolnica ima čuvaja','secret: the capital has a guardian'),()=>false],
- ['obala',()=>tr('47 km obale','47 km of coast'),()=>tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
- ['poldne',()=>tr('Poldne','Noon'),()=>tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false]);
+ ['tri',()=>tr('Na vrhu','On top'),()=>S.ach.includes('tri')?tr('natipkal si Triglav','you typed Triglav'):tr('skrivnost: natipkaj ime gore','secret: type the name of a mountain'),()=>false],
+ ['hac',()=>tr('Strešica','The háček'),()=>S.ach.includes('hac')?tr('strešica je padla s črke Č','the háček fell off the Č'):tr('skrivnost: nekaj v naslovu ni dobro pritrjeno','secret: something in the title is loose'),()=>false],
+ ['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>S.ach.includes('zmaj')?tr('zmaj z Zmajskega mostu','the dragon of the Dragon Bridge'):tr('skrivnost: prestolnica ima čuvaja','secret: the capital has a guardian'),()=>false],
+ ['obala',()=>tr('47 km obale','47 km of coast'),()=>S.ach.includes('obala')?tr('galeb, burek in 47 km obale','a seagull, a burek and 47 km of coast'):tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
+ ['poldne',()=>tr('Poldne','Noon'),()=>S.ach.includes('poldne')?tr('zvonil si opoldne','you rang at noon'):tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false]);
 const SECRET=new Set(['tri','hac','zmaj','obala','poldne']);
 const secret=id=>{if(S.ach.includes(id))return;const a=ACH.find(a=>a[0]===id);if(a)gotAch(a)};
 function gotAch(a){S.ach.push(a[0]);S.achT[a[0]]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');
@@ -633,7 +634,9 @@ document.addEventListener('pointerdown',e=>{mapSecret(e.target);const t=target(e
 document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest&&el.closest('[data-a]');
  if(t&&t.dataset.a===a){act(a);render(true)}});
 document.addEventListener('pointercancel',()=>{downA=null});
-document.getElementById('toast').addEventListener('click',()=>nextToast());
+{const te=document.getElementById('toast');te.addEventListener('click',()=>nextToast());
+ /* reading time: the pop-up waits while the mouse rests on it */
+ te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden)toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */
 document.addEventListener('click',e=>{if(e.detail!==0)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;act(t.dataset.a);render(true)});
 let typed='';

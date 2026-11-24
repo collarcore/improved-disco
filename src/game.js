@@ -267,7 +267,7 @@ function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2
 /* ================= TOASTS ================= */
 const toastQ=[];let toastTimer=0;
 const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
-const ART={triglav:['    /\\    ',' /\\/  \\/\\ ','/  \\  /  \\','  2864 m  '],hacek:['  \\/   ','  ____ ',' /     ',' \\____ '],zmaj:['   _/\\_/\\  ','  / o    \\ ',' <_,-\\  /~~','    /_/\\_\\ '],galeb:[' \\_ v _/ ','         ','  ,---.  ',' (_@@@_) '],poldne:['    +    ','   /_\\   ',' |(O)(O)|',' |__(O)_|'],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
+const ART={triglav:['    /\\    ',' /\\/  \\/\\ ','/  \\  /  \\','  2864 m  '],hacek:['  \\/   ','  ____ ',' /     ',' \\____ '],zmaj:['   _/\\_/\\  ','  / o    \\ ',' <_,-\\  /~~','    /_/\\_\\ '],galeb:[' \\_ v _/ ','  ,---.  ',' (_@@@_) ','  \' . \' '],poldne:['    +    ','   /_\\   ',' |(O)(O)|',' |__(O)_|'],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
 function toast(kind,title,text,sound){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
@@ -326,9 +326,9 @@ const SEC={
  poldne:['poldne',()=>tr('Poldne','Noon'),()=>tr('Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.','Every parish rings noon. Yours too.')]};
 function secret(id,sound){const s=SEC[id];const first=!S.ach.includes(id);const a=ACH.find(a=>a[0]===id);
  if(first&&a){S.ach.push(id);S.achT[id]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
- toast(s[0],s[1](),s[2]()+(first?tr(' Dosežek: +',' Achievement: +')+pc(ACHP()*100)+'.':''),sound||(first?fanfare:null))}
+ toast(s[0],s[1](),s[2]()+(first?tr(' Dosežek:\u00a0+',' Achievement:\u00a0+')+pc(ACHP()*100)+'.':''),sound||(first?fanfare:null))}
 function gotAch(a){S.ach.push(a[0]);S.achT[a[0]]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');
- toast('ach',a[1](),a[2]()+'. '+tr('Dohodek +','Income +')+pc(ACHP()*100)+'.',fanfare);const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
+ toast('ach',a[1](),a[2]()+'. '+tr('Dohodek\u00a0+','Income\u00a0+')+pc(ACHP()*100)+'.',fanfare);const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
 function checkAch(){for(const a of ACH){if(SECRET.has(a[0])||S.ach.includes(a[0]))continue;if(a[3]())gotAch(a)}}
 
 /* ================= PLAYTEST STATS ================= */

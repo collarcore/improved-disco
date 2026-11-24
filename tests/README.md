@@ -17,3 +17,6 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 
 `LANGX=en python3 tests/layout.py` runs the layout and truncation checks in English.
 Set `CHROME=/path/to/chrome` to use a specific browser.
+
+The tests use the game's `window.__dbg` hooks, which exist only on `localhost`/`127.0.0.1` or with `?debug`
+in the address, so the live site has no cheat menu in the console.

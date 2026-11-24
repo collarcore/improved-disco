@@ -113,6 +113,13 @@ with sync_playwright() as p:
     off = pg.evaluate("""()=>{const t=document.getElementById('toast');if(t.hidden)return 0;const b=t.getBoundingClientRect();const r=document.getElementById('root').getBoundingClientRect();
       const lh=parseFloat(getComputedStyle(document.body).lineHeight);const o=((b.top-r.top)%lh+lh)%lh;return Math.min(o,lh-o)}""")
     check('pop-up on the line grid after a reset', off < 0.6, off)
+    # resizing while a pop-up shows: it is redrawn to the width of its new column, never spilling over the next one
+    pg.evaluate("__dbg.toast('ach','Milijonar','skupaj zaslužiš 1,00 mio SIT. Dohodek +1 %.')"); pg.wait_for_timeout(300)
+    for w in (1300, 1100, 700, 390, 1920):
+        pg.set_viewport_size({'width': w, 'height': 900}); pg.wait_for_timeout(400)
+        fit = pg.evaluate("""()=>{const t=document.getElementById('toast').getBoundingClientRect();
+          return [...document.querySelectorAll('#cols .col')].some(c=>{const r=c.getBoundingClientRect();return Math.abs(r.left-t.left)<2&&Math.abs(r.width-t.width)<2})}""")
+        check(f'pop-up fits its column after resizing to {w}px', fit)
     pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(500)
     r = pg.evaluate("(()=>{const t=document.getElementById('toast');if(t.hidden)return 'hidden';const b=t.getBoundingClientRect();return [Math.round(b.left),Math.round(b.right),innerWidth]})()")
     check('pop-up fits the screen after switching to phone width', r == 'hidden' or (r[0] >= 0 and r[1] <= r[2]), r)

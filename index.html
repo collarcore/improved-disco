@@ -350,18 +350,21 @@ function toast(kind,title,text,sound,art){
  if(['kur','ref','new','win',...SECK].includes(kind)&&toastQ.length){toastQ.splice(1,0,{kind,title,text,art});if(sound)sound();nextToast();return}
  toastQ.push({kind,title,text,art});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
+ drawToast(q);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+ clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
+/* drawn for the width of the column it sits over; redrawn if the layout changes while it shows */
+function drawToast(q){const el=document.getElementById('toast');
  const w=toastCol().w;const iw=w-4;const art=q.art||ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];/* every pop-up is the same height (5 rows inside), so each covers the same lines of the page */
  const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
  const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
- el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
- clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
+ el.innerHTML=box(T,lines,w);el.dataset.w=w+'.'+LANG}
 let toastMs=6000;const TOAST_ROWS=5;let lastScrollT=0;
 function nextToast(){toastQ.shift();showToast()}
 /* the pop-up borrows one column: the right one on 3 columns, else the left/only one */
 function toastCol(){const cs=document.querySelectorAll('#cols .col');const three=MODE.startsWith('3');return {el:cs[three?2:0],w:three?W.c:W.a}}
-function placeToast(){const el=document.getElementById('toast');if(el.hidden)return;
+function placeToast(){const el=document.getElementById('toast');if(el.hidden)return;if(el.dataset.w!==toastCol().w+'.'+LANG&&toastQ[0])drawToast(toastQ[0]);
  const cols=document.getElementById('cols').getBoundingClientRect();const lh=parseFloat(getComputedStyle(document.body).lineHeight)||16;
  const host=toastCol().el;const x=host?host.getBoundingClientRect().left:cols.left;
  let bottom=lh;{const top=innerHeight-bottom-el.offsetHeight;const rootTop=document.getElementById('root').getBoundingClientRect().top;const off=((top-rootTop)%lh+lh)%lh;bottom+=off}
@@ -717,9 +720,9 @@ function act(a){if(!a)return;
  if(a==='snd'){S.sound=S.sound?0:1;return}
  if(a==='thm'){S.light=S.light?0:1;document.documentElement.classList.toggle('light',!!S.light);return}
  if(a==='lng'){LANG=S.lang=LANG==='en'?'sl':'en';document.documentElement.lang=LANG;PH={};full();return}
- if(a==='exp')return copy(btoa(unescape(encodeURIComponent(JSON.stringify(S)))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
+ if(a==='exp')return copy(signSave(btoa(unescape(encodeURIComponent(JSON.stringify(S))))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
  if(a==='stats')return copy(statsText(),tr('statistika je kopirana.','stats copied.'));
- if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const s=migrate(JSON.parse(decodeURIComponent(escape(atob(v.trim())))));if(!s)throw 0;S=s;flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
+ if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const raw=unsign(v.trim());if(!raw)throw 0;const s=migrate(JSON.parse(decodeURIComponent(escape(atob(raw)))));if(!s)throw 0;S=s;flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
  if(a==='rst'){resetArm=Date.now()+4000;return}
  if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang};S=Object.assign(fresh(),keep);resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
 /* a finger is wider than a line of text: a touch just off a button (up to ~half a line above or below,
@@ -795,7 +798,15 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
  render()}
 
 /* ================= TEST HOOK ================= */
-window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+/* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+
+/* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
+   player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */
+function fnv(t){let h=0x811c9dc5;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h.toString(36)}
+const SALT='obcine~zvon~1991';
+function signSave(b64){return 'OB1.'+fnv(SALT+b64+SALT.length)+fnv(b64+SALT)+'.'+b64}
+function unsign(code){const m=/^OB1\.([0-9a-z]+)\.(.+)$/.exec(code.replace(/\s+/g,''));if(!m)return null;return signSave(m[2])===code.replace(/\s+/g,'')?m[2]:null}
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;

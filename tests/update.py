@@ -22,11 +22,17 @@ try:
         t = pg.evaluate("document.getElementById('toast').hidden?'':document.getElementById('toast').innerText")
         print('still there 14 s later:', 'POSODOBITEV' in t)
         if 'POSODOBITEV' not in t: bad.append('sticky')
-        # a stray tap on the notice (not on a button) only hides it, like [kasneje]
-        tb = pg.locator('#toast').bounding_box(); pg.mouse.click(tb['x'] + 60, tb['y'] + 60); pg.wait_for_timeout(300)
+        # a tap on the notice's blank space does nothing; [kasneje] hides it
+        tb = pg.locator('#toast').bounding_box(); before0 = pg.evaluate("performance.timeOrigin")
+        pg.mouse.click(tb['x'] + 60, tb['y'] + 60); pg.wait_for_timeout(400)
         t = pg.evaluate("document.getElementById('toast').hidden?'':document.getElementById('toast').innerText")
-        print('stray tap hides it without reloading:', 'POSODOBITEV' not in t)
-        if 'POSODOBITEV' in t: bad.append('stray')
+        same = pg.evaluate("performance.timeOrigin") == before0
+        print('tap on blank space does nothing:', 'POSODOBITEV' in t and same)
+        if not ('POSODOBITEV' in t and same): bad.append('stray')
+        bb = pg.locator('#toast [data-a="updlater"]').bounding_box(); pg.mouse.click(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2); pg.wait_for_timeout(400)
+        t = pg.evaluate("document.getElementById('toast').hidden?'':document.getElementById('toast').innerText")
+        print('[kasneje] hides it:', 'POSODOBITEV' not in t)
+        if 'POSODOBITEV' in t: bad.append('later')
         # bring it back and press [osveži]
         pg.evaluate("sessionStorage.removeItem('obcine-upd')")
         c2 = None

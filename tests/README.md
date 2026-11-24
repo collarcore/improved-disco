@@ -12,7 +12,7 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `taps.py` | phone: 30 quick taps ring 30 times, drumming pays at most 10 a second, 5 fast [KUPI] taps buy 5, no zoom, the page stays put |
 | `multitouch.py` | 2-3 finger drumming on a phone: never more than 10 paid rings in any second |
 | `copy.py` | copy buttons work by mouse and touch, with the old copy method or the clipboard API; if the clipboard refuses or never answers, the code ends up selected in the paste field |
-| `update.py` | an open tab notices a new version: a notice with [kasneje] and [osveži] (a stray tap only hides it), or a quiet reload in the background; no reload loop |
+| `update.py` | an open tab notices a new version: a notice with [kasneje] and [osveži] (a tap elsewhere on it does nothing), or a quiet reload in the background; no reload loop |
 | `honeypot.py` | the debugger traps (a "developer mode" switch, an "unlock all" function, a dev flag in the save) earn the cap; the console greets whoever opens it; honest play never trips them |
 | `console_script.py` | a friend's real console script (rewrite save, delete the cap marker, block save handlers, reload) gets the cap in every variant |
 | `cheats.py` | consistent fake saves (like a friend's 1e300) caught by real-time limits; honest casual and old saves never; scripted input ignored; hijacked built-ins get nothing |

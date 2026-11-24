@@ -738,7 +738,7 @@ document.addEventListener('pointercancel',()=>{downA=null});
  for(const ev of ['gesturestart','gesturechange'])document.addEventListener(ev,e=>{if(onBell)e.preventDefault()},{passive:false})}
 /* iOS zooms in when a text field smaller than 16 px gets focus; maximum-scale stops that, and iOS still allows pinch-zoom */
 if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const v=document.querySelector('meta[name=viewport]');if(v)v.content='width=device-width, initial-scale=1, maximum-scale=1'}
-{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(!(e.button===0||e.pointerType!=='mouse'))return;if(toastQ[0]&&toastQ[0].kind==='upd'){if(!(e.target.closest&&e.target.closest('[data-a]')))updLater();return}nextToast()});te.addEventListener('click',e=>{if(e.detail!==0)return;if(toastQ[0]&&toastQ[0].kind==='upd')return;nextToast()});
+{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(!(e.button===0||e.pointerType!=='mouse'))return;if(toastQ[0]&&toastQ[0].kind==='upd')return;/* the update notice only answers its two buttons */nextToast()});te.addEventListener('click',e=>{if(e.detail!==0)return;if(toastQ[0]&&toastQ[0].kind==='upd')return;nextToast()});
  /* reading time: the pop-up waits while the mouse rests on it */
  te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden&&!(toastQ[0]&&toastQ[0].kind==='upd'))toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */

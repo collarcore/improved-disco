@@ -89,7 +89,7 @@ const PDIV=20000,GROW=1.15;
 const KEY='obcine-v2',VERSION=5;
 const RELEASE=Date.UTC(2026,10,23,21,0);/* the game came out on 23 November 2026; nobody can have played longer */
 const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
- lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION});
+ lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION,dev:0});
 /* saves carry a version; each step upgrades an older shape */
 function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2;if(!(s.first>0))s.first=RELEASE;/* a save that doesn't know when it started gets the most generous date */
  const rv=s.runV||Math.min(v,4);/* runs that don't record their version started before this check existed */s=ASSIGN(fresh(),s);s.__v=v;s.runV=rv;
@@ -100,7 +100,7 @@ function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return nul
    crash the game (and then crash it again on every reload). Bad values fall back to a fresh game's. */
 function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>=0?v:d},strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.length<40):[];
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
- for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV'])s[k]=num(s[k],0||f[k]||0);
+ for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV','dev'])s[k]=num(s[k],0||f[k]||0);
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
  s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
@@ -272,8 +272,8 @@ const PRITRK=[0,1,2,1,0,1,2,2,0,2,1,2];
 const bellTier=()=>CLK.reduce((k,c,i)=>has(c[0])?i+1:k,0);
 const bellName=()=>{const b=BELLS[bellTier()];return tr(b.sl,b.en)};
 let strike=0;
-function bellSound(){const B=BELLS[bellTier()];const note=B.notes.length>1?B.notes[PRITRK[strike++%PRITRK.length]]:B.notes[0]*(1+(Math.random()-.5)*.01);
- tone(note,{p:B.p,dur:B.dur,vol:B.vol,echo:B.echo});
+function bellSound(soft){const B=BELLS[bellTier()];const note=B.notes.length>1?B.notes[PRITRK[strike++%PRITRK.length]]:B.notes[0]*(1+(Math.random()-.5)*.01);
+ tone(note,{p:B.p,dur:soft?Math.min(B.dur,.5):B.dur,vol:soft?B.vol*.3:B.vol,echo:soft?0:B.echo});if(soft)return;
  if(B.all){const other=[[784,CHURCH,1.6],[523,CHURCH,2.2],[1568,HAND,.5]][strike%3];tone(other[0]*(PRITRK[strike%12]===0?1:.89),{p:other[1],dur:other[2],vol:.03,when:.09,echo:.4})}
  const now=Date.now();
  if(now<clkUntil)for(let i=0;i<3;i++)tone(2400+Math.random()*1800,{p:HAND,dur:.18,vol:.03,when:i*.045,jingle:true});
@@ -292,10 +292,10 @@ const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
 const ART={triglav:['    /\\    ',' /\\/  \\/\\ ','/  \\  /  \\','  2864 m  '],hacek:['  \\/   ','  ____ ',' /     ',' \\____ '],zmaj:['   _/\\_/\\  ','  / o    \\ ',' <_,-\\  /~~','    /_/\\_\\ '],galeb:[' \\_ v _/ ','  ,---.  ',' (_@@@_) ','  \' . \' '],poldne:['    +    ','   /_\\   ',' |(O)(O)|',' |__(O)_|'],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
 const EVART={"pust": ["\\  /", "(oo)", "/##\\ ", " /\\ "], "kultura": [" ____ ____ ", "|~~~ | ~~~|", "|~~~ | ~~~|", "|____|____|"], "zima": [" *   o   * ", "    <|\\    ", "  * / >    ", " ========  "], "drzava": ["o_______ ", "|  /^\\  |", "|=======|", "|-------'", "|        "], "poletje": ["  \\ | /  ", " -- O -- ", "~~~~~~~~~", " ~ ~ ~ ~ "], "trgatev": ["   \\_/   ", "  ooooo  ", "   ooo   ", "    o    "], "martin": ["  _      ", " | |  \\~/", " |#|   | ", " |_|  _|_"], "bozic": ["    *    ", "   /o\\   ", "  /_o_\\  ", " /o__o_\\ "], "d0": ["    +    ", "   /^\\   ", "  /___\\  ", "  |_n_|  "], "d1": [" /=====\\ ", " |-|-|-| ", " |-|-|-| ", " | | | | "], "d2": [" .--+--. ", "/   |   \\", "    |    ", "    |    "], "d3": ["      || ", " /\\/\\/|| ", " | [] []|", " |__[]__|"], "d4": ["  ) ) )  ", " ( ( (   ", "~~~~~~~~~", " ~~~~~~~ "], "d5": ["  ____   ", " |~~~~|_ ", " |    | |", " |____|- "], "d6": [".-------.", "|=|||||=|", "|=|||||=|", "'-------'"]};
 const BELLART=[["   _   ", "  (_)  ", "  / \\  ", " /___\\ "], ["  /^\\    ", " |o o o| ", " | | | | ", " |_|_|_| "], ["   _|_   ", "  /   \\  ", " /     \\ ", "/___o___\\"], ["    +    ", "   |O|   ", "  _|_|_  ", " /     \\ "], ["    _|_    ", "   /   \\   ", "  /     \\  ", " /       \\ ", "/____@____\\"], [" +   +   + ", "|O| |O| |O|", "|_| |_| |_|", " ~ ~ ~ ~ ~ "]];
-Object.assign(ART,{osel:['    ^    ','   /O\\   ','  /SEL\\  ','=========']},{"piran": ["  \\ | /  ", "-- (_) --", "~~~~~~~~~", " ~ ~ ~ ~ "], "grb": ["._______.", "| * * * |", "|  /^\\  |", "|~/~~~\\~|", " \\_____/ "], "win": ["  \\   /  ", "   \\_/   ", "  /212\\  ", "  \\___/  "]});
+Object.assign(ART,{upd:['  .--.  ',' /    v ',' ^    / ',"  '--'  "],osel:['    ^    ','   /O\\   ','  /SEL\\  ','=========']},{"piran": ["  \\ | /  ", "-- (_) --", "~~~~~~~~~", " ~ ~ ~ ~ "], "grb": ["._______.", "| * * * |", "|  /^\\  |", "|~/~~~\\~|", " \\_____/ "], "win": ["  \\   /  ", "   \\_/   ", "  /212\\  ", "  \\___/  "]});
 const SECK=['triglav','hacek','zmaj','galeb','poldne','piran','grb'];
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
-function toast(kind,title,text,sound,art){
+function toast(kind,title,text,sound,art){if(toastQ[0]&&toastQ[0].kind==='upd'&&kind!=='upd'){toastQ.unshift({kind,title,text,art});if(sound)sound();showToast();return}
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
   m.title=tr('in še ','and ')+m.more+' '+tr('','more ')+ach4(m.more);m.text=tr('Vse najdeš v panelu Dosežki.','You will find them all under Achievements.');return}
  /* pop-ups that answer something you just did (Kurent, amendment, new bell, a found secret) show at once */
@@ -303,14 +303,14 @@ function toast(kind,title,text,sound,art){
  toastQ.push({kind,title,text,art});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
  drawToast(q);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
- clearTimeout(toastTimer);toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
+ clearTimeout(toastTimer);if(q.kind==='upd')return;toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
 /* drawn for the width of the column it sits over; redrawn if the layout changes while it shows */
 function drawToast(q){const el=document.getElementById('toast');
  const w=toastCol().w;const iw=w-4;const art=q.art||ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];/* every pop-up is the same height (5 rows inside), so each covers the same lines of the page */
  const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
- const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{osel:tr('GOLJUF','CHEATER'),win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
+ const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{upd:tr('POSODOBITEV','UPDATE'),osel:tr('GOLJUF','CHEATER'),win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.dataset.w=w+'.'+LANG}
 let toastMs=6000;const TOAST_ROWS=5;let lastScrollT=0;
 function nextToast(){toastQ.shift();showToast()}
@@ -397,9 +397,9 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
  secret('poldne',()=>{})}
 /* at most RATE paid rings a second, about a fast mouse finger: drumming with several fingers or an autoclicker
    still rings, but anything faster earns nothing and counts towards nothing */
-const RATE=10;const paidT=[];
+const RATE=10;const paidT=[];let lastSoft=0;
 function ring(){noonCheck();lastRingT=Date.now();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
- swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){bellSound();return}paidT.push(now);
+ swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s */if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);
  meter=Math.min(1,meter+FILL*evFill());const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
@@ -706,11 +706,19 @@ document.addEventListener('pointercancel',()=>{downA=null});
 /* phones: a second tap within ~0.35 s must never zoom the page. touch-action covers most browsers; iOS Safari
    can still zoom on fast taps, so the second touchend is cancelled. Actions run on pointer events, so nothing is lost. */
 {let lastEnd=0;document.addEventListener('touchend',e=>{const now=e.timeStamp;if(now-lastEnd<350&&e.cancelable&&!(e.target.closest&&e.target.closest('input')))e.preventDefault();lastEnd=now},{passive:false})}
+/* drumming on the bell with two or three fingers looks like the start of a pinch to iOS, which then zooms and sticks.
+   While a finger is on the bell, multi-finger gestures are cancelled; one-finger scrolling and pinching anywhere else still work. */
+{let onBell=false;const bellTouch=e=>[...e.touches].some(t=>t.target&&t.target.closest&&t.target.closest('.ring'));
+ const stop=e=>{onBell=bellTouch(e);if(e.touches.length>1&&onBell&&e.cancelable)e.preventDefault()};
+ document.addEventListener('touchstart',stop,{passive:false});document.addEventListener('touchmove',stop,{passive:false});
+ document.addEventListener('touchend',e=>{onBell=bellTouch(e)},{passive:true});
+ /* Safari's own pinch events: refuse them while the bell is being played */
+ for(const ev of ['gesturestart','gesturechange'])document.addEventListener(ev,e=>{if(onBell)e.preventDefault()},{passive:false})}
 /* iOS zooms in when a text field smaller than 16 px gets focus; maximum-scale stops that, and iOS still allows pinch-zoom */
 if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const v=document.querySelector('meta[name=viewport]');if(v)v.content='width=device-width, initial-scale=1, maximum-scale=1'}
-{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(e.button===0||e.pointerType!=='mouse')nextToast()});te.addEventListener('click',e=>{if(e.detail===0)nextToast()});
+{const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(!(e.button===0||e.pointerType!=='mouse'))return;if(toastQ[0]&&toastQ[0].kind==='upd'&&updAvail){reloadFresh(updAvail);return}nextToast()});te.addEventListener('click',e=>{if(e.detail!==0)return;if(toastQ[0]&&toastQ[0].kind==='upd'&&updAvail){reloadFresh(updAvail);return}nextToast()});
  /* reading time: the pop-up waits while the mouse rests on it */
- te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden)toastTimer=setTimeout(nextToast,2500)})}
+ te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden&&!(toastQ[0]&&toastQ[0].kind==='upd'))toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */
 document.addEventListener('click',e=>{if(!e.isTrusted||e.detail!==0)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;act(t.dataset.a);render(true)});
 let typed='';
@@ -740,7 +748,7 @@ function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.g
  for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime,EVART[e.id]);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
 let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;
- if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);if(S.sit!==led||(++plTick%50===0&&!S.osel&&implausible()))caught();const g=ips()*dt;earn(g);S.play+=dt;
+ if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);if(S.sit!==led||(razvijalec&&odkleniVse)||(S.dev&&!S.osel)||(++plTick%50===0&&!S.osel&&implausible()))caught();const g=ips()*dt;earn(g);S.play+=dt;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(KC.every[0]+Math.random()*(KC.every[1]-KC.every[0]))*(has(kurLm.id)?KC.ptujEvery:1)*(am('a2')?.5:1)*evKur()}
@@ -783,13 +791,38 @@ function implausible(){const h=hoursIn(),sec=h*3600;
  if(S.all>10**ceil10(h))return 'all';if(S.life>S.all*1.001+1000)return 'life';if(S.sit>S.life*1.001+1000)return 'sit';
  if(S.votes>votesTotal()+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
  if(S.runV>=5&&spentMin()+upsSpent()>S.life*1.001+1000)return 'spent';return ''}
-function loadCheck(){if(implausible())caught()}
+function loadCheck(){if(S.dev||implausible())caught()}
+/* honeypots: things that look like a cheat menu to someone browsing the game's internals in a debugger.
+   Nothing in the game ever calls odkleniVse, turns on razvijalec or sets S.dev; touching any of them earns the cap. */
+let razvijalec=false;
+function odkleniVse(){bait=true;caught()}
+let bait=false;
 function caught(){led=S.sit;if(S.osel)return;S.osel=Date.now();try{lsSet(OSEL,String(S.osel))}catch(e){}
  log(tr('zvonik nosi oslovsko kapo.','the belfry wears a dunce cap.'));
- toast('osel',tr('Ponarejeni tolarji','Counterfeit tolars'),tr('Teh tolarjev nisi prizvonil. Zvonik bo zdaj za vedno nosil oslovsko kapo.','You did not ring up these tolars. From now on the belfry wears a dunce cap.'),()=>tone(196,{p:CHURCH,dur:1.2,vol:.06}));save()}
+ const trap=bait||razvijalec||S.dev;
+ toast('osel',trap?tr('Past','Trap'):tr('Ponarejeni tolarji','Counterfeit tolars'),trap?tr('Razvijalskega načina ni. Je pa oslovska kapa, in ta je zdaj tvoja.','There is no developer mode. There is a dunce cap, though, and now it is yours.'):tr('Teh tolarjev nisi prizvonil. Zvonik bo zdaj za vedno nosil oslovsko kapo.','You did not ring up these tolars. From now on the belfry wears a dunce cap.'),()=>tone(196,{p:CHURCH,dur:1.2,vol:.06}));save()}
 try{const o=+lsGet(OSEL);if(o&&!S.osel)S.osel=o}catch(e){}
 if(S.osel)try{lsSet(OSEL,String(S.osel))}catch(e){}
 loadCheck();
+
+/* a word for whoever opens the console */
+try{console.log('%c          ^\n         /O\\\n        /SEL\\\n      =========\n\n'+tr('Živjo, goljuf. Kapa te že čaka.','Hello, cheater. The cap is waiting for you.')+'\n'+tr('Vsa koda je na github.com/collarcore/improved-disco, če te zanima, kako deluje.','All the code is at github.com/collarcore/improved-disco if you want to see how it works.'),'font-family:monospace')}catch(e){}
+
+/* ================= NEW VERSION ================= */
+/* every few minutes (and when the tab comes back) the game asks the server which version is current. A tab in the
+   background saves and reloads by itself; a tab being played shows a notice instead of pulling the page away. */
+const BUILD='/*BUILD*/';let updAvail=false;
+function checkVersion(){if(!/^https?:$/.test(location.protocol)||updAvail)return;
+ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).then(v=>{if(v&&v.build&&v.build!==BUILD)newVersion(v.build)}).catch(()=>{})}
+function reloadFresh(b){try{sessionStorage.setItem('obcine-upd',b)}catch(e){}save();
+ /* refresh the browser's cached copy of the page first, so the reload gets the new one */
+ fetch(location.pathname,{cache:'reload'}).catch(()=>{}).finally(()=>location.reload())}
+function newVersion(b){let tried='';try{tried=sessionStorage.getItem('obcine-upd')||''}catch(e){}
+ if(tried===b)return;/* already reloaded for this version and the server still sent the old page: don't loop */
+ updAvail=b;if(document.hidden){reloadFresh(b);return}
+ toast('upd',tr('Nova različica','New version'),tr('Igra je posodobljena. Tapni tukaj za osvežitev; napredek ostane.','The game has been updated. Tap here to reload; your progress stays.'),null)}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&updAvail)reloadFresh(updAvail);else if(!document.hidden)checkVersion()});
+setTimeout(checkVersion,20e3);setInterval(checkVersion,5*60e3);
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;

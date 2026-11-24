@@ -137,12 +137,13 @@ with sync_playwright() as p:
         for _ in range(n): pg.keyboard.press('Space'); pg.wait_for_timeout(gap)
         return pg.evaluate("window.__osc.slice()")
     plain = rings(20, 40)
-    pg.evaluate("__dbg.boost('kur',60000)"); kur = rings(20, 40)
-    pg.evaluate("__dbg.boost('kur',0);__dbg.boost('clk',60000)"); clk = rings(20, 40)
+    # paid rings (under 10 a second) carry the boost sounds; rings over the limit only tick quietly
+    pg.wait_for_timeout(1100); pg.evaluate("__dbg.boost('kur',60000)"); kur = rings(20, 110)
+    pg.wait_for_timeout(1100); pg.evaluate("__dbg.boost('kur',0);__dbg.boost('clk',60000)"); clk = rings(20, 110)
     jk = sum(1 for f in kur if 900 <= f < 1400); jc = sum(1 for f in clk if 2400 <= f < 4200)
     check('every ring sounds a bell (20 fast rings)', len(plain) >= 20 * 9, len(plain))
-    check('Kurentovanje: cowbells on every ring', jk >= 20 * 2, jk)
-    check('zvonci: jingles on every ring', jc >= 20 * 3, jc)
+    check('Kurentovanje: cowbells on every paid ring', jk >= 20 * 2, jk)
+    check('zvonci: jingles on every paid ring', jc >= 20 * 3, jc)
     vmax = 0
     for _ in range(40): pg.keyboard.press('Space'); vmax = max(vmax, pg.evaluate("__dbg.voices"))
     check('bell voices stay within the cap while spamming', vmax <= 10, vmax)

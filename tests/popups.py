@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 st = {"sit": 4e9, "n": 120, "own": [60, 50, 40, 30, 20, 10, 5, 2, 0, 0, 0, 0], "save": 9e15, "sound": 0, "ach": ["o1"]}
 KINDS = {
  'sl': [
+        ('upd', 'Nova različica', 'Igra je posodobljena. Tapni tukaj za osvežitev; napredek ostane.'),
         ('osel', 'Ponarejeni tolarji', 'Teh tolarjev nisi prizvonil. Zvonik bo zdaj za vedno nosil oslovsko kapo.'),
         ('ev', 'Prešernov dan', 'klik ×3.'),
         ('ev', 'Dan državnosti', 'vse ×1,25.'),
@@ -25,6 +26,7 @@ KINDS = {
         ('triglav', 'Na vrhu', 'Triglav, 2864 m. Vsak Slovenec mora vsaj enkrat gor. Dosežek: +1 %.'),
         ('hacek', 'Strešica', 'Strešica je padla s črke Č. Brez nje so Občine samo Obcine. Klikni jo, da jo vrneš. Dosežek: +1 %.')],
  'en': [
+        ('upd', 'New version', 'The game has been updated. Tap here to reload; your progress stays.'),
         ('osel', 'Counterfeit tolars', 'You did not ring up these tolars. From now on the belfry wears a dunce cap.'),
         ('ev', 'Prešeren Day', 'clicks ×3.'),
         ('ev', 'Statehood Day', 'everything ×1.25.'),
@@ -79,4 +81,4 @@ with sync_playwright() as p:
             c.close()
     b.close()
 for f in fails[:25]: print('FAIL', f)
-print(f'{len(fails)} problems' if fails else 'ALL PASSED: 19 kinds x 10 sizes x 3 scroll positions x 2 languages')
+print(f'{len(fails)} problems' if fails else 'ALL PASSED: 20 kinds x 10 sizes x 3 scroll positions x 2 languages')

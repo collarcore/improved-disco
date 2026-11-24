@@ -110,6 +110,12 @@ Saves carry a version number (`v`). When the save format changes, bump `VERSION`
 
 GitHub Pages → *Deploy from a branch* → `main`, folder `/ (root)`.
 
+## Thanks
+
+Aiken tested the game's defences the way only a determined friend would: an edited save, a console script that
+rewrote the save and blocked the game's own saving, and finally a debugger breakpoint. Each round closed a real
+hole, and his scripts are now part of the tests (`tests/console_script.py`, `tests/cheats.py`).
+
 ## Licence
 
 Code: MIT, see `LICENSE`. Data: derived from Wikipedia

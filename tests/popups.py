@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 st = {"sit": 4e9, "n": 120, "own": [60, 50, 40, 30, 20, 10, 5, 2, 0, 0, 0, 0], "save": 9e15, "sound": 0, "ach": ["o1"]}
 KINDS = {
  'sl': [
+        ('hi', 'Dobrodošel v Občinah', 'Klikaj zvon (ali pritisni preslednico). S tolarji kupuj proizvodnjo in odklepaj občine.'),
         ('upd', 'Nova različica', 'Igra je posodobljena. Tapni tukaj za osvežitev; napredek ostane.'),
         ('osel', 'Ponarejeni tolarji', 'Teh tolarjev nisi prizvonil. Zvonik bo zdaj za vedno nosil oslovsko kapo.'),
         ('ev', 'Prešernov dan', 'klik ×3.'),
@@ -26,6 +27,7 @@ KINDS = {
         ('triglav', 'Na vrhu', 'Triglav, 2864 m. Vsak Slovenec mora vsaj enkrat gor. Dosežek: +1 %.'),
         ('hacek', 'Strešica', 'Strešica je padla s črke Č. Brez nje so Občine samo Obcine. Klikni jo, da jo vrneš. Dosežek: +1 %.')],
  'en': [
+        ('hi', 'Welcome to Občine', 'Click the bell (or press space). Spend the tolars on production and unlock municipalities.'),
         ('upd', 'New version', 'The game has been updated. Tap here to reload; your progress stays.'),
         ('osel', 'Counterfeit tolars', 'You did not ring up these tolars. From now on the belfry wears a dunce cap.'),
         ('ev', 'Prešeren Day', 'clicks ×3.'),
@@ -46,7 +48,7 @@ KINDS = {
         ('poldne', 'Noon', 'Every parish rings noon. Yours too.'),
         ('triglav', 'On top', 'Triglav, 2,864 m. Every Slovene has to climb it at least once. Achievement: +1%.'),
         ('hacek', 'The háček', 'The háček fell off the Č. Without it, Občine is just Obcine. Click it to put it back. Achievement: +1%.')]}
-ART = {('sl','ev','Prešernov dan'):'kultura',('sl','ev','Dan državnosti'):'drzava',('sl','new','VELIKI ZVON'):'b4',('sl','new','ZVONOVI VSEH FAR'):'b5',
+ART = {('sl','hi','Dobrodošel v Občinah'):'b2',('en','hi','Welcome to Občine'):'b2',('sl','ev','Prešernov dan'):'kultura',('sl','ev','Dan državnosti'):'drzava',('sl','new','VELIKI ZVON'):'b4',('sl','new','ZVONOVI VSEH FAR'):'b5',
        ('en','ev','Prešeren Day'):'kultura',('en','ev','Statehood Day'):'drzava',('en','new','GREAT BELL'):'b4',('en','new','BELLS OF EVERY PARISH'):'b5'}
 fails = []
 with sync_playwright() as p:
@@ -81,4 +83,4 @@ with sync_playwright() as p:
             c.close()
     b.close()
 for f in fails[:25]: print('FAIL', f)
-print(f'{len(fails)} problems' if fails else 'ALL PASSED: 20 kinds x 10 sizes x 3 scroll positions x 2 languages')
+print(f'{len(fails)} problems' if fails else 'ALL PASSED: 21 kinds x 10 sizes x 3 scroll positions x 2 languages')

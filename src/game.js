@@ -311,7 +311,7 @@ function drawToast(q){const el=document.getElementById('toast');
  const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');if(q.kind==='upd'){const l=tr('[ kasneje ]','[ later ]'),r=tr('[ osveži ]','[ reload ]');lines.push([' '.repeat(Math.max(0,iw-L(l)-2-L(r))),{t:l,a:'updlater',lab:tr('Posodobi kasneje','Update later')},'  ',{t:r,a:'updnow',lab:tr('Osveži zdaj','Reload now')}])}
  else lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
- const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{upd:tr('POSODOBITEV','UPDATE'),osel:tr('GOLJUF','CHEATER'),win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
+ const T=SECK.includes(q.kind)?tr('SKRIVNOST','SECRET'):{hi:tr('DOBRODOŠEL','WELCOME'),upd:tr('POSODOBITEV','UPDATE'),osel:tr('GOLJUF','CHEATER'),win:tr('ČESTITKE','CONGRATULATIONS'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.dataset.w=w+'.'+LANG}
 let toastMs=6000;const TOAST_ROWS=5;let lastScrollT=0;
 function nextToast(){toastQ.shift();showToast()}
@@ -476,7 +476,7 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
   [...p.t].forEach((ch,j)=>{if(grid[y][x+j]!==undefined)grid[y][x+j]=ch})}
  const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell',hid:true}]);
  lines.push(['']);
- const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',c:'ring',lab:tr('Pozvoni','Ring the bell')}]);
+ const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',c:'ring'+(S.clicks===0&&S.all===0?' nudge':''),lab:tr('Pozvoni','Ring the bell')}]);
  lines.push(['']);{const x=xf(meterMult()),lab=tr('zvonjenje ','ringing ');lines.push([lab,H(bar(meter,iw-L(lab)-L(x)-3)),' ',x])}
  lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click')+(performance.now()-cappedT<1000?' (max '+RATE+'/s)':''),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
@@ -858,6 +858,10 @@ document.documentElement.classList.toggle('light',!!S.light);document.documentEl
 {const away=(Date.now()-S.save)/1000;if(away>60&&baseIps()>0){const full_=am('a9');const g=baseIps()*Math.min(away,(full_?12:8)*3600)*(full_?1:.5);earn(g);
  log(tr('med odsotnostjo (','while away (')+dur(away)+'): +'+fmt(g)+' SIT')}}
 if(!S.log.length)log(tr('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.','welcome. ring the bell, buy a field, unlock Osilnica.'));
+/* a brand-new player gets one welcome pop-up saying what the game is and where to click; the ZVONI button blinks until the first ring */
+{let seen=false;try{seen=!!lsGet('obcine-hi')}catch(e){}
+ if(!seen&&S.clicks===0&&S.all===0&&S.n===0){try{lsSet('obcine-hi','1')}catch(e){}
+  toast('hi',tr('Dobrodošel v Občinah','Welcome to Občine'),tr('Klikaj zvon (ali pritisni preslednico). S tolarji kupuj proizvodnjo in odklepaj občine.','Click the bell (or press space). Spend the tolars on production and unlock municipalities.'),null,BELLART[2])}}
 const ro=new ResizeObserver(()=>{layout();render();placeToast()});ro.observe(document.documentElement);
 /* the pop-up sits on the page's line grid, so it never cuts a line in half. It stays still while the page scrolls
    (moving with it looked jittery) and settles onto the grid once scrolling stops, including the scroll a reload restores */

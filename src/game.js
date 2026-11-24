@@ -1,3 +1,7 @@
+/* the game keeps its own copies of the built-ins it hands its state to, so console code that replaces
+   JSON.stringify or Object.assign after the page loads can't intercept the save */
+const JSTR=JSON.stringify,JPARSE=JSON.parse,ASSIGN=Object.assign,LSGET=Storage.prototype.getItem,LSSET=Storage.prototype.setItem;
+const lsGet=k=>LSGET.call(localStorage,k),lsSet=(k,v)=>LSSET.call(localStorage,k,v);
 {
 /* ================= LANGUAGE =================
    Every string is written as a Slovenian/English pair: tr('…','…'). */
@@ -83,18 +87,20 @@ const PDIV=20000,GROW=1.15;
 
 /* ================= STATE ================= */
 const KEY='obcine-v2',VERSION=5;
+const RELEASE=Date.UTC(2026,10,23,21,0);/* the game came out on 23 November 2026; nobody can have played longer */
 const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
- lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[]});
+ lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION});
 /* saves carry a version; each step upgrades an older shape */
-function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2,first=s.first||s.t0;s=Object.assign(fresh(),s);s.__v=v;
- if(v<3){s.first=first||Date.now()}
+function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2;if(!(s.first>0))s.first=RELEASE;/* a save that doesn't know when it started gets the most generous date */
+ const rv=s.runV||Math.min(v,4);/* runs that don't record their version started before this check existed */s=ASSIGN(fresh(),s);s.__v=v;s.runV=rv;
+ if(v<3)s.first=RELEASE;/* before v3 saves only knew when the current run began */
  /* v4: new unlock prices and the ringing meter; nothing in the save needs converting */
  s.v=VERSION;return clean(s)}
 /* a save comes from this browser or a pasted code: every field is checked, so a broken or hand-made save can't
    crash the game (and then crash it again on every reload). Bad values fall back to a fresh game's. */
 function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>=0?v:d},strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.length<40):[];
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
- for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel'])s[k]=num(s[k],0||f[k]||0);
+ for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV'])s[k]=num(s[k],0||f[k]||0);
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
  s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
@@ -104,10 +110,10 @@ function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>
 let S=fresh();
 /* every legitimate change to the money goes through earn/spend, which also keep a hidden second copy (led).
    If S.sit ever differs from it, something outside the game changed it: the belfry gets a dunce cap. */
-let led=0;
+let led=0,plTick=0;
 function earn(g){S.sit+=g;S.life+=g;S.all+=g;led+=g}
 function spend(c){S.sit-=c;led-=c}
-let loadedV=VERSION;try{const s=migrate(JSON.parse(localStorage.getItem(KEY)||'null'));if(s){S=s;loadedV=s.__v}}catch(e){}
+let loadedV=VERSION;try{const s=migrate(JPARSE(lsGet(KEY)||'null'));if(s){S=s;loadedV=s.__v}}catch(e){}
 delete S.__v;led=S.sit;
 LANG=S.lang||'sl';
 const has=id=>S.ups.includes(id);
@@ -408,12 +414,12 @@ function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(le
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
  const keep={all:S.all,votes:S.votes+g,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
   amends:pick?[...S.amends,pick]:S.amends,first:S.first,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel};
- const bells=S.ups.filter(id=>id[0]==='k');S=Object.assign(fresh(),keep);led=S.sit;
+ const bells=S.ups.filter(id=>id[0]==='k');S=ASSIGN(fresh(),keep);led=S.sit;
  if(am('a10'))S.ups=bells;if(am('a4')){S.own[0]=10;S.own[1]=10;S.own[2]=5}
  log(tr('referendum: +','referendum: +')+g+tr(' glasov. Nova Slovenija se začne.',' votes. A new Slovenia begins.'));
  if(pick)toast('ref',amName(pick),amDesc(pick)+'.',fanfare);
  kurUntil=clkUntil=0;regPage=null;refPick=null;save();full()}
-function save(){S.save=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){S.save=Date.now();try{lsSet(KEY,JSTR(S))}catch(e){}}
 
 /* ================= LAYOUT ================= */
 let MODE='',W={},PW={},HW=80,cache={};
@@ -667,11 +673,11 @@ function act(a){if(!a)return;
  if(a==='snd'){S.sound=S.sound?0:1;return}
  if(a==='thm'){S.light=S.light?0:1;document.documentElement.classList.toggle('light',!!S.light);return}
  if(a==='lng'){LANG=S.lang=LANG==='en'?'sl':'en';document.documentElement.lang=LANG;PH={};full();return}
- if(a==='exp')return copy(signSave(btoa(unescape(encodeURIComponent(JSON.stringify(S))))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
+ if(a==='exp')return copy(signSave(btoa(unescape(encodeURIComponent(JSTR(S))))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
  if(a==='stats')return copy(statsText(),tr('statistika je kopirana.','stats copied.'));
- if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const raw=unsign(v.trim());if(!raw)throw 0;const s=migrate(JSON.parse(decodeURIComponent(escape(atob(raw)))));if(!s)throw 0;const os=S.osel,sv=s.__v;delete s.__v;S=s;S.osel=S.osel||os;led=S.sit;loadCheck(sv);flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
+ if(a==='imp'){const v=(document.getElementById('impin')||{}).value||'';try{const raw=unsign(v.trim());if(!raw)throw 0;const s=migrate(JPARSE(decodeURIComponent(escape(atob(raw)))));if(!s)throw 0;const os=S.osel,sv=s.__v;delete s.__v;S=s;S.osel=S.osel||os;led=S.sit;loadCheck();flash=tr('igra naložena.','game loaded.');save();full()}catch(e){flash=tr('to ni veljavna shranjena igra.','that is not a valid saved game.')}return}
  if(a==='rst'){resetArm=Date.now()+4000;return}
- if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang,osel:S.osel};S=Object.assign(fresh(),keep);led=S.sit;resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
+ if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang,osel:S.osel};S=ASSIGN(fresh(),keep);led=S.sit;resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
 /* a finger is wider than a line of text: a touch just off a button (up to ~half a line above or below,
    or a character to the side) goes to the nearest button; a touch on something else's own text never does */
 const at=(x,y)=>{const el=document.elementFromPoint(x,y);return el&&el.closest&&el.closest('[data-a]')};
@@ -692,9 +698,9 @@ function mapSecret(el){if(!el||!el.closest)return;if(el.closest('#mapgrid .sea')
  const c=el.closest('#mapgrid i');if(c&&c.classList.contains('c'+IDX['Ljubljana'])&&S.n>IDX['Ljubljana']){
   secret('zmaj',regionChime)}
  if(c&&c.classList.contains('c'+IDX['Piran'])&&S.n>IDX['Piran']){const d=new Date(window.__date||Date.now());if(Math.abs(d-piranSunset(d))<=30*6e4)secret('piran',regionChime)}}
-document.addEventListener('pointerdown',e=>{mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
+document.addEventListener('pointerdown',e=>{if(!e.isTrusted)return;mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
  if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
-document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;let t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY);
+document.addEventListener('pointerup',e=>{if(!e.isTrusted||!downA)return;const a=downA;downA=null;let t=at(e.clientX,e.clientY);if(!t&&touchy(e))t=nearBtn(e.clientX,e.clientY);
  if(t&&t.dataset.a===a){act(a);render(true)}});
 document.addEventListener('pointercancel',()=>{downA=null});
 /* phones: a second tap within ~0.35 s must never zoom the page. touch-action covers most browsers; iOS Safari
@@ -706,9 +712,9 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&
  /* reading time: the pop-up waits while the mouse rests on it */
  te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden)toastTimer=setTimeout(nextToast,2500)})}
 /* clicks without a pointer (screen readers, keyboard-synthesised) */
-document.addEventListener('click',e=>{if(e.detail!==0)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;act(t.dataset.a);render(true)});
+document.addEventListener('click',e=>{if(!e.isTrusted||e.detail!==0)return;const t=e.target.closest&&e.target.closest('[data-a]');if(!t)return;act(t.dataset.a);render(true)});
 let typed='';
-document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
+document.addEventListener('keydown',e=>{if(!e.isTrusted||e.target.id==='impin')return;
  if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render(true)}return}
  if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render(true)}return}
  if(e.key==='n'||e.key==='N'){unlock();render(true)}
@@ -734,7 +740,7 @@ function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.g
  for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime,EVART[e.id]);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
 let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;
- if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);if(S.sit!==led)caught();const g=ips()*dt;earn(g);S.play+=dt;
+ if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);if(S.sit!==led||(++plTick%50===0&&!S.osel&&implausible()))caught();const g=ips()*dt;earn(g);S.play+=dt;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(KC.every[0]+Math.random()*(KC.every[1]-KC.every[0]))*(has(kurLm.id)?KC.ptujEvery:1)*(am('a2')?.5:1)*evKur()}
@@ -762,13 +768,24 @@ function unsign(code){const m=/^OB1\.([0-9a-z]+)\.(.+)$/.exec(code.replace(/\s+/
 const OSEL='obcine-osel';
 function spentMin(){let t=0;GEN.forEach((g,k)=>{const n=Math.max(0,S.own[k]-(am('a4')?[10,10,5][k]||0:0));t+=gcostBase(k)*GD()*(GROW**n-1)/(GROW-1)});
  for(let i=0;i<S.n;i++)t+=ocost(i);return t}
-function loadCheck(v){if(S.sit>S.life*1.001+1000||(v>=5&&spentMin()>S.life*1.001+1000))caught()}
-function caught(){led=S.sit;if(S.osel)return;S.osel=Date.now();try{localStorage.setItem(OSEL,String(S.osel))}catch(e){}
+/* honest numbers are bounded by real time. Perfect nonstop play at the 10-ring cap reaches about 1e17 lifetime
+   tolarji in 21 hours, 1e24 in 37 and 4e28 in 400 (tools/balance.py); the ceiling below allows 100x to 10000x that,
+   counted from when you first played (never before the release), so away-time earnings can't trip it either. */
+function hoursIn(){const f=Math.max(S.first||0,RELEASE);return Math.max(S.play/3600,(Date.now()-f)/36e5,0)}
+function ceil10(h){return h<=40?9.5+.5*h:29.5+3*Math.log10(h/40)}
+function upsSpent(){let t=0;for(const id of S.ups){const m=/^t(\d+)_(\d+)$/.exec(id);if(m&&GEN[+m[1]]&&TIERS[+m[2]])t+=gcostBase(+m[1])*TIERS[+m[2]][1];
+ else{const l=LM.find(l=>l.id===id);if(l)t+=lmcost(l)}}return t}
+function implausible(){const h=hoursIn(),sec=h*3600;
+ if(S.all>10**ceil10(h))return 'all';if(S.life>S.all*1.001+1000)return 'life';if(S.sit>S.life*1.001+1000)return 'sit';
+ if(S.votes>votesTotal()+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
+ if(S.runV>=5&&spentMin()+upsSpent()>S.life*1.001+1000)return 'spent';return ''}
+function loadCheck(){if(implausible())caught()}
+function caught(){led=S.sit;if(S.osel)return;S.osel=Date.now();try{lsSet(OSEL,String(S.osel))}catch(e){}
  log(tr('zvonik nosi oslovsko kapo.','the belfry wears a dunce cap.'));
  toast('osel',tr('Ponarejeni tolarji','Counterfeit tolars'),tr('Teh tolarjev nisi prizvonil. Zvonik bo zdaj za vedno nosil oslovsko kapo.','You did not ring up these tolars. From now on the belfry wears a dunce cap.'),()=>tone(196,{p:CHURCH,dur:1.2,vol:.06}));save()}
-try{const o=+localStorage.getItem(OSEL);if(o&&!S.osel)S.osel=o}catch(e){}
-if(S.osel)try{localStorage.setItem(OSEL,String(S.osel))}catch(e){}
-loadCheck(loadedV);
+try{const o=+lsGet(OSEL);if(o&&!S.osel)S.osel=o}catch(e){}
+if(S.osel)try{lsSet(OSEL,String(S.osel))}catch(e){}
+loadCheck();
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;

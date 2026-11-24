@@ -18,8 +18,8 @@ with sync_playwright() as p:
      ('honest old save (v4, big)', {"v":4,"sit":4e9,"life":5e9,"all":6e9,"n":120,"own":own,"sound":0}, None),
      ('v5 save, money > earned', {"v":5,"sit":1e100,"life":5e9,"all":6e9,"n":0,"own":[0]*12,"sound":0}, None),
      ('v4 save, money > earned', {"v":4,"sit":1e100,"life":0,"all":0,"n":0,"own":[0]*12,"sound":0}, None),
-     ('v5 save, buildings never paid for', {"v":5,"sit":10,"life":100,"all":100,"n":150,"own":own,"sound":0}, None),
-     ('v5 honest small', {"v":5,"sit":50,"life":300,"all":300,"n":1,"own":[3,0,0,0,0,0,0,0,0,0,0,0],"sound":0}, None),
+     ('v5 save, buildings never paid for', {"v":5,"runV":5,"sit":10,"life":100,"all":100,"n":150,"own":own,"sound":0}, None),
+     ('v5 honest small', {"v":5,"runV":5,"sit":50,"life":300,"all":300,"n":1,"own":[3,0,0,0,0,0,0,0,0,0,0,0],"sound":0}, None),
      ('console edit (debugger)', {"v":5,"sit":50,"life":300,"all":300,"n":1,"own":[3]+[0]*11,"sound":0}, lambda pg:(pg.evaluate("__dbg.S.sit=1e100"),pg.wait_for_timeout(600))),
     ]
     for name,st,ex in cases:

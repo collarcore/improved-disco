@@ -154,7 +154,7 @@ const PDIV=20000,GROW=1.15;
 
 /* ================= STATE ================= */
 const KEY='obcine-v2',VERSION=4;
-const fresh=()=>({v:VERSION,sit:15,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
+const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
  lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[]});
 /* saves carry a version; each step upgrades an older shape */
 function migrate(s){if(!s||!Array.isArray(s.own))return null;const v=s.v||2,first=s.first||s.t0;s=Object.assign(fresh(),s);

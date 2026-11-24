@@ -40,7 +40,7 @@ def ocost(i, p=None):
 class Game:
     def __init__(self, price, votes=0, life=0.0, clicks=0):
         self.p = price; self.votes = votes; self.life = life; self.clicks = clicks
-        self.sit = 15.0; self.n = 0; self.own = [0] * len(GEN); self.gm = [1.0] * len(GEN)
+        self.sit = 0.0; self.n = 0; self.own = [0] * len(GEN); self.gm = [1.0] * len(GEN)
         self.glob = 1.0; self.pct = 0.0; self.P = 0; self.rc = {}; self.rdone = 0
         self.tiers = set(); self.lms = set(); self.bell = 0; self.day = 0
 

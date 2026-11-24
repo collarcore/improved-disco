@@ -41,6 +41,7 @@ pre{margin:0 0 1.25em;font:inherit;white-space:pre;overflow:hidden}
 .b:focus-visible,.b:active,.on{background:var(--fg);color:var(--bg)}
 @media(hover:hover){.b:hover{background:var(--fg);color:var(--bg)}}
 .bell{cursor:pointer}
+.hk,.sea{cursor:default}
 .hv{cursor:default}@media(hover:hover){.hv:hover{text-decoration:underline}}.b.bell:hover,.b.bell:active{background:none;color:inherit}
 .b.ring:active{background:none;color:inherit}
 @media(hover:hover){.b.ring:hover:active{background:var(--fg);color:var(--bg)}}
@@ -338,19 +339,19 @@ function log(m){const d=new Date();S.log.unshift(String(d.getHours()).padStart(2
 /* ================= TOASTS ================= */
 const toastQ=[];let toastTimer=0;
 const CUP=['\\~~~~~/',' \\   / ','  | |  ',' _|_|_ '];
-const ART={kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
+const ART={zmaj:[' __/^\\_ ','<_ o  _\\>','  \\/\\/  ',' /_/\\_\\ '],galeb:['  \\ /  ','   v    ',' ~~~~~~ ','  ~  ~  '],poldne:[' (O)(O) ','  (O)   ','  | |   ',' _|_|_  '],kur:['\\  /','(oo)','/##\\',' /\\ '],ach:CUP,reg:['  /\\  ',' /  \\ ','/____\\','  ||  '],ev:[' \\ | / ','-- * --',' / | \\ ','       '],ref:['.-----.','| [X] |','|_____|','       ']};
 const ach4=n=>LANG==='en'?(n===1?'achievement':'achievements'):n===1?'dosežek':n===2?'dosežka':n<5?'dosežki':'dosežkov';
 function toast(kind,title,text,sound){
  if(toastQ.length>=3&&kind==='ach'){const l=toastQ[toastQ.length-1];if(l.more)l.more++;else toastQ.push({kind:'ach',more:1});const m=toastQ[toastQ.length-1];
   m.title=tr('in še ','and ')+m.more+' '+tr('','more ')+ach4(m.more);m.text=tr('Vse najdeš v panelu Dosežki.','You will find them all under Achievements.');return}
- /* pop-ups that answer something you just did (Kurent, amendment, new bell) show at once */
- if((kind==='kur'||kind==='ref'||kind==='new')&&toastQ.length){toastQ.splice(1,0,{kind,title,text});if(sound)sound();nextToast();return}
+ /* pop-ups that answer something you just did (Kurent, amendment, new bell, a found secret) show at once */
+ if(['kur','ref','new','zmaj','galeb','poldne'].includes(kind)&&toastQ.length){toastQ.splice(1,0,{kind,title,text});if(sound)sound();nextToast();return}
  toastQ.push({kind,title,text});if(sound)sound();if(toastQ.length===1)showToast()}
 function showToast(){const el=document.getElementById('toast');const q=toastQ[0];if(!q){el.hidden=true;return}
  const w=toastCol().w;const iw=w-4;const art=ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];const rows=Math.max(art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');lines.push(padL(tr('[ v redu ]','[ OK ]'),iw));
- const T={kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
+ const T={zmaj:tr('SKRIVNOST','SECRET'),galeb:tr('SKRIVNOST','SECRET'),poldne:tr('SKRIVNOST','SECRET'),kur:'KURENT',ach:tr('DOSEŽEK','ACHIEVEMENT'),reg:tr('CELA REGIJA','REGION COMPLETE'),ev:tr('PRAZNIK','EVENT'),ref:tr('REFERENDUM','REFERENDUM')}[q.kind]||tr('NOVO','NEW');
  el.innerHTML=box(T,lines,w);el.hidden=false;placeToast();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
  clearTimeout(toastTimer);toastTimer=setTimeout(nextToast,3500)}
 function nextToast(){toastQ.shift();showToast()}
@@ -381,10 +382,16 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
  ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
  ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],
- ['tri',()=>tr('Na vrhu','On top'),()=>tr('skrivnost: natipkaj ime gore','secret: type the name of a mountain'),()=>S.ach.includes('tri')]);
+ ['tri',()=>tr('Na vrhu','On top'),()=>tr('skrivnost: natipkaj ime gore','secret: type the name of a mountain'),()=>false],
+ ['hac',()=>tr('Strešica','The háček'),()=>tr('skrivnost: nekaj v naslovu ni dobro pritrjeno','secret: something in the title is loose'),()=>false],
+ ['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>tr('skrivnost: prestolnica ima čuvaja','secret: the capital has a guardian'),()=>false],
+ ['obala',()=>tr('47 km obale','47 km of coast'),()=>tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
+ ['poldne',()=>tr('Poldne','Noon'),()=>tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false]);
+const SECRET=new Set(['tri','hac','zmaj','obala','poldne']);
+const secret=id=>{if(S.ach.includes(id))return;const a=ACH.find(a=>a[0]===id);if(a)gotAch(a)};
 function gotAch(a){S.ach.push(a[0]);S.achT[a[0]]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');
  toast('ach',a[1](),a[2]()+'. '+tr('Dohodek +','Income +')+pc(ACHP()*100)+'.',fanfare);const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
-function checkAch(){for(const a of ACH){if(a[0]==='tri'||S.ach.includes(a[0]))continue;if(a[4]===undefined&&a[3]())gotAch(a)}}
+function checkAch(){for(const a of ACH){if(SECRET.has(a[0])||S.ach.includes(a[0]))continue;if(a[3]())gotAch(a)}}
 
 /* ================= PLAYTEST STATS ================= */
 const MILES=[10,25,50,75,100,125,150,175,200,212];
@@ -412,7 +419,11 @@ function buyGen(k){if(S.n<greq(k))return;let a=S.amt==='max'?gmax(k):S.amt;if(a<
 function buyUp(id){const u=upgrades().find(u=>u.id===id);if(!u||S.sit<u.cost)return;S.sit-=u.cost;S.ups.push(id);log(tr('kupljeno: ','bought: ')+u.name+' ('+u.desc.split(' · ')[0]+')');
  if(id[0]==='k'){strike=0;toast('new',bellName().toUpperCase(),tr('Tvoj zvon zdaj zveni drugače. Pozvoni!','Your bell sounds different now. Ring it!'),null);bellSound()}else ding(1175,.05)}
 let swing=0,pslot=0;const parts=[];
-function ring(){meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;
+let noonDay='';
+function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()!==12||d.getMinutes()!==0||noonDay===d.toDateString())return;noonDay=d.toDateString();
+ [[196,0],[262,.7],[220,1.4]].forEach(([f,w])=>tone(f,{p:GREAT,dur:3.4,vol:.06,when:w,echo:.45}));
+ toast('poldne',tr('Poldne','Noon'),tr('Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.','Every parish rings noon. Yours too.'),null);secret('poldne')}
+function ring(){noonCheck();meter=Math.min(1,meter+FILL*evFill());lastRingT=Date.now();const v=clickVal();S.sit+=v;S.life+=v;S.all+=v;S.clicks++;swing=6;
  pslot=(pslot+1)%6;parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
@@ -458,14 +469,18 @@ function headStatus(w){if(S.n>=O.length)return '*** '+tr('VSA SLOVENIJA JE TVOJA
  const tail=' '+pc(Math.floor(f*100))+(f<1&&v>0?' · '+tr('še ~','~')+dur((c-S.sit)/v):' · '+tr('lahko odkleneš','ready'));const head=tr('občine ','')+S.n+'/212 · '+tr('naslednja: ','next: ')+ab(O[S.n].n,16)+' ';
  const bw=Math.max(6,Math.min(30,w-L(head)-L(tail)-2));return L(head)+bw+2+L(tail)<=w?head+bar(f,bw)+tail:tr('naslednja: ','next: ')+ab(O[S.n].n,w-11-L(tail))+tail}
 function headEvents(w){const ev=eventsNow();return wrapItems(ev.map((e,i)=>(i?'':tr('* danes: ','* today: '))+evName(e)+' ('+evDesc(e)+')'),' · ',w)}
-function pHead(){const w=HW;const ban=w>=70?BAN_BIG:BAN_SMALL;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))+6>w)dg=big(m?m[1]:s,'small');
+function pHead(){const w=HW;const ban0=w>=70?BAN_BIG:BAN_SMALL;const hcol=ban0[0].indexOf('\\/');const ban=S.noHacek?[ban0[0].replace('\\/','  '),...ban0.slice(1)]:ban0;const s=fmt(Math.floor(S.sit));const m=s.match(/^([\d.,]+)\s*([^\d]*)$/);let dg=big(m?m[1]:s,w>=70?'big':'small');if(Math.max(...dg.map(L))+6>w)dg=big(m?m[1]:s,'small');
  {const base=dg.length-2,u=m&&m[2]?m[2]:'';dg=dg.map((r,i)=>r+(i===base&&u?' '+u:' '.repeat(u?L(u)+1:0)))}
  const unit=tr('tolarji','tolars');const rate='+'+fmt(ips(),1)+' SIT/s';const sub=tr('212 občin, od Osilnice do Ljubljane','212 municipalities, from Osilnica to Ljubljana');const lines=[];
- if(w>=100){const left=[...ban,'',sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L))+2;
+ const fallen=S.noHacek?' '.repeat(hcol)+'\\/':'';
+ if(w>=100){const left=[...ban,fallen,sub];const right=[unit,'',...dg,'',rate];const rows=Math.max(left.length,right.length);const rw=Math.max(34,...right.map(L))+2;
   for(let i=0;i<rows;i++){const r=padL(right[i]||'',rw);lines.push(i>=2&&i<2+dg.length?{h:esc(padR(left[i]||'',w-rw))+'<b>'+esc(r)+'</b>'}:padR(left[i]||'',w-rw)+r)}}
- else lines.push(...ban,'',...wrap(sub,w),'',unit,'',...dg.map(d=>({h:'<b>'+esc(padR(d,w))+'</b>'})),'',rate);
+ else lines.push(...ban,fallen,...wrap(sub,w),'',unit,'',...dg.map(d=>({h:'<b>'+esc(padR(d,w))+'</b>'})),'',rate);
  lines.push('='.repeat(w));lines.push(cut(headStatus(w),w));lines.push(...headEvents(w));
- return lines.map(l=>typeof l==='object'?l.h:esc(padR(l,w))).join('\n')}
+ const html=lines.map(l=>typeof l==='object'?l.h:esc(padR(l,w)));
+ /* the háček is clickable where it is: on top of the C, or fallen just below the banner (no hover hint) */
+ const hr=S.noHacek?ban.length:0;html[hr]=html[hr].slice(0,hcol)+'<span data-a="hacek" class="hk">\\/</span>'+html[hr].slice(hcol+2);
+ return html.join('\n')}
 function srSummary(){const n=S.n<O.length?O[S.n]:null;
  return tr('Tolarji: ','Tolars: ')+fmt(Math.floor(S.sit))+'. '+tr('Na sekundo: ','Per second: ')+fmt(ips(),1)+'. '+tr('Občine: ','Municipalities: ')+S.n+tr(' od 212.',' of 212.')+
   (n?' '+tr('Naslednja: ','Next: ')+n.n+', '+tr('cena ','cost ')+fmt(ocost(S.n))+' SIT.':'')}
@@ -522,7 +537,7 @@ function mapGridHTML(M,iw){const n=S.n;const pad=Math.floor((iw-M.W)/2);let h=''
  for(let y=0;y<M.H;y++){let row='| '+' '.repeat(pad);for(let x=0;x<M.W;x++){
   if(kurPos&&y>=kurPos[1]&&y<kurPos[1]+3&&x>=kurPos[0]&&x<kurPos[0]+4){row+=`<span class="kur" data-a="kurent">${esc(KUR[y-kurPos[1]][x-kurPos[0]])}</span>`;continue}
   const near=kurPos&&y>=kurPos[1]-1&&y<=kurPos[1]+3&&x>=kurPos[0]-1&&x<=kurPos[0]+4;const da=near?' data-a="kurent"':'';
-  const i=M.g[y][x];if(i===-2){row+=near?`<span data-a="kurent">~</span>`:'~';continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
+  const i=M.g[y][x];if(i===-2){row+=near?`<span data-a="kurent">~</span>`:'<span class="sea">~</span>';continue}if(i<0){row+=near?`<span data-a="kurent"> </span>`:' ';continue}
   const seat=M.s[i]&&M.s[i][0]===x&&M.s[i][1]===y;let ch,cls='c'+i+' r'+O[i].r+(i<n?' u':'');
   if(i<n)ch=seat?(O[i].n==='Ljubljana'?'@':O[i].u?'O':'o'):REG[O[i].r][3];else if(i===n){ch='?';cls+=' q'}else ch='.';
   row+=`<i class="${cls}"${da}>${esc(ch)}</i>`}
@@ -587,7 +602,7 @@ function pAch(w){const iw=w-4;const per=6;const pages=Math.ceil(ACH.length/per);
  ls.push(lr(tr('dobljeno ','earned ')+S.ach.length+'/'+ACH.length,'+'+pc(Math.round(ACHP()*100*S.ach.length))+tr(' dohodka',' income'),iw));ls.push([H(bar(S.ach.length/ACH.length,iw-2))]);ls.push('');
  const isNew=id=>S.achT[id]&&Date.now()-S.achT[id]<6e5;
  ACH.slice(achPage*per,achPage*per+per).forEach(a=>{const got=S.ach.includes(a[0]);const nw=got&&isNew(a[0]);
-  wrap((got||a[0]!=='tri'?a[1]():'???'),iw-4).forEach((l,j)=>ls.push(j?'    '+l:nw?[{t:'[!] '+l,c:'bold'}]:(got?'[x] ':'[ ] ')+l));wrap(a[2](),iw-4).forEach(l=>ls.push('    '+l))});
+  wrap((got||!SECRET.has(a[0])?a[1]():'???'),iw-4).forEach((l,j)=>ls.push(j?'    '+l:nw?[{t:'[!] '+l,c:'bold'}]:(got?'[x] ':'[ ] ')+l));wrap(a[2](),iw-4).forEach(l=>ls.push('    '+l))});
  ls.push('');ls.push(two([btn('<','ach-1',true,tr('prejšnja stran','previous page')),' ',btn('>','ach1',true,tr('naslednja stran','next page'))],[(achPage+1)+'/'+pages],iw));
  const nNew=S.ach.filter(isNew).length;return box(tr('DOSEŽKI','ACHIEVEMENTS'),ls,w,nNew?[{t:'[ '+tr('novih: ','new: ')+nNew+' ]',c:'bold'}]:[])}
 function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
@@ -636,7 +651,7 @@ function put(id,html){html=padPanel(id,html);if(cache[id]===html)return;const el
   if(inp){const ni=el.querySelector('#impin');if(ni){ni.replaceWith(inp);if(act===inp)inp.focus({preventScroll:true})}}
   if(fa){const n=el.querySelector(`[data-a="${fa}"]`);if(n)n.focus({preventScroll:true})}}
  lineCache[id]=rows;cache[id]=html}
-let lastTitle='';function title(){const s=(kurPos?(Date.now()%1000<500?'(!) KURENT · ':'(.) KURENT · '):'')+fmt(Math.floor(S.sit))+' SIT · Občine';if(s!==lastTitle){document.title=s;lastTitle=s}}
+let lastTitle='';function title(){const s=(kurPos?(Date.now()%1000<500?'(!) KURENT · ':'(.) KURENT · '):'')+fmt(Math.floor(S.sit))+(S.noHacek?' SIT · Obcine':' SIT · Občine');if(s!==lastTitle){document.title=s;lastTitle=s}}
 let srKey='';function sr(){const s=srSummary();if(s!==srKey){document.getElementById('srsum').textContent=s;srKey=s}}
 const FAST={bell:1};let lastSlow=0;
 function render(force){const now=performance.now();const slow=force||now-lastSlow>250;if(slow)lastSlow=now;
@@ -659,6 +674,7 @@ function act(a){if(!a)return;
  if(a==='unlock'){unlock();return}
  if(a==='all'){let k=0;const f=S.n;while(unlock(true))k++;if(k){log(tr('odklenjenih ','unlocked ')+k+': '+O[f].n+(k>1?' … '+O[S.n-1].n:''));ding(660,.05)}return}
  if(a==='kurent')return catchKurent();
+ if(a==='hacek'){S.noHacek=S.noHacek?0:1;tone(S.noHacek?330:660,{p:HAND,dur:.3,vol:.04});if(S.noHacek)secret('hac');return}
  if(a.startsWith('amt')){S.amt=a==='amtmax'?'max':+a.slice(3);return}
  if(/^g\d+$/.test(a))return buyGen(+a.slice(1));
  if(a==='upall'){let k=0;for(const u of upgrades()){if(u.cost<=S.sit){S.sit-=u.cost;S.ups.push(u.id);k++}}if(k){log(tr('kupljenih izboljšav: ','upgrades bought: ')+k);ding(1175,.05)}return}
@@ -678,7 +694,13 @@ function act(a){if(!a)return;
  if(a==='rstyes'){const keep={sound:S.sound,light:S.light,lang:S.lang};S=Object.assign(fresh(),keep);resetArm=0;log(tr('nova igra. pozvoni!','new game. ring the bell!'));save();full();return}}
 const target=e=>{let t=e.target.closest&&e.target.closest('[data-a]');if(!t&&e.clientX!=null){const el=document.elementFromPoint(e.clientX,e.clientY);t=el&&el.closest&&el.closest('[data-a]')}return t};
 let downA=null;
-document.addEventListener('pointerdown',e=>{const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
+/* map secrets: the capital's guardian and the coast */
+let seaClicks=0;
+function mapSecret(el){if(!el||!el.closest)return;if(el.closest('#mapgrid .sea')){if(++seaClicks===10){seaClicks=0;
+  toast('galeb',tr('Galeb','A seagull'),tr('ti je pojedel burek. Na vseh 47 km obale je našel ravno tebe.','stole your burek. 47 km of coast, and it found you.'),null);tone(1760,{p:HAND,dur:.2,vol:.04});secret('obala')}return}
+ const c=el.closest('#mapgrid i');if(c&&c.classList.contains('c'+IDX['Ljubljana'])&&S.n>IDX['Ljubljana']){
+  toast('zmaj',tr('Ljubljanski zmaj','The Ljubljana dragon'),tr('Z Zmajskega mostu pazi na prestolnico. Nanj se lahko zaneseš.','From the Dragon Bridge it watches over the capital. You can count on it.'),regionChime);secret('zmaj')}}
+document.addEventListener('pointerdown',e=>{mapSecret(e.target);const t=target(e);if(!t){downA=null;return}if(e.pointerType==='mouse')e.preventDefault();
  if(t.dataset.a==='ring'||t.dataset.a==='kurent'){e.preventDefault();downA=null;act(t.dataset.a);render(true);return}downA=t.dataset.a});
 document.addEventListener('pointerup',e=>{if(!downA)return;const a=downA;downA=null;const el=document.elementFromPoint(e.clientX,e.clientY);const t=el&&el.closest&&el.closest('[data-a]');
  if(t&&t.dataset.a===a){act(a);render(true)}});
@@ -691,7 +713,7 @@ document.addEventListener('keydown',e=>{if(e.target.id==='impin')return;
  if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.a){e.preventDefault();if(!e.repeat){act(e.target.dataset.a);render(true)}return}
  if(e.code==='Space'){e.preventDefault();if(!e.repeat){ring();render(true)}return}
  if(e.key==='n'||e.key==='N'){unlock();render(true)}
- typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav'&&!S.ach.includes('tri'))gotAch(ACH.find(a=>a[0]==='tri'))});
+ typed=(typed+e.key.toLowerCase()).slice(-7);if(typed==='triglav')secret('tri')});
 /* hovering (or tapping) a map cell, a register row or a region row highlights it on the map */
 const hoverTarget=el=>{if(!el||!el.closest)return null;const c=el.closest('#mapgrid i');if(c)return{i:+c.className.match(/c(\d+)/)[1],r:-1};
  const o=el.closest('[data-o]');if(o)return{i:+o.dataset.o,r:-1};const g=el.closest('[data-r]');if(g)return{i:-1,r:+g.dataset.r};return null};
@@ -720,7 +742,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
  render()}
 
 /* ================= TEST HOOK ================= */
-window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()}};
+window.__dbg={get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx){toastQ.length=0;toast(k,ti,tx,null)},get noHacek(){return !!S.noHacek}};
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;

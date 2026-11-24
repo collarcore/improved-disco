@@ -40,7 +40,7 @@ Black and white, one font, one character grid. Slovenian and English.
   delavnik, izletniki, petek v gostilni, gasilska veselica and nedeljska maša (Sunday: the meter fills twice as fast).
 - **Prazniki**: rarer extras from the real calendar: Pust and Prešernov dan in February,
   Dan državnosti in June, the tourist season, trgatev, Martinovanje in November, Christmas, the ski season.
-- **Dosežki**: 55 achievements, each +1 %. One of them is a secret.
+- **Dosežki**: 59 achievements, each +1 %. Five are secrets, shown as ??? with a cryptic hint until you find them.
 
 The game saves in your browser and earns at half speed while closed (up to 8 h).
 Settings → *Prenos igre* copies the save so you can continue on another device.

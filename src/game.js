@@ -876,7 +876,8 @@ function tipLine(){if(S.n>=4||S.refs>0||S.osel)return '';const t=TOUCH.matches,p
  return p+tr('odklepaj naprej; vsaka občina dvigne dohodek. Zemljevid kaže, kje si.','keep unlocking; every municipality raises income. The map shows where you are.')}
 function say(m){const sr=document.getElementById('srlog');if(sr)sr.textContent=m}
 function dragonSound(){[[98,GREAT,1.3,.06,0],[147,CHURCH,1,.045,.22],[73,GREAT,1.6,.05,.5],[1976,HAND,.5,.03,.85],[2637,HAND,.4,.025,1]].forEach(([f,p,dur,vol,when])=>tone(f,{p,dur,vol,when,jingle:true}))}
-function spawnDragon(){zmaj={t0:Date.now(),row:-1,away:document.hidden};dragonSound();say(tr('Nad naslovom leti zmaj. Pritisni Z, da ga ujameš.','A dragon is flying over the title. Press Z to catch it.'))}
+/* once its secret is found the dragon still drops by, but silently: nothing left to call you over for */
+function spawnDragon(){zmaj={t0:Date.now(),row:-1,away:document.hidden};if(!S.ach.includes('zmaj'))dragonSound();say(tr('Nad naslovom leti zmaj. Pritisni Z, da ga ujameš.','A dragon is flying over the title. Press Z to catch it.'))}
 function catchDragon(){if(!zmaj)return;zmaj=null;zmajNext=Date.now()+ZC.every[0]+Math.random()*(ZC.every[1]-ZC.every[0]);
  if(!S.ach.includes('zmaj'))secret('zmaj',regionChime);else{regionChime();log(tr('zmaj ti je pomahal in odletel.','the dragon waved and flew off.'))}render(true)}
 
@@ -898,7 +899,7 @@ function boatCell(b,x,y){/* the boat's own cells, and the sea right around it (s
  const r=y-b.y,c=x-b.x;if(r>=0&&r<b.spr.length&&c>=0&&c<b.w){const ch=b.spr[r][c]||' ';return ch===' '?((x+y+b.f)%2?' ':'~'):ch}
  if(r>=-1&&r<=b.spr.length&&c>=-1&&c<=b.w){const M=mapFor(PW.map||48);if(M.g[y]&&M.g[y][x]===-2)return (x+y)%2?' ':'~'}return null}
 function boatSound(){tone(110,{p:CHURCH,dur:1.6,vol:.045,jingle:true});tone(82.5,{p:CHURCH,dur:1.8,vol:.035,when:.05,jingle:true});tone(1568,{p:HAND,dur:.3,vol:.02,when:1.2,jingle:true})}
-function spawnBoat(){boat={t0:Date.now(),away:document.hidden};boatSound();say(tr('Na morju je jadrnica. Pritisni J, da se vkrcaš.','There is a sailboat on the sea. Press J to go aboard.'));drawMap(true)}
+function spawnBoat(){boat={t0:Date.now(),away:document.hidden};if(!S.ach.includes('piran'))boatSound();say(tr('Na morju je jadrnica. Pritisni J, da se vkrcaš.','There is a sailboat on the sea. Press J to go aboard.'));drawMap(true)}
 function catchBoat(){if(!boat)return;boat=null;boatNext=Date.now()+BC.every[0]+Math.random()*(BC.every[1]-BC.every[0]);
  if(!S.ach.includes('piran')){piranVia='boat';secret('piran',regionChime);piranVia=''}else{regionChime();log(tr('jadrnica je odplula proti Piranu.','the sailboat sailed off towards Piran.'))}drawMap(true);render(true)}
 

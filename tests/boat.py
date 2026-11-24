@@ -29,7 +29,10 @@ with sync_playwright() as p:
         print(f'[{w}] {how}: horn={horn>=2} boat cells={n} drawn={txt.strip()!r} caught->secret={got} boat text={"Jadrnica" in t}')
         if not (horn >= 2 and n and got and 'Jadrnica' in t): bad.append(how)
         if how == 'click':
-            pg.evaluate("__dbg.boat()"); pg.wait_for_timeout(300); pg.keyboard.press('j'); pg.wait_for_timeout(300)
+            pg.evaluate("window.__osc.length=0;__dbg.boat()"); pg.wait_for_timeout(300); quiet = not any(f < 120 for f in pg.evaluate('window.__osc.slice()'))
+            print('second boat comes silently:', quiet)
+            if not quiet: bad.append('quiet')
+            pg.keyboard.press('j'); pg.wait_for_timeout(300)
             sailed = 'odplula' in pg.evaluate("document.getElementById('p-log').innerText"); print('second boat: sails off, no new pop-up =', sailed)
             if not sailed: bad.append('again')
         c.close()

@@ -59,7 +59,10 @@ with sync_playwright() as p:
         print(f'{how}: arrival sound={low>=2} caught={gone} secret={got} pop-up={"zmaj" in t.lower()}')
         if not (low >= 2 and gone and got): bad.append(('catch', how))
         if how == 'click':
-            pg.evaluate("__dbg.dragon()"); pg.wait_for_timeout(300); pg.keyboard.press('z'); pg.wait_for_timeout(300)
+            pg.evaluate("window.__osc.length=0;__dbg.dragon()"); pg.wait_for_timeout(300); quiet = not any(f < 160 for f in pg.evaluate('window.__osc.slice()'))
+            print('second dragon comes silently:', quiet)
+            if not quiet: bad.append('quiet')
+            pg.keyboard.press('z'); pg.wait_for_timeout(300)
             waved = 'pomahal' in pg.evaluate("document.getElementById('p-log').innerText")
             print('second dragon: waves, no new pop-up =', waved)
             if not waved: bad.append('wave')

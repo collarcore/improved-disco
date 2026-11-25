@@ -17,6 +17,7 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `welcome.py` | a first visit gets one welcome pop-up, a blinking ZVONI button and step-by-step hints; never again, never for existing players; the register names the same three as "sledijo" |
 | `background.py` | in a background tab the Kurent, dragon and boat still arrive with their sounds; a tab with working sound is never reloaded behind your back |
 | `achievements.py` | the 14 newer achievements (61 -> 75) unlock when their condition holds and not before |
+| `krof.py` | the Kurent's doughnut pays 3 minutes of the income on screen, ringing included |
 | `amendments.py` | each of the new amendments does what it says (night shift, urban municipalities, cooperatives, market days, holiday law, 30-min bank); offers come only from those not yet adopted |
 | `bank.py` | ringing on a full meter banks time; the meter holds while it runs down, then the grace, then the drain; survives a reload; capped at 10 min (30 with the amendment) |
 | `copy.py` | copy buttons work by mouse and touch, with the old copy method or the clipboard API; if the clipboard refuses or never answers, the code ends up selected in the paste field |

@@ -450,7 +450,7 @@ const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
  let title,text;
  if(r<.5){const ms=KC.multS*lx;kurUntil=Date.now()+ms;title=tr('Kurentovanje','Kurentovanje');text=tr('Dohodek ×','Income ×')+KC.mult+tr(' za ',' for ')+ms/1000+' s.'}
- else if(r<.8){const g=baseIps()*KC.krofS+25;earn(g);title=tr('Pustni krof','Carnival doughnut');text='+'+fmt(g)+' SIT'+tr(' (3 minute dohodka).',' (3 minutes of income).')}
+ else if(r<.8){const g=baseIps()*meterMult()*KC.krofS+25;/* 3 minutes of what you earn now, ringing included (the Kurent's own ×3 left out) */earn(g);title=tr('Pustni krof','Carnival doughnut');text='+'+fmt(g)+' SIT'+tr(' (3 minute dohodka).',' (3 minutes of income).')}
  else{const ms=KC.clickS*lx;clkUntil=Date.now()+ms;title=tr('Zvonci','Jingle bells');text=tr('Klik ×','Clicks ×')+KC.click+tr(' za ',' for ')+ms/1000+tr(' s. Zvoni zdaj!',' s. Ring now!')}
  log(tr('kurent: ','Kurent: ')+title.toLowerCase()+' · '+text);toast('kur',title,text,null);
  ding(523,.06);ding(784,.05);drawMap(true)}
@@ -867,7 +867,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 
 /* ================= TEST HOOK ================= */
 /* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
-if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={ev(){return {fill:evFill(),click:evClick(),kur:evKur(),glob:evGlob(),gen:GEN.map((_,k)=>evGen(k))}},soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={ips:()=>ips(),ev(){return {fill:evFill(),click:evClick(),kur:evKur(),glob:evGlob(),gen:GEN.map((_,k)=>evGen(k))}},soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
    player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */

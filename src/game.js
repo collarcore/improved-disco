@@ -313,7 +313,9 @@ function showToast(){const el=document.getElementById('toast');const q=toastQ[0]
  clearTimeout(toastTimer);if(q.kind==='upd')return;toastMs=Math.min(12000,Math.max(6000,3000+70*(L(q.title||'')+L(q.text||''))));toastTimer=setTimeout(nextToast,toastMs)}
 /* drawn for the width of the column it sits over; redrawn if the layout changes while it shows */
 function drawToast(q){const el=document.getElementById('toast');
- const w=toastCol().w;const iw=w-4;const art=q.art||ART[q.kind]||['','','',''];const aw=Math.max(...art.map(L))+2;
+ const w=toastCol().w;const iw=w-4;const art0=q.art||ART[q.kind]||['','','',''];
+ /* every pop-up has the same drawing column (the widest drawing, 11), each drawing centred in it, so the text always starts in the same place */
+ const ART_W=11,dw=Math.max(...art0.map(L)),art=art0.map(l=>' '.repeat(Math.floor((ART_W-dw)/2))+l);const aw=ART_W+2;
  const tx=[...wrap(q.title,iw-aw),...wrap(q.text,iw-aw)];/* every pop-up is the same height (5 rows inside), so each covers the same lines of the page */
  const rows=Math.max(TOAST_ROWS,art.length,tx.length);const lines=[''];
  for(let i=0;i<rows;i++)lines.push([H(padR(art[i]||'',aw)),tx[i]||'']);lines.push('');if(q.kind==='upd'){const l=tr('[ kasneje ]','[ later ]'),r=tr('[ osveži ]','[ reload ]');lines.push([' '.repeat(Math.max(0,iw-L(l)-2-L(r))),{t:l,a:'updlater',lab:tr('Posodobi kasneje','Update later')},'  ',{t:r,a:'updnow',lab:tr('Osveži zdaj','Reload now')}])}
@@ -359,11 +361,11 @@ const SECRET=new Set(['tri','hac','zmaj','obala','poldne','piran','sam']);
 /* each secret has one pop-up with its own drawing; the first time it also counts as an achievement */
 const SEC={
  tri:['triglav',()=>tr('Na vrhu','On top'),()=>tr('Triglav, 2864 m. Vsak Slovenec mora vsaj enkrat gor.','Triglav, 2,864 m. Every Slovene has to climb it at least once.')],
- hac:['hacek',()=>tr('Strešica','The háček'),()=>tr('Strešica je padla s črke Č. Brez nje so Občine samo Obcine. Klikni jo, da jo vrneš.','The háček fell off the Č. Without it, Občine is just Obcine. Click it to put it back.')],
+ hac:['hacek',()=>tr('Strešica','The háček'),()=>tr('Strešica je padla s črke Č. Zdaj so Občine samo Obcine. Klikni jo, da jo vrneš.','The háček fell off the Č: Občine is now Obcine. Click it to put it back.')],
  zmaj:['zmaj',()=>tr('Ljubljanski zmaj','The Ljubljana dragon'),()=>tr('Z Zmajskega mostu pazi na prestolnico. Nanj se lahko zaneseš.','From the Dragon Bridge it watches over the capital. You can count on it.')],
  obala:['galeb',()=>tr('Galeb in burek','A seagull and a burek'),()=>tr('Galeb ti je pojedel burek. Na vseh 47 km obale je našel ravno tebe.','A seagull ate your burek. 47 km of coast, and it found you.')],
  poldne:['poldne',()=>tr('Poldne','Noon'),()=>tr('Zvonovi vseh far odzvanjajo poldne. Tudi tvoj.','Every parish rings noon. Yours too.')],
- piran:['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>piranVia==='boat'?tr('Jadrnica te je pripeljala v Piran ravno ob zahodu. Lepšega pristanka ni.','The sailboat brought you to Piran just at sunset. There is no finer landing.'):tr('Sonce tone v morje za Tartinijevim trgom. Lepšega zahoda ni.','The sun sinks into the sea behind Tartini Square. There is no finer sunset.')],
+ piran:['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>piranVia==='boat'?tr('Jadrnica te je pripeljala v Piran ravno ob zahodu. Lepšega pristanka ni.','The sailboat brought you to Piran at sunset. No finer landing.'):tr('Sonce tone v morje za Tartinijevim trgom. Lepšega zahoda ni.','The sun sinks into the sea behind Tartini Square. No finer sunset.')],
  sam:['grb',()=>tr('25. junij 1991','25 June 1991'),()=>tr('1991 zvonov za samostojno Slovenijo. Vsi so zvonili s teboj.','1991 rings for an independent Slovenia. Every bell rang with you.')]};
 function secret(id,sound){const s=SEC[id];const first=!S.ach.includes(id);const a=ACH.find(a=>a[0]===id);
  if(first&&a){S.ach.push(id);S.achT[id]=Date.now();log('*** '+tr('dosežek: ','achievement: ')+a[1]()+' (+'+pc(ACHP()*100)+')');const i=ACH.indexOf(a);if(i>=0)achPage=Math.floor(i/6)}
@@ -950,7 +952,7 @@ if(!S.log.length)log(tr('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.','w
 /* a brand-new player gets one welcome pop-up saying what the game is and where to click; the ZVONI button blinks until the first ring */
 {let seen=false;try{seen=!!lsGet('obcine-hi')}catch(e){}
  if(!seen&&S.clicks===0&&S.all===0&&S.n===0){try{lsSet('obcine-hi','1')}catch(e){}
-  toast('hi',tr('Dobrodošel v Občinah','Welcome to Občine'),tr('Klikaj zvon (ali pritisni preslednico). S tolarji kupuj proizvodnjo in odklepaj občine.','Click the bell (or press space). Spend the tolars on production and unlock municipalities.'),null,BELLART[2])}}
+  toast('hi',tr('Dobrodošel v Občinah','Welcome to Občine'),tr('Klikaj zvon ali preslednico. S tolarji kupuj proizvodnjo in odklepaj občine.','Click the bell or press space. Spend tolars on production and unlock municipalities.'),null,BELLART[2])}}
 const ro=new ResizeObserver(()=>{layout();render();placeToast()});ro.observe(document.documentElement);
 /* the pop-up sits on the page's line grid, so it never cuts a line in half. It stays still while the page scrolls
    (moving with it looked jittery) and settles onto the grid once scrolling stops, including the scroll a reload restores */

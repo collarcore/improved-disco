@@ -112,7 +112,7 @@ function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
  for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV','dev','bank'])s[k]=num(s[k],0||f[k]||0);
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
- s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
+ s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.offer=strs(s.offer).filter(id=>AM.some(m=>m[0]===id)&&!s.amends.includes(id)).slice(0,3);s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
  s.achT=obj(s.achT);s.evSeen=obj(s.evSeen);s.amt=[1,10,100,'max'].includes(s.amt)?s.amt:1;s.lang=['sl','en'].includes(s.lang)?s.lang:null;
  for(const k of ['sound','light','noHacek'])s[k]=k==='sound'?(s[k]===0||s[k]===false?0:1):(s[k]?1:0);
@@ -764,7 +764,8 @@ function act(a){if(!a)return;
  if(a[0]==='u')return buyUp(a.slice(1));
  if(a.startsWith('pg')){const v=+a.slice(2);const rows=MODE.startsWith('1')?10:16;if(v===0)regPage=null;else regPage=Math.max(0,Math.min(O.length-rows,(regPage===null?Math.max(0,Math.min(O.length-rows,S.n-Math.floor(rows/2))):regPage)+v));return}
  if(a.startsWith('ach'))return achPage+=+a.slice(3);
- if(a==='ref'){const offer=offerAmendments();if(offer.length)refPick=offer;else refArm=Date.now()+5000;return}
+ /* the three on offer stay the same until a referendum is held: cancelling or reloading doesn't redeal them (the referendum's fresh save drops S.offer) */
+ if(a==='ref'){const left=AM.filter(m=>!am(m[0])).length;if(!S.offer||S.offer.length!==Math.min(3,left)||S.offer.some(am)){S.offer=offerAmendments();save()}const offer=S.offer;if(offer.length)refPick=offer;else refArm=Date.now()+5000;return}
  if(a==='refno'){refArm=0;refPick=null;return}if(a==='refyes'){refArm=0;return referendum(null)}
  if(a==='snd'){S.sound=S.sound?0:1;return}
  if(a==='thm'){S.light=S.light?0:1;document.documentElement.classList.toggle('light',!!S.light);return}

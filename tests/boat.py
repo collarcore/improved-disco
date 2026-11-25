@@ -22,8 +22,14 @@ with sync_playwright() as p:
         if how == 'J': pg.keyboard.press('j')
         else:
             pg.evaluate("document.querySelector('#mapgrid .boat').scrollIntoView({block:'center'})"); pg.wait_for_timeout(200)
-            cells = pg.locator('#mapgrid .boat'); k = [i for i in range(cells.count()) if cells.nth(i).text_content().strip() in ('|', '\\', '/', '_')][0]
-            bb = cells.nth(k).bounding_box(); (pg.touchscreen.tap if touch else pg.mouse.click)(bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2)
+            # the map redraws as the boat moves, so a cell can be replaced while we look at it: retry until it holds still
+            bb = None
+            for _ in range(20):
+                bb = pg.evaluate("""(()=>{const c=[...document.querySelectorAll('#mapgrid .boat')].find(e=>/[|\\\\/_]/.test(e.textContent));
+                  if(!c)return null;const r=c.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}})()""")
+                if bb: break
+                pg.wait_for_timeout(100)
+            (pg.touchscreen.tap if touch else pg.mouse.click)(bb['x'] + bb['w'] / 2, bb['y'] + bb['h'] / 2)
         pg.wait_for_timeout(400)
         t = pg.evaluate("document.getElementById('toast').innerText"); got = 'piran' in ach(pg)
         print(f'[{w}] {how}: horn={horn>=2} boat cells={n} drawn={txt.strip()!r} caught->secret={got} boat text={"Jadrnica" in t}')

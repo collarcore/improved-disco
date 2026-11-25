@@ -489,8 +489,10 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
  return box(tr('ZVONIK','BELL TOWER'),lines,w,[tr('[preslednica]','[space]')])}
 function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
  const row=(a,b)=>tl.push(lr(a,b,iw));
- row(tr('tolarji','tolars'),fmt(Math.floor(S.sit)));row(tr('na sekundo','per second'),fmt(ips(),1));row(tr('na klik','per click'),fmt(clickVal(),1));row(tr('občine','municipalities'),S.n+'/212');row(tr('prebivalci','residents'),num(p));
+ row(tr('tolarji','tolars'),fmt(Math.floor(S.sit)));row(tr('na sekundo','per second'),fmt(ips(),1));row(tr('  brez zvonjenja','  without ringing'),fmt(ips()/meterMult(),1));row(tr('na klik','per click'),fmt(clickVal(),1));row(tr('občine','municipalities'),S.n+'/212');row(tr('prebivalci','residents'),num(p));
  tl.push(two([H(bar(p/TOTAL,iw-9))],[pc(p/TOTAL*100)],iw));tl.push('');
+ /* production × total = per second: the producers with their own upgrades, then everything that multiplies all of it */
+ row(tr('proizvodnja','production'),fmt(baseIps()/allMult(),1));
  tl.push(tr('množitelji:','multipliers:'));
  row(tr('  prebivalci (1 na ','  residents (1 per ')+num(PDIV)+')',xf(popMult()));row(tr('  cele regije (','  complete regions (')+rd+'/12)',xf(regMult()));row(tr('  znamenitosti','  landmarks'),xf(globUp()));
  row(tr('  zvonjenje','  ringing'),xf(meterMult()));row(tr('  dosežki (','  achievements (')+S.ach.length+')',xf(achMult()));row(tr('  glasovi (','  votes (')+S.votes+')',xf(voteMult()));
@@ -800,7 +802,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 
 /* ================= TEST HOOK ================= */
 /* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
-if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
    player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */
@@ -916,9 +918,13 @@ function reloadFresh(b){try{sessionStorage.setItem('obcine-upd',b)}catch(e){}sav
 function updLater(){if(toastQ[0]&&toastQ[0].kind==='upd'){toastQ.shift();showToast()}}
 function newVersion(b){let tried='';try{tried=sessionStorage.getItem('obcine-upd')||''}catch(e){}
  if(tried===b)return;/* already reloaded for this version and the server still sent the old page: don't loop */
- updAvail=b;if(document.hidden){reloadFresh(b);return}
+ updAvail=b;if(document.hidden&&!soundLive()){reloadFresh(b);return}if(document.hidden)return;/* shown when you come back */
  toast('upd',tr('Nova različica','New version'),tr('Igra je posodobljena. Osveži zdaj ali kasneje; napredek ostane.','The game has been updated. Reload now or later; your progress stays.'),null)}
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&updAvail)reloadFresh(updAvail);else if(!document.hidden)checkVersion()});
+/* a reload ends the page's permission to play sound until the next click, so a tab whose sound is working is never
+   reloaded behind your back: it shows the notice when you come back instead */
+const soundLive=()=>!!(S.sound&&gestured);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&updAvail&&!soundLive())reloadFresh(updAvail);
+ else if(!document.hidden){if(updAvail&&!(toastQ.some(q=>q.kind==='upd')))toast('upd',tr('Nova različica','New version'),tr('Igra je posodobljena. Osveži zdaj ali kasneje; napredek ostane.','The game has been updated. Reload now or later; your progress stays.'),null);checkVersion()}});
 setTimeout(checkVersion,20e3);setInterval(checkVersion,5*60e3);
 
 /* ================= START ================= */

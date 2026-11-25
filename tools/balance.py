@@ -35,7 +35,8 @@ def ocost(i, p=None):
     p = p or PRICE
     base = p['A'] * 1.15 ** i * math.exp(p['B'] * i * (211 - i) / 211) + p['E'] * (i + 1) ** p['P']
     r = min(1, max(0, (i - 16) / 6), max(0, (70 - i) / 6)); dip = 1 - .45 * (3 * r * r - 2 * r ** 3)   # same dip as the game
-    return base * math.exp(p['C'] * max(0, i - 140)) * dip
+    ramp = .3 + .7 * (i / 10) ** 2 if i < 10 else 1   # the first ten cheaper, as in the game
+    return base * math.exp(p['C'] * max(0, i - 140)) * dip * ramp
 
 
 class Game:

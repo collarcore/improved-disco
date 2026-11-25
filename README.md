@@ -61,16 +61,16 @@ Settings → *Prenos igre* copies the save so you can continue on another device
 
 From `python3 tools/balance.py` (models producers, landmarks, bells, the ringing meter,
 the week and referendums; leaves out the Kurent, achievements, amendments and holidays,
-so real players are somewhat faster):
+so real players are faster; the first finishers took about a day):
 
 | občine | active player (hours of play) | casual player, 3×10 min a day (days) |
 |---|---|---|
-| 10 | 0.8 | 0.9 |
-| 25 | 2.4 | 1.5 |
-| 50 | 5.2 | 2.5 |
-| 100 | 7.6 | 3.5 |
-| 150 | 12.4 | 6.5 |
-| all 212 | ~28 (8 referendums) | ~17 (6 referendums) |
+| 10 | 0.6 | 0.5 |
+| 25 | 2.2 | 1.3 |
+| 50 | 5.0 | 2.3 |
+| 100 | 7.4 | 3.3 |
+| 150 | 13.9 | 6.3 |
+| all 212 | ~25 (8 referendums) | ~16 (6 referendums) |
 
 Without referendums a run stalls around 150 občin; the *next občina* panel says when one pays off.
 

@@ -27,7 +27,7 @@ const TOTAL=O.reduce((s,o)=>s+o.p,0);
 const GEN=[['Njiva','Field',15,.1,0,'njive','fields'],['Kozolec','Hayrack',100,1,2,'kozolci','hayracks'],['Čebelnjak','Apiary',1100,8,8,'čebelnjaki','apiaries'],
  ['Gostilna','Inn',12e3,47,18,'gostilne','inns'],['Vinska klet','Wine cellar',130e3,260,30,'vinske kleti','wine cellars'],['Žaga','Sawmill',1.4e6,1400,45,'žage','sawmills'],
  ['Rudnik','Mine',20e6,7800,62,'rudniki','mines'],['Toplice','Spa',330e6,44e3,80,'toplice','spas'],['Smučišče','Ski resort',5.1e9,260e3,100,'smučišča','ski resorts'],
- ['Tovarna','Factory',75e9,1.6e6,125,'tovarne','factories'],['Pristanišče','Port',1e12,10e6,150,'pristanišča','ports'],['Elektrarna','Power plant',14e12,65e6,175,'elektrarne','power plants']];
+ ['Tovarna','Factory',75e9,1.6e6,120,'tovarne','factories'],['Pristanišče','Port',1e12,10e6,142,'pristanišča','ports'],['Elektrarna','Power plant',14e12,65e6,163,'elektrarne','power plants']];
 const gname=k=>tr(GEN[k][0],GEN[k][1]);const gpl=k=>tr(GEN[k][5],GEN[k][6]);const gcostBase=k=>GEN[k][2];const gprod=k=>GEN[k][3];const greq=k=>GEN[k][4];
 const TIERS=[[10,10,'boljše orodje','better tools'],[25,100,'zadruga','cooperative'],[50,1e4,'evropska sredstva','EU funds'],[100,1e6,'digitalizacija','digitalisation'],
  [150,1e8,'zelena preobrazba','green transition'],[200,1e10,'pametna specializacija','smart specialisation']];
@@ -148,7 +148,7 @@ const evKur=()=>eventsNow().reduce((m,e)=>m*evF(e,e.kur),1);
 /* prices are 45 % lower across #16-70, easing in and out over 6 steps: without it the first run had a half-hour
    stretch around #25-60 with nothing to unlock; with it the longest wait is about 20 minutes (tools/balance.py) */
 const DIP=i=>{const r=Math.min(1,Math.max(0,(i-16)/6),Math.max(0,(70-i)/6));return 1-.45*(3*r*r-2*r*r*r)};
-const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*DIP(i)*(am('a3')?.8:1));
+const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*DIP(i)*(i<10?.3+.7*(i/10)**2:1)*(am('a3')?.8:1));/* the first ten cheaper, so the opening moves */
 const lmcost=l=>ocost(l.o)*3*(am('a7')?.5:1)||Math.ceil((30*1.15**l.o)*3);
 function pop(){let p=0;for(let i=0;i<S.n;i++)p+=O[i].p;return p}
 function regCount(){const c=REG.map(()=>0);for(let i=0;i<S.n;i++)c[O[i].r]++;return c}
@@ -191,11 +191,15 @@ const gcost=(k,a)=>gcostBase(k)*GD()*GROW**S.own[k]*(GROW**a-1)/(GROW-1);
 const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(gcostBase(k)*GD()*GROW**S.own[k])+1)/Math.log(GROW)));
 const votesTotal=()=>Math.floor(Math.cbrt(S.all/1e9));
 const votesGain=()=>Math.max(0,votesTotal()-S.votes);
+/* a producer's share of income: what doubling it adds */
+const share=k=>{const b=baseIps();return b>0?genIps(k)/b:0};
+const gainTxt=g=>g==null?'':g<.001?' · '+tr('<0,1 %','<0.1%'):' · +'+pc(g*100>=10?Math.round(g*100):Math.round(g*1000)/10);
 function upgrades(){const L=[];
- GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:gname(k)+': '+tr(t[2],t[3]),desc:gpl(k)+' ×2',cost:gcostBase(k)*t[1]*(am('a19')?.5:1)})}));
- LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:lname(l),desc:lmDesc(l)+' · '+ab(O[l.o].n,16),cost:lmcost(l)})});
+ GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:gname(k)+': '+tr(t[2],t[3]),desc:gpl(k)+' ×2',gain:share(k),cost:gcostBase(k)*t[1]*(am('a19')?.5:1)})}));
+ LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:lname(l),desc:lmDesc(l)+' · '+ab(O[l.o].n,16),cost:lmcost(l),gain:l.kind==='gen'?share(l.t)*(l.v-1):l.kind==='glob'?l.v-1:null})});
  CLK.forEach(c=>{if(S.clicks>=c[3]&&!has(c[0]))L.push({id:c[0],name:tr(c[1],c[2]),desc:tr('klik','clicks')+' ×'+c[5]+(c[6]?', +'+pc(c[6]*100)+tr(' dohodka na klik',' of income per click'):'')+tr(', nov zvok',', new sound'),cost:c[4]})});
- return L.sort((a,b)=>a.cost-b.cost)}
+ /* worthwhile ones first, by price; those worth under 0.1 % of income after them */
+ const lo=u=>u.gain!=null&&u.gain<.001?1:0;return L.sort((a,b)=>lo(a)-lo(b)||a.cost-b.cost)}
 function lmDesc(l){const v=xv(l.v);return l.kind==='gen'?gpl(l.t)+' '+v:l.kind==='glob'?tr('vse ','everything ')+v:l.kind==='click'?tr('klik ','clicks ')+v:l.kind==='pct'?tr('klik +','clicks +')+pc(Math.round(l.v*100))+tr(' dohodka',' of income'):tr('kurent pogosteje, učinki 1,5× dlje','Kurent more often, effects last 1.5× longer')}
 
 /* ================= FORMAT ================= */
@@ -643,8 +647,9 @@ function pGen(w){const iw=w-4;const ls=[];const wide=iw>=70;const bg=bestGen();
  return box(tr('PROIZVODNJA','PRODUCTION'),ls,w,right)}
 function pUps(w){const iw=w-4;const U=upgrades();const ls=[];const max=MODE.startsWith('3')?9:6;
  if(!U.length)ls.push(tr('ni novih izboljšav.','no new upgrades.'));
- U.slice(0,max).forEach(u=>{const can=S.sit>=u.cost;const nw=wrap(u.name,iw-L(fmt(u.cost))-2);nw.forEach((l,j)=>ls.push(j===0?lr(l,fmt(u.cost),iw):l));
-  const d=wrap(u.desc,iw-11);if(!d.length)d.push('');d.forEach((l,j)=>ls.push(j===0?two(['  '+l],[btn(tr(' KUPI ',' BUY '),'u'+u.id,can,tr('Kupi ','Buy ')+u.name)],iw):['  '+l]))});
+ U.slice(0,max).forEach(u=>{const can=S.sit>=u.cost;const mu=u.gain!=null&&u.gain<.001;const M=t=>mu?{t,c:'mu'}:t;/* worth under 0.1 %: dimmed */
+  const nw=wrap(u.name,iw-L(fmt(u.cost))-2);nw.forEach((l,j)=>ls.push(j===0?[M(padR(l,iw-L(fmt(u.cost)))),M(fmt(u.cost))]:[M(l)]));
+  const d=wrap(u.desc+gainTxt(u.gain),iw-11);if(!d.length)d.push('');d.forEach((l,j)=>ls.push(j===0?two([M('  '+l)],[btn(tr(' KUPI ',' BUY '),'u'+u.id,can,tr('Kupi ','Buy ')+u.name)],iw):[M('  '+l)]))});
  if(U.length>max)ls.push(tr('… in še ','… and ')+(U.length-max)+tr('',' more'));
  const nextLm=LM.find(l=>l.o>=S.n);if(nextLm){ls.push('');wrap(tr('naslednja znamenitost: čez ','next landmark: in ')+(nextLm.o-S.n+1)+' '+obc(nextLm.o-S.n+1),iw).forEach(l=>ls.push(l))}
  const aff=U.filter(u=>u.cost<=S.sit).length;return box(tr('IZBOLJŠAVE','UPGRADES'),ls,w,aff>1?[btn(tr(' KUPI VSE ',' BUY ALL '),'upall')]:['[ '+tr('kupljenih ','owned ')+S.ups.length+' ]'])}

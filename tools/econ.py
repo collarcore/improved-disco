@@ -3,7 +3,7 @@ d=sorted(json.load(open('data/obcine.json')),key=lambda o:o['p'])
 IDX={o['n']:i for i,o in enumerate(d)}
 GEN=[('Njiva',15,.1,0),('Kozolec',100,1,2),('Čebelnjak',1100,8,8),('Gostilna',12e3,47,18),('Vinska klet',130e3,260,30),
 ('Žaga',1.4e6,1400,45),('Rudnik',20e6,7800,62),('Toplice',330e6,44e3,80),('Smučišče',5.1e9,260e3,100),
-('Tovarna',75e9,1.6e6,125),('Pristanišče',1e12,10e6,150),('Nuklearka',14e12,65e6,175)]
+('Tovarna',75e9,1.6e6,120),('Pristanišče',1e12,10e6,142),('Nuklearka',14e12,65e6,163)]
 TIERS=[(10,10),(25,100),(50,1e4),(100,1e6),(150,1e8),(200,1e10)]
 # landmark: obcina, kind, target, value
 LM=[('Solčava','gen',0,2),('Kostel','click',0,2),('Šentrupert','gen',1,3),('Bovec','gen',3,2),('Ankaran','glob',0,1.1),

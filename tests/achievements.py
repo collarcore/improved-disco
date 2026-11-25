@@ -9,7 +9,7 @@ def got(b, date='2026-11-25T15:00:00', away_h=0, ring=0, **kw):
     if away_h: sv['save'] = 0  # filled in below, relative to the fake clock
     c = b.new_context(viewport={'width': 1600, 'height': 900})
     pre = "window.__date='%s';" % date
-    if away_h: pre += "var __s=%s;__s.save=new Date('%s').getTime()-%d;" % (json.dumps(sv), date, away_h * 3600e3)
+    if away_h: pre += "var __s=%s;__s.save=Date.now()-%d;" % (json.dumps(sv), away_h * 3600e3)  # time away runs on the real clock
     else: pre += "var __s=%s;" % json.dumps(sv)
     c.add_init_script(pre + "localStorage.setItem('obcine-v2',JSON.stringify(__s));localStorage.setItem('obcine-hi','1')")
     pg = c.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)[:120])); pg.goto('http://localhost:8765/?debug'); pg.wait_for_timeout(700)

@@ -13,10 +13,11 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `multitouch.py` | 2-3 finger drumming on a phone: never more than 10 paid rings in any second |
 | `dragon.py` | the dragon flies only through empty header space at every size and number length; its sound; click, tap or Z finds the Ljubljana secret, later it only waves; reduced motion holds it still |
 | `boat.py` | the boat on the map's sea (sailboat or hull); its horn; click, tap or J finds the Piran secret, later it only sails off |
-| `residents.py` | found secrets leave something behind (Triglav's M, the gull, the belfry flag, the perched dragon, the anchored boat, noon bells at 12:00), and only once found |
+| `residents.py` | found secrets leave something behind (Triglav's M, the gull, the belfry flag, the gliding dragon, the anchored boat, noon bells at 12:00), and only once found |
 | `welcome.py` | a first visit gets one welcome pop-up, a blinking ZVONI button and step-by-step hints; never again, never for existing players; the register names the same three as "sledijo" |
 | `background.py` | in a background tab the Kurent, dragon and boat still arrive with their sounds; a tab with working sound is never reloaded behind your back |
-| `bank.py` | ringing on a full meter banks time; the meter holds while it runs down, then the grace, then the drain; survives a reload; capped at 10 min |
+| `amendments.py` | each of the new amendments does what it says (night shift, urban municipalities, cooperatives, market days, holiday law, 30-min bank); offers come only from those not yet adopted |
+| `bank.py` | ringing on a full meter banks time; the meter holds while it runs down, then the grace, then the drain; survives a reload; capped at 10 min (30 with the amendment) |
 | `copy.py` | copy buttons work by mouse and touch, with the old copy method or the clipboard API; if the clipboard refuses or never answers, the code ends up selected in the paste field |
 | `update.py` | an open tab notices a new version: a notice with [kasneje] and [osveži] (a tap elsewhere on it does nothing), or a quiet reload in the background; no reload loop |
 | `honeypot.py` | the debugger traps (a "developer mode" switch, an "unlock all" function, a dev flag in the save) earn the cap; the console greets whoever opens it; honest play never trips them |

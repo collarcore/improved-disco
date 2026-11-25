@@ -59,14 +59,16 @@ with sync_playwright() as p:
         print(f'{how}: arrival sound={low>=2} caught={gone} secret={got} pop-up={"zmaj" in t.lower()}')
         if not (low >= 2 and gone and got): bad.append(('catch', how))
         if how == 'click':
-            # found: it now lives in the header, perched and still there much later; it never flies in again (no sounds)
+            # found: it now lives in the header, gliding to and fro in its gap, still there much later; it never flies in again (no sounds)
             pg.evaluate("window.__osc.length=0"); pg.wait_for_timeout(20000)
             stays = pg.evaluate("document.querySelectorAll('#head .zm').length") > 0
             quiet = not any(f < 160 for f in pg.evaluate('window.__osc.slice()'))
-            x1 = pg.locator('#head .zm').first.bounding_box()['x']; pg.wait_for_timeout(1500); x2 = pg.locator('#head .zm').first.bounding_box()['x']
+            cw = pg.evaluate("(()=>{const s=document.createElement('span');s.textContent='x'.repeat(100);document.getElementById('head').appendChild(s);const w=s.getBoundingClientRect().width/100;s.remove();return w})()")
+            x1 = pg.locator('#head .zm').first.bounding_box()['x']; pg.wait_for_timeout(2100); x2 = pg.locator('#head .zm').first.bounding_box()['x']
+            glide = 1 <= round(abs(x2 - x1) / cw) <= 4
             pg.keyboard.press('z'); pg.wait_for_timeout(300); waved = 'pomahal' in pg.evaluate("document.getElementById('p-log').innerText")
-            print('after the secret: dragon stays', stays, '| perched (not flying)', x1 == x2, '| no arrival sounds', quiet, '| waves when clicked', waved)
-            if not (stays and quiet and waved and x1 == x2): bad.append('resident')
+            print('after the secret: dragon stays', stays, '| glides slowly along the gap', glide, round(abs(x2-x1)/cw), '| no arrival sounds', quiet, '| waves when clicked', waved)
+            if not (stays and quiet and waved and glide): bad.append('resident')
         c.close()
     # left alone it flies off after its 16 s
     c = b.new_context(viewport={'width': 1600, 'height': 900}); c.add_init_script(save(base(5000))); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(500)

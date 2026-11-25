@@ -63,7 +63,16 @@ const AM=[['a1','Cenejša proizvodnja','Producer subsidies','proizvodnja je 15 %
  ['a9','Zakon o delovnem času','Working Hours Act','med odsotnostjo poln dohodek do 12 h','full income while away, up to 12 h'],
  ['a10','Zvonovi ostanejo','The bells stay','izboljšave zvona ostanejo po referendumu','bell upgrades survive referendums'],
  ['a11','Dan dosežkov','Merit Day','vsak dosežek da +2 % namesto +1 %','each achievement gives +2% instead of +1%'],
- ['a12','Hitri začetek','Fast start','prvih 25 občin je brezplačnih','the first 25 municipalities are free']];
+ ['a12','Hitri začetek','Fast start','prvih 25 občin je brezplačnih','the first 25 municipalities are free'],
+ /* these change how you play more than how much you earn, at about the strength of the first twelve */
+ ['a13','Dežurstvo','On duty','kurent ostane 2× dlje','the Kurent stays twice as long'],
+ ['a14','Zvonarska tradicija','Bell-ringing tradition','zaloga zvonjenja drži do 30 min namesto 10','the ringing bank holds up to 30 min instead of 10'],
+ ['a15','Hitrejše zvonjenje','Faster ringing','zvonjenje se polni 2× hitreje','the ringing meter fills twice as fast'],
+ ['a16','Sejemski dnevi','Market days','bonusi dni v tednu so dvojni','weekday bonuses count double'],
+ ['a17','Praznični zakon','Holiday law','bonusi praznikov so dvojni','holiday bonuses count double'],
+ ['a18','Nočna izmena','Night shift','dohodek ×1,5 med 20. in 6. uro','income ×1.5 between 20:00 and 06:00'],
+ ['a19','Zadružništvo','Cooperatives','izboljšave proizvodnje so pol cenejše','production upgrades cost half'],
+ ['a20','Mestne občine','Urban municipalities','vsaka odklenjena mestna občina da +5 % dohodka','each unlocked urban municipality gives +5% income']];
 const amName=id=>{const a=AM.find(a=>a[0]===id);return tr(a[1],a[2])};const amDesc=id=>{const a=AM.find(a=>a[0]===id);return tr(a[3],a[4])};
 /* seasonal events from the real calendar: [month, day] ranges, wrapping over new year */
 const EV=[{id:'pust',sl:'Pust',en:'Carnival',from:[2,1],to:[2,29],dsl:'kurent pride 2× pogosteje',den:'the Kurent comes twice as often',kur:.5},
@@ -87,7 +96,7 @@ const PDIV=20000,GROW=1.15;
 
 /* ================= STATE ================= */
 const KEY='obcine-v2',VERSION=5;
-const BANK_MAX=600;/* the ringing bank's cap, in seconds (see the meter) */
+const BANK_MAX=600,BANK_HARD=1800;/* the ringing bank's cap in seconds (30 min with Zvonarska tradicija) */
 const RELEASE=Date.UTC(2026,10,23,21,0);/* the game came out on 23 November 2026; nobody can have played longer */
 const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
  lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION,dev:0});
@@ -115,10 +124,10 @@ let led=0,plTick=0;
 function earn(g){S.sit+=g;S.life+=g;S.all+=g;led+=g}
 function spend(c){S.sit-=c;led-=c}
 let loadedV=VERSION;try{const s=migrate(JPARSE(lsGet(KEY)||'null'));if(s){S=s;loadedV=s.__v}}catch(e){}
-delete S.__v;led=S.sit;S.bank=Math.min(BANK_MAX,S.bank||0);
+delete S.__v;led=S.sit;S.bank=Math.min(S.amends.includes('a14')?BANK_HARD:BANK_MAX,S.bank||0);
 LANG=S.lang||'sl';
 const has=id=>S.ups.includes(id);
-const am=id=>S.amends.includes(id);
+const am=id=>S.amends.includes(id);const bankMax=()=>am('a14')?BANK_HARD:BANK_MAX;
 let kurUntil=0,clkUntil=0,kurNext=Date.now()+90e3,kurPos=null,kurGone=0,hover=-1,regPage=null,achPage=0,refArm=0,refPick=null,resetArm=0,flash='';
 
 /* ================= CALENDAR ================= */
@@ -127,12 +136,13 @@ function eventsNow(){const d=new Date(window.__date||Date.now());const key=d.toD
  const md=(d.getMonth()+1)*100+d.getDate();const inR=e=>{const a=e.from[0]*100+e.from[1],b=e.to[0]*100+e.to[1];return a<=b?md>=a&&md<=b:md>=a||md<=b};
  evCache={key,list:[WEEK[d.getDay()],...EV.filter(inR)]};return evCache.list}
 const holidaysNow=()=>eventsNow().slice(1);
-const evFill=()=>eventsNow().reduce((m,e)=>m*(e.fill||1),1);
+const evF=(e,f)=>!f||f===1||!(/^d\d$/.test(e.id)?am('a16'):am('a17'))?(f||1):f>1?1+(f-1)*2:f*f;
+const evFill=()=>eventsNow().reduce((m,e)=>m*evF(e,e.fill),1);
 const evName=e=>tr(e.sl,e.en),evDesc=e=>tr(e.dsl,e.den);
-const evGen=k=>eventsNow().reduce((m,e)=>m*((e.gm&&e.gm[k])||1),1);
-const evGlob=()=>eventsNow().reduce((m,e)=>m*(e.glob||1),1);
-const evClick=()=>eventsNow().reduce((m,e)=>m*(e.click||1),1);
-const evKur=()=>eventsNow().reduce((m,e)=>m*(e.kur||1),1);
+const evGen=k=>eventsNow().reduce((m,e)=>m*evF(e,e.gm&&e.gm[k]),1);
+const evGlob=()=>eventsNow().reduce((m,e)=>m*evF(e,e.glob),1);
+const evClick=()=>eventsNow().reduce((m,e)=>m*evF(e,e.click),1);
+const evKur=()=>eventsNow().reduce((m,e)=>m*evF(e,e.kur),1);
 
 /* ================= ECONOMY ================= */
 /* prices are 45 % lower across #16-70, easing in and out over 6 steps: without it the first run had a half-hour
@@ -158,7 +168,10 @@ const voteMult=()=>1+VOTEP()*S.votes;
    An attentive player gains roughly +20-25 % from him overall. */
 const KC={every:[240e3,480e3],stay:13e3,mult:3,multS:30e3,krofS:180,krofBank:.1,click:7,clickS:10e3,ptujEvery:.75,ptujLong:1.5};
 const kurMult=()=>Date.now()<kurUntil?KC.mult:1;
-const allMult=()=>popMult()*regMult()*achMult()*voteMult()*globUp()*evGlob();
+const nightOn=()=>{if(!am('a18'))return false;const h=new Date(window.__date||Date.now()).getHours();return h>=20||h<6};
+let urbanN=[-1,0];const urban=()=>{if(urbanN[0]!==S.n){let c=0;for(let i=0;i<S.n;i++)if(O[i].u)c++;urbanN=[S.n,c]}return urbanN[1]};
+const amMult=()=>(nightOn()?1.5:1)*(am('a20')?1+.05*urban():1);
+const allMult=()=>popMult()*regMult()*achMult()*voteMult()*globUp()*evGlob()*amMult();
 const genIps=k=>S.own[k]*gprod(k)*genMult(k)*allMult();
 function baseIps(){let s=0;for(let k=0;k<GEN.length;k++)s+=S.own[k]*gprod(k)*genMult(k);return s*allMult()}
 /* ringing meter: every ring fills it, it drains once you pause, and it multiplies all income
@@ -179,7 +192,7 @@ const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(gcostBase(k)*GD()*G
 const votesTotal=()=>Math.floor(Math.cbrt(S.all/1e9));
 const votesGain=()=>Math.max(0,votesTotal()-S.votes);
 function upgrades(){const L=[];
- GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:gname(k)+': '+tr(t[2],t[3]),desc:gpl(k)+' ×2',cost:gcostBase(k)*t[1]})}));
+ GEN.forEach((g,k)=>TIERS.forEach((t,ti)=>{if(S.own[k]>=t[0]&&!has('t'+k+'_'+ti))L.push({id:'t'+k+'_'+ti,name:gname(k)+': '+tr(t[2],t[3]),desc:gpl(k)+' ×2',cost:gcostBase(k)*t[1]*(am('a19')?.5:1)})}));
  LM.forEach(l=>{if(l.o<S.n&&!has(l.id))L.push({id:l.id,name:lname(l),desc:lmDesc(l)+' · '+ab(O[l.o].n,16),cost:lmcost(l)})});
  CLK.forEach(c=>{if(S.clicks>=c[3]&&!has(c[0]))L.push({id:c[0],name:tr(c[1],c[2]),desc:tr('klik','clicks')+' ×'+c[5]+(c[6]?', +'+pc(c[6]*100)+tr(' dohodka na klik',' of income per click'):'')+tr(', nov zvok',', new sound'),cost:c[4]})});
  return L.sort((a,b)=>a.cost-b.cost)}
@@ -239,6 +252,9 @@ const bar=(f,w)=>{const k=Math.round(Math.max(0,Math.min(1,f))*w);return '['+'#'
 
 /* ================= BIG DIGITS / BANNERS ================= */
 const FIG={big:{"0": ["  ___  ", " / _ \\ ", "| | | |", "| |_| |", " \\___/ ", "       "], "1": [" _ ", "/ |", "| |", "| |", "|_|", "   "], "2": [" ____  ", "|___ \\ ", "  __) |", " / __/ ", "|_____|", "       "], "3": [" _____ ", "|___ / ", "  |_ \\ ", " ___) |", "|____/ ", "       "], "4": [" _  _   ", "| || |  ", "| || |_ ", "|__   _|", "   |_|  ", "        "], "5": [" ____  ", "| ___| ", "|___ \\ ", " ___) |", "|____/ ", "       "], "6": ["  __   ", " / /_  ", "| '_ \\ ", "| (_) |", " \\___/ ", "       "], "7": [" _____ ", "|___  |", "   / / ", "  / /  ", " /_/   ", "       "], "8": ["  ___  ", " ( _ ) ", " / _ \\ ", "| (_) |", " \\___/ ", "       "], "9": ["  ___  ", " / _ \\ ", "| (_) |", " \\__, |", "   /_/ ", "       "], ".": ["   ", "   ", "   ", " _ ", "(_)", "   "], ",": ["   ", "   ", "   ", " _ ", "( )", "|/ "], "-": ["       ", "       ", " _____ ", "|_____|", "       ", "       "], "+": ["       ", "   _   ", " _| |_ ", "|_   _|", "  |_|  ", "       "], "e": ["      ", "  ___ ", " / _ \\", "|  __/", " \\___|", "      "]},small:{"0": ["  __  ", " /  \\ ", "| () |", " \\__/ ", "      "], "1": [" _ ", "/ |", "| |", "|_|", "   "], "2": [" ___ ", "|_  )", " / / ", "/___|", "     "], "3": [" ____", "|__ /", " |_ \\", "|___/", "     "], "4": [" _ _  ", "| | | ", "|_  _|", "  |_| ", "      "], "5": [" ___ ", "| __|", "|__ \\", "|___/", "     "], "6": ["  __ ", " / / ", "/ _ \\", "\\___/", "     "], "7": [" ____ ", "|__  |", "  / / ", " /_/  ", "      "], "8": [" ___ ", "( _ )", "/ _ \\", "\\___/", "     "], "9": [" ___ ", "/ _ \\", "\\_, /", " /_/ ", "     "], ".": ["   ", "   ", " _ ", "(_)", "   "], ",": ["   ", "   ", " _ ", "( )", "|/ "], "-": ["     ", " ___ ", "|___|", "     ", "     "], "+": ["   _   ", " _| |_ ", "|_   _|", "  |_|  ", "       "], "e": ["     ", " ___ ", "/ -_)", "\\___|", "     "]}};
+/* every digit as wide as the widest one, so the number only shifts when it gains a digit (and the dragon's gap beside it holds still) */
+for(const f in FIG){const F=FIG[f],dw=Math.max(...'0123456789'.split('').map(d=>Math.max(...F[d].map(r=>r.length))));
+ for(const d of '0123456789'){const gw=Math.max(...F[d].map(r=>r.length)),lp=Math.floor((dw-gw)/2);F[d]=F[d].map(r=>' '.repeat(lp)+r.padEnd(gw)+' '.repeat(dw-gw-lp))}}
 function big(str,f){const F=FIG[f];const h=F['0'].length;const r=Array(h).fill('');for(const ch of [...str]){const g=F[ch];if(!g)continue;for(let i=0;i<h;i++)r[i]+=(r[i]?' ':'')+g[i]}return r}
 const BAN_BIG=['               \\/','  ___  ____   ____ ___ _   _ _____',' / _ \\| __ ) / ___|_ _| \\ | | ____|','| | | |  _ \\| |    | ||  \\| |  _|','| |_| | |_) | |___ | || |\\  | |___',' \\___/|____/ \\____|___|_| \\_|_____|'];
 const BAN_SMALL=['             \\/','  ___  ___  ___ ___ _  _ ___',' / _ \\| _ )/ __|_ _| \\| | __|','| (_) | _ \\ (__ | || .` | _|',' \\___/|___/\\___|___|_|\\_|___|'];
@@ -346,7 +362,7 @@ GEN.forEach((g,k)=>ACH.push(['g'+k,()=>gname(k)+' ×50',()=>tr('zgradi 50 enot: 
 ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr('razpiši referendum','call a referendum'),()=>S.refs>=1],
  ['ref5',()=>tr('Večni referendum','Eternal referendum'),()=>tr('razpiši 5 referendumov','call 5 referendums'),()=>S.refs>=5],
  ['am1',()=>tr('Ustavna sprememba','Constitutional change'),()=>tr('sprejmi prvi amandma','adopt your first amendment'),()=>S.amends.length>=1],
- ['am12',()=>tr('Nova ustava','A new constitution'),()=>tr('sprejmi vseh 12 amandmajev','adopt all 12 amendments'),()=>S.amends.length>=AM.length],
+ ['am12',()=>tr('Nova ustava','A new constitution'),()=>tr('sprejmi vseh '+AM.length+' amandmajev','adopt all '+AM.length+' amendments'),()=>S.amends.length>=AM.length],
  ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
  ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
  ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],
@@ -413,7 +429,7 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
 const RATE=10;const paidT=[];let lastSoft=0,cappedT=-1e9;
 function ring(){noonCheck();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
  swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s, nothing else */cappedT=now;if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);lastRingT=Date.now();
- meter=Math.min(1,meter+FILL*evFill());if(meter>=1){S.bank=Math.min(BANK_MAX,(S.bank||0)+1);lastBankT=now}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
+ meter=Math.min(1,meter+FILL*evFill()*(am('a15')?2:1));if(meter>=1){S.bank=Math.min(bankMax(),(S.bank||0)+1);lastBankT=now}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
@@ -501,7 +517,7 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
    const g=1+Math.floor(now/(charging?35:140))%bw;lines.push([padR(l1,lw),H(b.slice(0,g)),{t:b[g],c:'gl',hid:true},H(b.slice(g+1)),' ',x])}
   else lines.push([padR(l1,lw),H(b),' ',x]);
   const t=Math.floor((S.bank||0)/60)+':'+String(Math.floor((S.bank||0)%60)).padStart(2,'0');
-  lines.push([padR(l2,lw),H(bar((S.bank||0)/BANK_MAX,iw-lw-L(x)-3)),' ',padL(t,L(x))])}
+  lines.push([padR(l2,lw),H(bar((S.bank||0)/bankMax(),iw-lw-L(x)-3)),' ',padL(t,L(x))])}
  lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click')+(performance.now()-cappedT<1000?' (max '+RATE+'/s)':''),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
  if(now<kurUntil)lines.push(lr(tr('KURENTOVANJE ×','KURENT ×')+KC.mult,Math.ceil((kurUntil-now)/1000)+' s',iw));
@@ -516,7 +532,7 @@ function pStat(w){const iw=w-4;const p=pop();const rd=regsDone();const tl=[];
  tl.push(tr('množitelji:','multipliers:'));
  row(tr('  prebivalci (1 na ','  residents (1 per ')+num(PDIV)+')',xf(popMult()));row(tr('  cele regije (','  complete regions (')+rd+'/12)',xf(regMult()));row(tr('  znamenitosti','  landmarks'),xf(globUp()));
  row(tr('  zvonjenje','  ringing'),xf(meterMult()));row(tr('  dosežki (','  achievements (')+S.ach.length+')',xf(achMult()));row(tr('  glasovi (','  votes (')+S.votes+')',xf(voteMult()));
- if(evGlob()>1)row(tr('  dan / praznik','  day / holiday'),xf(evGlob()));if(kurMult()>1)row('  '+tr('kurent','Kurent'),xf(KC.mult));
+ if(evGlob()>1)row(tr('  dan / praznik','  day / holiday'),xf(evGlob()));if(nightOn())row(tr('  nočna izmena','  night shift'),xf(1.5));if(am('a20'))row(tr('  mestne občine (','  urban municipalities (')+urban()+')',xf(1+.05*urban()));if(kurMult()>1)row('  '+tr('kurent','Kurent'),xf(KC.mult));
  row(tr('  skupaj','  total'),xf(allMult()*kurMult()*meterMult()));tl.push('');
  row(tr('čas te igre','this run'),dur((Date.now()-S.t0)/1000));row(tr('vsega zasluženo','earned in total'),fmt(S.all));
  return box(tr('STANJE','STATUS'),tl,w)}
@@ -807,7 +823,7 @@ document.addEventListener('mouseout',e=>{if(hoverTarget(e.target)&&!hoverTarget(
 
 /* ================= LOOP ================= */
 function spawnKurent(){const M=mapFor(PW.map||48);const cells=[];for(let y=0;y<M.H-3;y++)for(let x=0;x<M.W-4;x++)if(M.g[y][x]>=0&&M.g[y+2][x+3]>=0)cells.push([x,y]);
- if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+KC.stay;drawMap(true);kurentBells()}
+ if(!cells.length)return;kurPos=cells[Math.floor(Math.random()*cells.length)];kurGone=Date.now()+KC.stay*(am('a13')?2:1);drawMap(true);kurentBells()}
 /* the Kurent's zvonci: big cowbells, shaken; inharmonic partials make them clank */
 const COW=[[1,1,1],[1.48,.7,.6],[2.37,.35,.4],[3.2,.15,.25]];
 function kurentBells(){for(let i=0;i<8;i++)tone(560+Math.random()*420,{p:COW,dur:.5,vol:.055,when:i*.1+Math.random()*.03,jingle:true})}
@@ -835,7 +851,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 
 /* ================= TEST HOOK ================= */
 /* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
-if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={ev(){return {fill:evFill(),click:evClick(),kur:evKur(),glob:evGlob(),gen:GEN.map((_,k)=>evGen(k))}},soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
    player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */
@@ -858,7 +874,7 @@ function spentMin(){let t=0;GEN.forEach((g,k)=>{const n=Math.max(0,S.own[k]-(am(
    so a save can't make every limit infinite by claiming 10^300 seconds of play */
 function hoursIn(){const now=Date.now(),f=Math.max(S.first||0,RELEASE),since=Math.max(0,now-RELEASE)/36e5;return Math.max(0,(now-f)/36e5,Math.min(S.play/3600,since))}
 function ceil10(h){return h<=40?9.5+.5*h:29.5+3*Math.log10(h/40)}
-function upsSpent(){let t=0;for(const id of S.ups){const m=/^t(\d+)_(\d+)$/.exec(id);if(m&&GEN[+m[1]]&&TIERS[+m[2]])t+=gcostBase(+m[1])*TIERS[+m[2]][1];
+function upsSpent(){let t=0;for(const id of S.ups){const m=/^t(\d+)_(\d+)$/.exec(id);if(m&&GEN[+m[1]]&&TIERS[+m[2]])t+=gcostBase(+m[1])*TIERS[+m[2]][1]*(am('a19')?.5:1);
  else{const l=LM.find(l=>l.id===id);if(l)t+=lmcost(l)}}return t}
 function implausible(){const h=hoursIn(),sec=h*3600;
  /* beyond 1e100 nothing is honest on any timescale, and huge values could overflow the comparisons below */
@@ -898,8 +914,15 @@ function dragonPlace(rows,w,z){/* the highest three empty rows with room to fly 
  let best=z.row>=0&&z.row+2<rows.length?runAt(z.row):null;
  for(let r=0;!best&&r+2<rows.length;r++)best=runAt(r);
  if(!best)return null;const a=best.a+1,span=best.len-2-ZW;const el=Date.now()-z.t0;
- const still=REDUCED.matches||z.res;const x=a+(still?Math.floor(span/2):Math.floor(Math.min(1,el/ZC.stay)*span));z.row=best.row;
- return {row:best.row,x,spr:ZM[REDUCED.matches?0:z.res?(Math.floor(Date.now()/2000)%2):Math.floor(el/300)%2]}}
+ z.row=best.row;
+ if(REDUCED.matches)return {row:best.row,x:a+Math.floor(span/2),spr:ZM[0]};
+ if(!z.res)return {row:best.row,x:a+Math.floor(Math.min(1,el/ZC.stay)*span),spr:ZM[Math.floor(el/300)%2]};
+ /* at home it patrols the gap: a cell every 0.7 s end to end, turning round at each end, wings beating as it goes */
+ const step=Math.floor(Date.now()/700),sp=Math.max(0,span);
+ if(z.px==null||step-z.st>4*sp+4){z.px=z.px==null?Math.floor(sp/2):z.px;z.dir=z.dir||1;z.st=step}
+ z.px=Math.min(sp,z.px);while(z.st<step){z.st++;z.px+=z.dir;if(z.px>=sp){z.px=sp;z.dir=-1}if(z.px<=0){z.px=0;z.dir=1}}
+ const spr=ZM[step%2];return {row:best.row,x:a+z.px,spr:z.dir<0?spr.map(zMirror):spr}}
+const ZFLIP={'/':'\\','\\':'/','<':'>','>':'<','(':')',')':'('};const zMirror=l=>[...l].reverse().map(c=>ZFLIP[c]||c).join('');
 function dragonRow(plain,boldFrom,x,spr,hk,hg){let h='',cur='',open=null;const flush=()=>{if(!cur)return;h+=open==='z'?'<span class="zm" data-a="dragon">'+esc(cur)+'</span>':open==='b'?'<b>'+esc(cur)+'</b>':esc(cur);cur=''};
  for(let i=0;i<plain.length;i++){if(i===hk){flush();open=null;h+='<span data-a="hacek" class="hk">'+esc(hg)+'</span>';i++;continue}
   const inZ=i>=x-1&&i<x+ZW+1;const ch=inZ&&i>=x&&i<x+ZW?(spr[i-x]||' '):plain[i];const k=inZ?'z':i>=boldFrom?'b':'n';if(k!==open){flush();open=k}cur+=ch}

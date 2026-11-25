@@ -662,7 +662,8 @@ function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
  wrap(tr('Vsak glas da +'+pc(VOTEP()*100)+' dohodka. Referendum ponastavi tolarje, občine, proizvodnjo in izboljšave. Glasovi, dosežki in amandmaji ostanejo.',
   'Each vote gives +'+pc(VOTEP()*100)+' income. A referendum resets tolars, municipalities, production and upgrades. Votes, achievements and amendments stay.'),iw).forEach(l=>ls.push(l));ls.push('');
  if(Date.now()<refArm)ls.push([btn(tr(' RES? DA ',' SURE? YES '),'refyes'),' ',btn(tr(' NE ',' NO '),'refno')]);else ls.push([btn(tr(' RAZPIŠI REFERENDUM ',' CALL A REFERENDUM '),'ref',g>=1)]);
- ls.push('');ls.push(tr('amandmaji: ','amendments: ')+S.amends.length+'/'+AM.length);S.amends.forEach(id=>wrap('- '+amName(id)+': '+amDesc(id),iw-2).forEach((l,j)=>ls.push(j?'  '+l:l)));
+ ls.push('');ls.push(tr('amandmaji: ','amendments: ')+S.amends.length+'/'+AM.length);/* a handful with what they do; past that just the names, so the panel stays short */
+ if(S.amends.length<=5)S.amends.forEach(id=>wrap('- '+amName(id)+': '+amDesc(id),iw-2).forEach((l,j)=>ls.push(j?'  '+l:l)));else wrap(S.amends.map(amName).join(', '),iw).forEach(l=>ls.push(l));
  return box('REFERENDUM',ls,w)}
 function pLog(w){const iw=w-4;const n=MODE.startsWith('1')?6:8;const ls=[];for(const e of S.log){const ws=wrap(e,iw-6);ws.forEach((l,j)=>ls.push(j?'      '+l:l));if(ls.length>=n)break}
  ls.length=Math.min(ls.length,n);while(ls.length<n)ls.push('');return box(tr('DNEVNIK','LOG'),ls,w)}

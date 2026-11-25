@@ -7,7 +7,8 @@ V = 'version.json'; real = open(V).read()
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get('CHROME') or None)
-        c = b.new_context(viewport={'width': 1600, 'height': 900}); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
+        c = b.new_context(viewport={'width': 1600, 'height': 900}); c.add_init_script("window.__date='2026-11-26T15:00:00'")  # after midnight, Night owl's pop-up would queue ahead
+        pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(700)
         for i in range(5): pg.keyboard.press('Space'); pg.wait_for_timeout(120)
         open(V, 'w').write(json.dumps({'build': 'newer12345'}))
         pg.evaluate("document.dispatchEvent(new Event('visibilitychange'))")

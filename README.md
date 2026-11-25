@@ -38,6 +38,8 @@ Black and white, one font, one character grid. Slovenian and English.
   Krško's power plant, Planica in Kranjska Gora or kremšnita in Bled.
 - **Zmaj in jadrnica**: now and then the Dragon Bridge dragon flies across the header, and a sailboat crosses the sea
   on the map. Each has its own sound; catching them is a second way to two of the secrets.
+- **Found secrets stay**: the dragon then lives in the header and the boat lies at anchor; Triglav gets its M on the
+  map, a seagull circles the coast, a flag flies on the belfry, and the bells ring noon by themselves.
 - **Kurent**: shows up on the map every 4–8 minutes for 13 seconds. Catch him for ×3 income (30 s),
   a pustni krof worth 3 minutes of income, or clicks ×7 (10 s). A pop-up says what you got. A nice bonus, not an engine.
 - **Referendum**: prestige. Reset your run for votes (each +5 % income for good) and adopt one of

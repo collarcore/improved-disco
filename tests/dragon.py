@@ -59,13 +59,14 @@ with sync_playwright() as p:
         print(f'{how}: arrival sound={low>=2} caught={gone} secret={got} pop-up={"zmaj" in t.lower()}')
         if not (low >= 2 and gone and got): bad.append(('catch', how))
         if how == 'click':
-            pg.evaluate("window.__osc.length=0;__dbg.dragon()"); pg.wait_for_timeout(300); quiet = not any(f < 160 for f in pg.evaluate('window.__osc.slice()'))
-            print('second dragon comes silently:', quiet)
-            if not quiet: bad.append('quiet')
-            pg.keyboard.press('z'); pg.wait_for_timeout(300)
-            waved = 'pomahal' in pg.evaluate("document.getElementById('p-log').innerText")
-            print('second dragon: waves, no new pop-up =', waved)
-            if not waved: bad.append('wave')
+            # found: it now lives in the header, perched and still there much later; it never flies in again (no sounds)
+            pg.evaluate("window.__osc.length=0"); pg.wait_for_timeout(20000)
+            stays = pg.evaluate("document.querySelectorAll('#head .zm').length") > 0
+            quiet = not any(f < 160 for f in pg.evaluate('window.__osc.slice()'))
+            x1 = pg.locator('#head .zm').first.bounding_box()['x']; pg.wait_for_timeout(1500); x2 = pg.locator('#head .zm').first.bounding_box()['x']
+            pg.keyboard.press('z'); pg.wait_for_timeout(300); waved = 'pomahal' in pg.evaluate("document.getElementById('p-log').innerText")
+            print('after the secret: dragon stays', stays, '| perched (not flying)', x1 == x2, '| no arrival sounds', quiet, '| waves when clicked', waved)
+            if not (stays and quiet and waved and x1 == x2): bad.append('resident')
         c.close()
     # left alone it flies off after its 16 s
     c = b.new_context(viewport={'width': 1600, 'height': 900}); c.add_init_script(save(base(5000))); pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(500)

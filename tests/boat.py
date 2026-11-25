@@ -35,12 +35,13 @@ with sync_playwright() as p:
         print(f'[{w}] {how}: horn={horn>=2} boat cells={n} drawn={txt.strip()!r} caught->secret={got} boat text={"Jadrnica" in t}')
         if not (horn >= 2 and n and got and 'Jadrnica' in t): bad.append(how)
         if how == 'click':
-            pg.evaluate("window.__osc.length=0;__dbg.boat()"); pg.wait_for_timeout(300); quiet = not any(f < 120 for f in pg.evaluate('window.__osc.slice()'))
-            print('second boat comes silently:', quiet)
-            if not quiet: bad.append('quiet')
-            pg.keyboard.press('j'); pg.wait_for_timeout(300)
-            sailed = 'odplula' in pg.evaluate("document.getElementById('p-log').innerText"); print('second boat: sails off, no new pop-up =', sailed)
-            if not sailed: bad.append('again')
+            # found: the boat stays anchored mid-sea, still there much later; no more arrivals or horns
+            pg.evaluate("window.__osc.length=0"); pg.wait_for_timeout(30000)
+            stays = pg.evaluate("document.querySelectorAll('#mapgrid .boat').length") > 0
+            quiet = not any(f < 120 for f in pg.evaluate('window.__osc.slice()'))
+            pg.keyboard.press('j'); pg.wait_for_timeout(300); rocks = 'ziblje' in pg.evaluate("document.getElementById('p-log').innerText")
+            print('after the secret: boat stays', stays, '| no arrival horns', quiet, '| responds when clicked', rocks)
+            if not (stays and quiet and rocks): bad.append('resident')
         c.close()
     c = b.new_context(viewport={'width': 1600, 'height': 900}); c.add_init_script("localStorage.setItem('obcine-v2',%s);localStorage.setItem('obcine-hi','1')" % json.dumps(json.dumps(st)))
     pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.wait_for_timeout(500); pg.evaluate("__dbg.boat()"); pg.wait_for_timeout(26000)

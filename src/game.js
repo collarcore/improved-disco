@@ -362,7 +362,7 @@ GEN.forEach((g,k)=>ACH.push(['g'+k,()=>gname(k)+' ×50',()=>tr('zgradi 50 enot: 
 ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr('razpiši referendum','call a referendum'),()=>S.refs>=1],
  ['ref5',()=>tr('Večni referendum','Eternal referendum'),()=>tr('razpiši 5 referendumov','call 5 referendums'),()=>S.refs>=5],
  ['am1',()=>tr('Ustavna sprememba','Constitutional change'),()=>tr('sprejmi prvi amandma','adopt your first amendment'),()=>S.amends.length>=1],
- ['am12',()=>tr('Nova ustava','A new constitution'),()=>tr('sprejmi vseh '+AM.length+' amandmajev','adopt all '+AM.length+' amendments'),()=>S.amends.length>=AM.length],
+ ['am12',()=>tr('Nova ustava','A new constitution'),()=>tr('sprejmi 12 amandmajev','adopt 12 amendments'),()=>S.amends.length>=12],
  ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
  ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
  ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],

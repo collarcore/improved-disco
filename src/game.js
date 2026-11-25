@@ -135,7 +135,10 @@ const evClick=()=>eventsNow().reduce((m,e)=>m*(e.click||1),1);
 const evKur=()=>eventsNow().reduce((m,e)=>m*(e.kur||1),1);
 
 /* ================= ECONOMY ================= */
-const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*(am('a3')?.8:1));
+/* prices are 45 % lower across #16-70, easing in and out over 6 steps: without it the first run had a half-hour
+   stretch around #25-60 with nothing to unlock; with it the longest wait is about 20 minutes (tools/balance.py) */
+const DIP=i=>{const r=Math.min(1,Math.max(0,(i-16)/6),Math.max(0,(70-i)/6));return 1-.45*(3*r*r-2*r*r*r)};
+const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*DIP(i)*(am('a3')?.8:1));
 const lmcost=l=>ocost(l.o)*3*(am('a7')?.5:1)||Math.ceil((30*1.15**l.o)*3);
 function pop(){let p=0;for(let i=0;i<S.n;i++)p+=O[i].p;return p}
 function regCount(){const c=REG.map(()=>0);for(let i=0;i<S.n;i++)c[O[i].r]++;return c}

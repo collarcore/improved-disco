@@ -34,7 +34,8 @@ WEEK = [{0: 3, 1: 3, 2: 3}, {5: 2, 6: 2}, {9: 2, 10: 2, 11: 2}, {7: 2, 8: 2}, {3
 def ocost(i, p=None):
     p = p or PRICE
     base = p['A'] * 1.15 ** i * math.exp(p['B'] * i * (211 - i) / 211) + p['E'] * (i + 1) ** p['P']
-    return base * math.exp(p['C'] * max(0, i - 140))
+    r = min(1, max(0, (i - 16) / 6), max(0, (70 - i) / 6)); dip = 1 - .45 * (3 * r * r - 2 * r ** 3)   # same dip as the game
+    return base * math.exp(p['C'] * max(0, i - 140)) * dip
 
 
 class Game:

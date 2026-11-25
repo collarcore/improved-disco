@@ -63,11 +63,11 @@ so real players are somewhat faster):
 | občine | active player (hours of play) | casual player, 3×10 min a day (days) |
 |---|---|---|
 | 10 | 0.8 | 0.9 |
-| 25 | 2.9 | 1.5 |
-| 50 | 6.7 | 2.9 |
-| 100 | 9.7 | 4.3 |
-| 150 | 15.2 | 7.9 |
-| all 212 | ~31 (8 referendums) | ~18.5 (6 referendums) |
+| 25 | 2.4 | 1.5 |
+| 50 | 5.2 | 2.5 |
+| 100 | 7.6 | 3.5 |
+| 150 | 12.4 | 6.5 |
+| all 212 | ~28 (8 referendums) | ~17 (6 referendums) |
 
 Without referendums a run stalls around 150 občin; the *next občina* panel says when one pays off.
 

@@ -24,6 +24,8 @@ Black and white, one font, one character grid. Slovenian and English.
   which multiplies *all* income while you keep ringing: ×1.5 with the handbell, up to ×5 with
   the bells of every parish. It drains when you pause, so active play matters all game.
   Five bell upgrades, each with its own sound, from a small handbell to *pritrkavanje*.
+  Ringing on a full meter banks time (1 s per ring, up to 10 min): stop, and the meter stays full while the bank
+  runs down.
   Up to 10 rings a second pay (about a fast mouse finger), so drumming on a phone or an autoclicker
   gains nothing over a mouse; faster taps still ring.
 - **Proizvodnja**: 12 producers, from *njiva* to *elektrarna*. New ones open as you unlock more občine.

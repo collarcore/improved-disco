@@ -87,6 +87,7 @@ const PDIV=20000,GROW=1.15;
 
 /* ================= STATE ================= */
 const KEY='obcine-v2',VERSION=5;
+const BANK_MAX=600;/* the ringing bank's cap, in seconds (see the meter) */
 const RELEASE=Date.UTC(2026,10,23,21,0);/* the game came out on 23 November 2026; nobody can have played longer */
 const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
  lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION,dev:0});
@@ -100,7 +101,7 @@ function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return nul
    crash the game (and then crash it again on every reload). Bad values fall back to a fresh game's. */
 function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>=0?v:d},strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.length<40):[];
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
- for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV','dev'])s[k]=num(s[k],0||f[k]||0);
+ for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV','dev','bank'])s[k]=num(s[k],0||f[k]||0);
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
  s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
@@ -114,7 +115,7 @@ let led=0,plTick=0;
 function earn(g){S.sit+=g;S.life+=g;S.all+=g;led+=g}
 function spend(c){S.sit-=c;led-=c}
 let loadedV=VERSION;try{const s=migrate(JPARSE(lsGet(KEY)||'null'));if(s){S=s;loadedV=s.__v}}catch(e){}
-delete S.__v;led=S.sit;
+delete S.__v;led=S.sit;S.bank=Math.min(BANK_MAX,S.bank||0);
 LANG=S.lang||'sl';
 const has=id=>S.ups.includes(id);
 const am=id=>S.amends.includes(id);
@@ -160,7 +161,10 @@ function baseIps(){let s=0;for(let k=0;k<GEN.length;k++)s+=S.own[k]*gprod(k)*gen
 /* ringing meter: every ring fills it, it drains once you pause, and it multiplies all income
    up to the current bell's cap (handbell ×1.5 … bells of every parish ×5) */
 const METER_CAP=[1.5,2,2.5,3,4,5],FILL=.025,GRACE=5000,DRAIN_S=45;
-let meter=0,lastRingT=0;
+/* ringing on a full meter banks time: 1 s per paid ring, up to 10 min. When you stop, the bank runs down first and
+   the meter stays full; then the usual grace and drain. Away time never spends or earns it. */
+let lastBankT=-1e9,holdEnd=0;
+let meter=S.bank>0?1:0,lastRingT=0;/* a bank left from last time keeps the meter full */
 const meterCap=()=>METER_CAP[bellTier()];
 const meterMult=()=>1+meter*(meterCap()-1);
 const ips=()=>baseIps()*kurMult()*meterMult();
@@ -401,7 +405,7 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
 const RATE=10;const paidT=[];let lastSoft=0,cappedT=-1e9;
 function ring(){noonCheck();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
  swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s, nothing else */cappedT=now;if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);lastRingT=Date.now();
- meter=Math.min(1,meter+FILL*evFill());const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
+ meter=Math.min(1,meter+FILL*evFill());if(meter>=1){S.bank=Math.min(BANK_MAX,(S.bank||0)+1);lastBankT=now}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
@@ -481,7 +485,14 @@ function pBell(w){const iw=w-4;const bg=BELLS[bellTier()].glyph;const sw=swing>0
  const lines=grid.map(r=>[{t:r.join(''),a:'ring',c:'bell',hid:true}]);
  lines.push(['']);
  const lbl=tr('[  Z V O N I  ]','[  R I N G  ]');lines.push([' '.repeat(off+AX-Math.floor(L(lbl)/2)),{t:lbl,a:'ring',c:'ring'+(S.clicks===0&&S.all===0?' nudge':''),lab:tr('Pozvoni','Ring the bell')}]);
- lines.push(['']);{const x=xf(meterMult()),lab=tr('zvonjenje ','ringing ');lines.push([lab,H(bar(meter,iw-L(lab)-L(x)-3)),' ',x])}
+ lines.push(['']);{const l1=tr('zvonjenje ','ringing '),l2=tr('polno še ','full for '),lw=Math.max(L(l1),L(l2));
+  const x=xf(meterMult()),b=bar(meter,iw-lw-L(x)-3),now=performance.now(),bw=L(b)-2;
+  const charging=now-lastBankT<400,holding=S.bank>0&&meter>=1&&Date.now()-lastRingT>1000;
+  if(meter>=1&&(charging||holding)&&!REDUCED.matches){/* a glint runs along the full bar: fast while you charge it, slow while it holds */
+   const g=1+Math.floor(now/(charging?35:140))%bw;lines.push([padR(l1,lw),H(b.slice(0,g)),{t:b[g],c:'gl',hid:true},H(b.slice(g+1)),' ',x])}
+  else lines.push([padR(l1,lw),H(b),' ',x]);
+  const t=Math.floor((S.bank||0)/60)+':'+String(Math.floor((S.bank||0)%60)).padStart(2,'0');
+  lines.push([padR(l2,lw),H(bar((S.bank||0)/BANK_MAX,iw-lw-L(x)-3)),' ',padL(t,L(x))])}
  lines.push(lr(tr('zvon','bell'),bellName()+' (max '+xv(meterCap())+')',iw));lines.push(lr(tr('en klik','per click')+(performance.now()-cappedT<1000?' (max '+RATE+'/s)':''),fmt(clickVal(),1)+' SIT',iw));
  const now=Date.now();
  if(now<kurUntil)lines.push(lr(tr('KURENTOVANJE ×','KURENT ×')+KC.mult,Math.ceil((kurUntil-now)/1000)+' s',iw));
@@ -786,7 +797,8 @@ function eventToasts(){const d=new Date(window.__date||Date.now());const md=(d.g
  for(const e of holidaysNow()){const y=d.getFullYear()-(md<e.from[0]*100+e.from[1]?1:0);if(S.evSeen[e.id]!==y){S.evSeen[e.id]=y;toast('ev',evName(e),evDesc(e)+'.',regionChime,EVART[e.id]);log(tr('praznik: ','event: ')+evName(e)+' ('+evDesc(e)+')')}}}
 let last=performance.now(),saveT=0,achT=0,partT=0,evT=0;
 function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);last=now;
- if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}if(Date.now()-lastRingT>GRACE)meter=Math.max(0,meter-dt/DRAIN_S);if(S.sit!==led||(razvijalec&&odkleniVse)||(S.dev&&!S.osel)||(++plTick%50===0&&!S.osel&&implausible()))caught();const g=ips()*dt;earn(g);S.play+=dt;
+ if(hacAnim&&Date.now()-hacAnim.t0>HAC_FRAME*8){const down=hacAnim.dir>0;hacAnim=null;S.noHacek=down?1:0;if(down)secret('hac');else tone(1568,{p:HAND,dur:.3,vol:.04})}{const idle=Date.now()-lastRingT;if(idle>1000&&S.bank>0&&meter>=1){S.bank=Math.max(0,S.bank-dt);if(!S.bank)holdEnd=Date.now()}
+ else if(Date.now()-Math.max(lastRingT,holdEnd)>GRACE&&!(S.bank>0&&meter>=1))meter=Math.max(0,meter-dt/DRAIN_S)}if(S.sit!==led||(razvijalec&&odkleniVse)||(S.dev&&!S.osel)||(++plTick%50===0&&!S.osel&&implausible()))caught();const g=ips()*dt;earn(g);S.play+=dt;
  if((partT+=dt)>.08){partT=0;parts.forEach(p=>p.age++);while(parts.length&&parts[0].age>14)parts.shift();if(swing>0)swing--}
  const t=Date.now();
  if(!kurPos&&t>kurNext&&S.n>=3){spawnKurent();kurNext=t+(KC.every[0]+Math.random()*(KC.every[1]-KC.every[0]))*(has(kurLm.id)?KC.ptujEvery:1)*(am('a2')?.5:1)*evKur()}

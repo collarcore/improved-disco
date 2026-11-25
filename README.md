@@ -49,7 +49,7 @@ Black and white, one font, one character grid. Slovenian and English.
   delavnik, izletniki, petek v gostilni, gasilska veselica and nedeljska maša (Sunday: the meter fills twice as fast).
 - **Prazniki**: rarer extras from the real calendar: Pust and Prešernov dan in February,
   Dan državnosti in June, the tourist season, trgatev, Martinovanje in November, Christmas, the ski season.
-- **Dosežki**: 61 achievements, each +1 %. Seven are secrets, shown as ??? with a cryptic hint until you find them;
+- **Dosežki**: 75 achievements, each +1 %. Seven are secrets, shown as ??? with a cryptic hint until you find them;
   each secret has its own drawing, as do every weekday, holiday and bell upgrade.
 - **Listina**: unlocking Ljubljana turns the next-municipality panel into a certificate with your time,
   rings, Kurents, referendums and secrets found, and a button that copies the result to share.

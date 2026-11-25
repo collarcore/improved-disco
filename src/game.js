@@ -128,7 +128,7 @@ delete S.__v;led=S.sit;S.bank=Math.min(S.amends.includes('a14')?BANK_HARD:BANK_M
 LANG=S.lang||'sl';
 const has=id=>S.ups.includes(id);
 const am=id=>S.amends.includes(id);const bankMax=()=>am('a14')?BANK_HARD:BANK_MAX;
-let kurUntil=0,clkUntil=0,kurNext=Date.now()+90e3,kurPos=null,kurGone=0,hover=-1,regPage=null,achPage=0,refArm=0,refPick=null,resetArm=0,flash='';
+let awayLong=false,nightRang=false,bankFull=false,kurUntil=0,clkUntil=0,kurNext=Date.now()+90e3,kurPos=null,kurGone=0,hover=-1,regPage=null,achPage=0,refArm=0,refPick=null,resetArm=0,flash='';
 
 /* ================= CALENDAR ================= */
 let evCache={key:'',list:[]};
@@ -363,6 +363,7 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['ref5',()=>tr('Večni referendum','Eternal referendum'),()=>tr('razpiši 5 referendumov','call 5 referendums'),()=>S.refs>=5],
  ['am1',()=>tr('Ustavna sprememba','Constitutional change'),()=>tr('sprejmi prvi amandma','adopt your first amendment'),()=>S.amends.length>=1],
  ['am12',()=>tr('Nova ustava','A new constitution'),()=>tr('sprejmi 12 amandmajev','adopt 12 amendments'),()=>S.amends.length>=12],
+ ['am20',()=>tr('Ustavodajalec','Framer of the constitution'),()=>tr('sprejmi vseh '+AM.length+' amandmajev','adopt all '+AM.length+' amendments'),()=>S.amends.length>=AM.length],
  ['ev',()=>tr('Praznično','Festive'),()=>tr('igraj med praznikom','play during a holiday'),()=>holidaysNow().length>0],
  ['wk7',()=>tr('Cel teden','A whole week'),()=>tr('igraj vseh 7 dni v tednu','play on all 7 days of the week'),()=>S.days.length>=7],
  ['mtr',()=>tr('Polno zvonjenje','Full peal'),()=>tr('napolni zvonjenje do konca','fill the ringing meter to the top'),()=>meter>=1],
@@ -372,6 +373,20 @@ ACH.push(['ref1',()=>tr('Ljudstvo je odločilo','The people have spoken'),()=>tr
  ['obala',()=>tr('47 km obale','47 km of coast'),()=>S.ach.includes('obala')?tr('galeb, burek in 47 km obale','a seagull, a burek and 47 km of coast'):tr('skrivnost: tudi morje je naše','secret: the sea is ours too'),()=>false],
  ['poldne',()=>tr('Poldne','Noon'),()=>S.ach.includes('poldne')?tr('zvonil si opoldne','you rang at noon'):tr('skrivnost: zvoni, ko zvonijo vsi','secret: ring when everyone rings'),()=>false],
  ['piran',()=>tr('Zahod v Piranu','Sunset in Piran'),()=>S.ach.includes('piran')?tr('obiskal si Piran ob sončnem zahodu','you visited Piran at sunset'):tr('skrivnost: najlepše mesto ob najlepši uri, ali pa pridi z morja','secret: the prettiest town at the prettiest hour, or come by sea'),()=>false],
+ /* 14 more (61 -> 75): late-game milestones, completed collections, habits and timing */
+ ['c100000',()=>tr('Neutrudni','Tireless'),()=>tr('100.000 klikov na zvon','100,000 bell rings'),()=>S.clicks>=1e5],
+ ['k100',()=>'Kurentovanje',()=>tr('ujemi kurenta 100×','catch the Kurent 100×'),()=>S.kur>=100],
+ ['ref10',()=>tr('Referendumska država','Referendum state'),()=>tr('razpiši 10 referendumov','call 10 referendums'),()=>S.refs>=10],
+ ['play10',()=>tr('Zvest občan','Loyal citizen'),()=>tr('igraj 10 ur','play for 10 hours'),()=>(S.play||0)>=36e3],
+ ['allgen',()=>tr('Pestro gospodarstvo','Diverse economy'),()=>tr('imej vsaj eno enoto vsake proizvodnje','own at least one of every producer'),()=>S.own.every(x=>x>=1)],
+ ['alllm',()=>tr('Turistični vodnik','Tour guide'),()=>tr('kupi vse znamenitosti','buy every landmark'),()=>LM.every(l=>has(l.id))],
+ ['allbell',()=>tr('Veliki zvon','The great bell'),()=>tr('kupi vse izboljšave zvona','buy every bell upgrade'),()=>bellTier()===CLK.length],
+ ['urb',()=>tr('Mestna občina','Urban municipality'),()=>tr('odkleni prvo mestno občino','unlock your first urban municipality'),()=>urban()>0],
+ ['sec',()=>tr('Raziskovalec','Explorer'),()=>tr('najdi vse skrivnosti','find every secret'),()=>secFound()===SECRET.size],
+ ['bank',()=>tr('Na zalogi','In reserve'),()=>tr('napolni zalogo zvonjenja do vrha','fill the ringing bank to the top'),()=>bankFull],
+ ['jutro',()=>tr('Dobro jutro','Good morning'),()=>tr('vrni se po vsaj 8 urah odsotnosti','come back after at least 8 hours away'),()=>awayLong],
+ ['noc',()=>tr('Nočna ptica','Night owl'),()=>tr('zvoni med polnočjo in 4. uro','ring between midnight and 4 am'),()=>nightRang],
+ ['hol4',()=>tr('Vse leto','All year round'),()=>tr('igraj med 4 različnimi prazniki','play during 4 different holidays'),()=>EV.filter(e=>S.evSeen&&S.evSeen[e.id]!=null).length>=4],
  ['sam',()=>tr('Samostojna','Independent'),()=>S.ach.includes('sam')?tr('pozvonil si 1991-krat','you rang 1991 times'):tr('skrivnost: zvoni do leta, ko se je vse začelo','secret: ring up to the year it all began'),()=>false]);
 const SECRET=new Set(['tri','hac','zmaj','obala','poldne','piran','sam']);
 /* each secret has one pop-up with its own drawing; the first time it also counts as an achievement */
@@ -427,9 +442,9 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
 /* at most RATE paid rings a second, about a fast mouse finger: drumming with several fingers or an autoclicker
    still rings, but anything faster earns nothing and counts towards nothing */
 const RATE=10;const paidT=[];let lastSoft=0,cappedT=-1e9;
-function ring(){noonCheck();const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
+function ring(){noonCheck();if(new Date(window.__date||Date.now()).getHours()<4)nightRang=true;const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
  swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s, nothing else */cappedT=now;if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);lastRingT=Date.now();
- meter=Math.min(1,meter+FILL*evFill()*(am('a15')?2:1));if(meter>=1){S.bank=Math.min(bankMax(),(S.bank||0)+1);lastBankT=now}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
+ meter=Math.min(1,meter+FILL*evFill()*(am('a15')?2:1));if(meter>=1){S.bank=Math.min(bankMax(),(S.bank||0)+1);lastBankT=now;if(S.bank>=bankMax())bankFull=true}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
@@ -992,7 +1007,7 @@ setTimeout(checkVersion,20e3);setInterval(checkVersion,5*60e3);
 
 /* ================= START ================= */
 document.documentElement.classList.toggle('light',!!S.light);document.documentElement.lang=LANG;
-{const away=(Date.now()-S.save)/1000;if(away>60&&baseIps()>0){const full_=am('a9');const g=baseIps()*Math.min(away,(full_?12:8)*3600)*(full_?1:.5);earn(g);
+{const away=(Date.now()-S.save)/1000;if(away>=8*3600)awayLong=true;if(away>60&&baseIps()>0){const full_=am('a9');const g=baseIps()*Math.min(away,(full_?12:8)*3600)*(full_?1:.5);earn(g);
  log(tr('med odsotnostjo (','while away (')+dur(away)+'): +'+fmt(g)+' SIT')}}
 if(!S.log.length)log(tr('dobrodošli. pozvoni, kupi njivo, odkleni Osilnico.','welcome. ring the bell, buy a field, unlock Osilnica.'));
 /* a brand-new player gets one welcome pop-up saying what the game is and where to click; the ZVONI button blinks until the first ring */

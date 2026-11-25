@@ -37,7 +37,8 @@ with sync_playwright() as p:
         c = b.new_context(viewport={'width': 1600, 'height': 900}); c.add_init_script(FAKE_AUDIO)
         c.add_init_script("window.__date='2026-11-25T12:00:20';localStorage.setItem('obcine-v2',%s);localStorage.setItem('obcine-hi','1')" % json.dumps(json.dumps(save(ach))))
         pg = c.new_page(); pg.goto('http://localhost:8765/'); pg.mouse.click(3, 3); pg.wait_for_timeout(1500)
-        rang = 'poldne: zvonijo' in pg.evaluate("document.getElementById('p-log').innerText")
+        pg.evaluate("dispatchEvent(new Event('pagehide'))")  # the whole saved log: the panel shows only the newest 8 lines
+        rang = any('poldne: zvonijo' in l for l in pg.evaluate("JSON.parse(localStorage.getItem('obcine-v2')).log"))
         great = sum(1 for f in pg.evaluate("window.__osc.slice()") if f in (196, 262, 220))
         print(f'noon at 12:00 with {"the secret" if want else "no secret"}: bells rang by themselves = {rang}')
         if rang != want: bad.append(('noon', want))

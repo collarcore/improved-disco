@@ -97,11 +97,13 @@ const PDIV=20000,GROW=1.15;
 /* ================= STATE ================= */
 const KEY='obcine-v2',VERSION=5;
 const BANK_MAX=600,BANK_HARD=1800;/* the ringing bank's cap in seconds (30 min with Zvonarska tradicija) */
-const RELEASE=Date.UTC(2026,10,23,21,0);/* the game came out on 23 November 2026; nobody can have played longer */
-const fresh=()=>({v:VERSION,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
+const RELEASE=Date.UTC(2026,10,23,21,0);/* votes got 40× harder to earn on 26 Nov 2026; saves begun before then may hold votes earned at the old rate */
+const VOTES2=Date.UTC(2026,10,26,0,30);
+/* the game came out on 23 November 2026; nobody can have played longer */
+const fresh=()=>({v:VERSION,voteV:2,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
  lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION,dev:0});
 /* saves carry a version; each step upgrades an older shape */
-function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2;if(!(s.first>0))s.first=RELEASE;/* a save that doesn't know when it started gets the most generous date */
+function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2;if(s.voteV!==2)s.voteV=1;/* no marker: votes may be from the old rate (checked against the start date below) */if(!(s.first>0))s.first=RELEASE;/* a save that doesn't know when it started gets the most generous date */
  const rv=s.runV||Math.min(v,4);/* runs that don't record their version started before this check existed */s=ASSIGN(fresh(),s);s.__v=v;s.runV=rv;
  if(v<3)s.first=RELEASE;/* before v3 saves only knew when the current run began */
  /* v4: new unlock prices and the ringing meter; nothing in the save needs converting */
@@ -111,6 +113,7 @@ function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return nul
 function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>=0?v:d},strs=a=>Array.isArray(a)?a.filter(x=>typeof x==='string'&&x.length<40):[];
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
  for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV','dev','bank'])s[k]=num(s[k],0||f[k]||0);
+ if(s.voteV!==1||!(s.first>0&&s.first<VOTES2))s.voteV=2;/* the old rate only for saves that started under it */
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
  s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.offer=strs(s.offer).filter(id=>AM.some(m=>m[0]===id)&&!s.amends.includes(id)).slice(0,3);s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
@@ -148,7 +151,7 @@ const evKur=()=>eventsNow().reduce((m,e)=>m*evF(e,e.kur),1);
 /* prices are 45 % lower across #16-70, easing in and out over 6 steps: without it the first run had a half-hour
    stretch around #25-60 with nothing to unlock; with it the longest wait is about 20 minutes (tools/balance.py) */
 const DIP=i=>{const r=Math.min(1,Math.max(0,(i-16)/6),Math.max(0,(70-i)/6));return 1-.45*(3*r*r-2*r*r*r)};
-const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*DIP(i)*(i<10?.3+.7*(i/10)**2:1)*(am('a3')?.8:1));/* the first ten cheaper, so the opening moves */
+const ocost=i=>am('a12')&&i<25?0:Math.ceil((30*1.15**i*Math.exp(.12*i*(211-i)/211)+200*(i+1)**4)*Math.exp(.18*Math.max(0,i-140))*DIP(i)*(i<25?.3+.7*(i/25)**2:1)*(am('a3')?.8:1));/* the first 25 cheaper, so the opening moves even when you aren't ringing */
 const lmcost=l=>ocost(l.o)*3*(am('a7')?.5:1)||Math.ceil((30*1.15**l.o)*3);
 function pop(){let p=0;for(let i=0;i<S.n;i++)p+=O[i].p;return p}
 function regCount(){const c=REG.map(()=>0);for(let i=0;i<S.n;i++)c[O[i].r]++;return c}
@@ -189,7 +192,8 @@ function clickVal(){let cm=am('a5')?5:1,pct=0;CLK.forEach(c=>{if(has(c[0])){cm*=
 const GD=()=>am('a1')?.85:1;
 const gcost=(k,a)=>gcostBase(k)*GD()*GROW**S.own[k]*(GROW**a-1)/(GROW-1);
 const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(gcostBase(k)*GD()*GROW**S.own[k])+1)/Math.log(GROW)));
-const votesTotal=()=>Math.floor(Math.cbrt(S.all/1e9));
+/* votes: cube root of all tolars ever earned, in units of VOTE_DIV (40 bn since v6: the first finishers did it in 13 h, about half the plan) */
+const VOTE_DIV=4e10;const votesTotal=()=>Math.floor(Math.cbrt(S.all/VOTE_DIV));
 const votesGain=()=>Math.max(0,votesTotal()-S.votes);
 /* a producer's share of income: what doubling it adds */
 const share=k=>{const b=baseIps();return b>0?genIps(k)/b:0};
@@ -461,7 +465,7 @@ function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
  const keep={all:S.all,votes:S.votes+g,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
-  amends:pick?[...S.amends,pick]:S.amends,first:S.first,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel};
+  amends:pick?[...S.amends,pick]:S.amends,first:S.first,voteV:S.voteV,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel};
  const bells=S.ups.filter(id=>id[0]==='k');S=ASSIGN(fresh(),keep);led=S.sit;
  if(am('a10'))S.ups=bells;if(am('a4')){S.own[0]=10;S.own[1]=10;S.own[2]=5}
  log(tr('referendum: +','referendum: +')+g+tr(' glasov. Nova Slovenija se začne.',' votes. A new Slovenia begins.'));
@@ -675,7 +679,9 @@ function pAch(w){const iw=w-4;const per=6;const pages=Math.ceil(ACH.length/per);
  const nNew=S.ach.filter(isNew).length;return box(tr('DOSEŽKI','ACHIEVEMENTS'),ls,w,nNew?[{t:'[ '+tr('novih: ','new: ')+nNew+' ]',c:'bold'}]:[])}
 function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
  ls.push(lr(tr('glasovi','votes'),S.votes+' (+'+pc(Math.round(S.votes*VOTEP()*100))+')',iw));ls.push(lr(tr('referendumi','referendums'),String(S.refs),iw));
- ls.push(lr(tr('ob referendumu dobiš','a referendum now gives'),'+'+g,iw));ls.push(lr(tr('naslednji glas pri','next vote at'),fmt((votesTotal()+1)**3*1e9),iw));ls.push('');
+ ls.push(lr(tr('ob referendumu dobiš','a referendum now gives'),'+'+g,iw));ls.push(lr(tr('naslednji glas pri','next vote at'),fmt((votesTotal()+1)**3*VOTE_DIV),iw));
+ /* worth it once it at least doubles your votes (at least 10): calling earlier resets for little */
+ {const rec=Math.max(10,S.votes);ls.push(lr(tr('priporočeno pri','recommended at'),g>=rec?tr('zdaj','now'):'+'+rec,iw))}ls.push('');
  if(refPick){wrap(tr('Izberi ustavni amandma. Velja za vedno.','Choose a constitutional amendment. It lasts forever.'),iw).forEach(l=>ls.push(l));ls.push('');
   refPick.forEach(id=>{wrap(amName(id),iw).forEach(l=>ls.push([{t:l,c:'bold'}]));const d=wrap(amDesc(id),iw-14);d.forEach((l,j)=>ls.push(j===d.length-1?two(['  '+l],[btn(tr(' SPREJMI ',' ADOPT '),'am'+id,true,tr('Sprejmi ','Adopt ')+amName(id))],iw):'  '+l))});
   ls.push('');ls.push([btn(tr(' PREKLIČI ',' CANCEL '),'refno')]);return box('REFERENDUM',ls,w)}
@@ -902,7 +908,7 @@ function implausible(){const h=hoursIn(),sec=h*3600;
  /* beyond 1e100 nothing is honest on any timescale, and huge values could overflow the comparisons below */
  if(!(S.all<1e100&&S.life<1e100&&S.sit<1e100&&S.votes<1e30))return 'huge';
  if(S.all>10**ceil10(h))return 'all';if(S.life>S.all*1.001+1000)return 'life';if(S.sit>S.life*1.001+1000)return 'sit';
- if(S.votes>votesTotal()+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
+ if(S.votes>Math.floor(Math.cbrt(S.all/(S.voteV===1?1e9:VOTE_DIV)))+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
  if(S.runV>=5&&spentMin()+upsSpent()>S.life*1.001+1000)return 'spent';return ''}
 function loadCheck(){if(S.dev||implausible())caught()}
 /* honeypots: things that look like a cheat menu to someone browsing the game's internals in a debugger.

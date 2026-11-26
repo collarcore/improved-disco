@@ -2,8 +2,10 @@
 
 Models what drives the economy: producers and their tier upgrades, landmarks,
 population and region multipliers, bell upgrades and the ringing meter, the
-weekly cycle, referendums (votes) and offline income. Leaves out the Kurent,
-achievements, amendments and holidays, so real players are somewhat faster.
+weekly cycle, referendums (votes) and offline income, plus the Kurent and
+achievements on average. Leaves out amendments and holidays. Checked against two
+real players' logs (Nov 2026): it reached 150 in the first run within minutes of
+one of them and finished about 20 % slower than the faster one.
 
 Two kinds of player:
   active  - plays nonstop, rings CPS times a second, buys greedily every 2 s
@@ -20,7 +22,9 @@ from econ import d, IDX, GEN, TIERS, LM, regs  # noqa: E402
 # ---- the game's numbers (keep in step with src/game.js) ----
 PRICE = dict(A=30, B=.12, E=200, P=4, C=.18)        # unlock price curve
 PDIV = 20000                                        # residents per +100 %
-VOTE_DIV, VOTE_PCT = 1e9, .05                       # votes = cbrt(lifetime/1e9), +5 % each
+VOTE_DIV, VOTE_PCT = 4e10, .05                      # votes = cbrt(lifetime/4e10), +5 % each
+KUR = 1.22                                          # the Kurent, caught every ~7.5 min: ×3 for 30 s or 3 min of income
+ACH_P, ACH_MISC = .01, 6                            # +1 % per achievement; a few event/secret ones not counted below
 OFFLINE_RATE, OFFLINE_CAP_H = .5, 8
 CLK = [(50, 200), (500, 2e4), (2000, 2e7), (6000, 2e10), (15000, 2e13)]   # (rings needed, cost)
 CLK_MULT = [2, 2, 2, 2, 2]; CLK_PCT = [0, .01, .01, .02, .02]
@@ -35,12 +39,13 @@ def ocost(i, p=None):
     p = p or PRICE
     base = p['A'] * 1.15 ** i * math.exp(p['B'] * i * (211 - i) / 211) + p['E'] * (i + 1) ** p['P']
     r = min(1, max(0, (i - 16) / 6), max(0, (70 - i) / 6)); dip = 1 - .45 * (3 * r * r - 2 * r ** 3)   # same dip as the game
-    ramp = .3 + .7 * (i / 10) ** 2 if i < 10 else 1   # the first ten cheaper, as in the game
+    ramp = .3 + .7 * (i / 25) ** 2 if i < 25 else 1   # the first 25 cheaper, as in the game
     return base * math.exp(p['C'] * max(0, i - 140)) * dip * ramp
 
 
 class Game:
-    def __init__(self, price, votes=0, life=0.0, clicks=0):
+    def __init__(self, price, votes=0, life=0.0, clicks=0, ach=None):
+        self.A = set() if ach is None else ach   # achievements, kept across referendums
         self.p = price; self.votes = votes; self.life = life; self.clicks = clicks
         self.sit = 0.0; self.n = 0; self.own = [0] * len(GEN); self.gm = [1.0] * len(GEN)
         self.glob = 1.0; self.pct = 0.0; self.P = 0; self.rc = {}; self.rdone = 0
@@ -67,7 +72,7 @@ class Game:
     def second(self, cps):
         cps = min(cps, RATE)  # the game pays for at most RATE rings a second
         m = self.meter(cps > 0)
-        g = (self.base() + cps * self.click_val()) * m
+        g = (self.base() + cps * self.click_val()) * m * (1 + ACH_P * self.achs()) * KUR
         self.sit += g; self.life += g; self.clicks += cps
 
     def buy_best(self, cps):
@@ -115,6 +120,19 @@ class Game:
             self.n += 1
         return True
 
+    def achs(self):
+        A = self.A
+        for x in (1, 10, 25, 50, 75, 100, 125, 150, 175, 200, 212):
+            if self.n >= x: A.add(('o', x))
+        for r in range(self.rdone): A.add(('r', r))
+        for k, o in enumerate(self.own):
+            if o >= 50: A.add(('g', k))
+        for x in (1e3, 1e6, 1e9, 1e12, 1e15, 1e18):
+            if self.life >= x: A.add(('l', x))
+        for x in (100, 1e3, 1e4, 5e4, 1e5):
+            if self.clicks >= x: A.add(('c', x))
+        return len(A) + ACH_MISC
+
     def gain(self):
         return int(math.cbrt(self.life / VOTE_DIV)) - self.votes
 
@@ -137,7 +155,7 @@ def active(price, cps=5, max_h=200):
             if g.n >= m and m not in marks: marks[m] = round(t / 3600, 1)
         if g.n == len(d): return marks, refs
         if t % 600 == 0 and referendum_due(g):
-            g = Game(price, g.votes + g.gain(), g.life, g.clicks); refs += 1
+            g = Game(price, g.votes + g.gain(), g.life, g.clicks, g.A); refs += 1
     return marks, refs
 
 
@@ -155,7 +173,7 @@ def casual(price, sessions=(8, 13, 21), minutes=10, cps=3, use_refs=True, max_da
                 if g.n >= m and m not in marks: marks[m] = round(day + h / 24, 1)
             if g.n == len(d): return marks, refs
             if use_refs and referendum_due(g):
-                g = Game(price, g.votes + g.gain(), g.life, g.clicks); g.day = day; refs += 1
+                g = Game(price, g.votes + g.gain(), g.life, g.clicks, g.A); g.day = day; refs += 1
             nxt = sessions[i + 1] if i + 1 < len(sessions) else sessions[0] + 24
             away = (nxt - h) * 3600 - minutes * 60
             g.sit += g.base() * min(away, OFFLINE_CAP_H * 3600) * OFFLINE_RATE

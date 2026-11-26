@@ -60,19 +60,20 @@ Settings → *Prenos igre* copies the save so you can continue on another device
 ## How long it takes
 
 From `python3 tools/balance.py` (models producers, landmarks, bells, the ringing meter,
-the week and referendums; leaves out the Kurent, achievements, amendments and holidays,
-so real players are faster; the first finishers took about a day):
+the week, referendums, and the Kurent and achievements on average; leaves out amendments and
+holidays). Checked against two real players' logs: a strong player is about 20 % faster than
+the active column.
 
 | občine | active player (hours of play) | casual player, 3×10 min a day (days) |
 |---|---|---|
-| 10 | 0.6 | 0.5 |
-| 25 | 2.2 | 1.3 |
-| 50 | 5.0 | 2.3 |
-| 100 | 7.4 | 3.3 |
-| 150 | 13.9 | 6.3 |
-| all 212 | ~25 (8 referendums) | ~16 (6 referendums) |
+| 10 | 0.3 | 0.5 |
+| 25 | 1.3 | 1.3 |
+| 50 | 3.2 | 1.9 |
+| 100 | 4.8 | 2.9 |
+| 150 | 12.2 | 6.5 |
+| all 212 | ~33 (8 referendums) | ~25 (7 referendums) |
 
-Without referendums a run stalls around 150 občin; the *next občina* panel says when one pays off.
+Without referendums a run stalls around 150 občin; the REFERENDUM panel says when calling one is worth it (once it would at least double your votes).
 
 ## Playtesting
 

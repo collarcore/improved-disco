@@ -13,8 +13,11 @@ cases={
  'same but modest counters':({"v":5,"sit":1e300,"life":1e300,"all":1e300,"votes":int(1e97),"n":212,"own":[1e6]*12,"clicks":100,"kur":1,"refs":1,"first":now-3600e3,"play":100,"sound":0},True),
  'votes beyond earnings':({"v":5,"sit":10,"life":100,"all":1e12,"votes":5000,"n":5,"own":[3]+[0]*11,"first":now-48*3600e3,"play":3600,"sound":0},True),
  'old first date (1970)':({"v":5,"sit":1e40,"life":1e40,"all":1e40,"votes":0,"n":0,"own":[0]*12,"first":1,"play":0,"sound":0},True),
- 'honest: perfect 21 h player':({"v":5,"sit":1e15,"life":1e16,"all":2.6e17,"votes":600,"n":42,"own":[40,30,20,12,8,4,0,0,0,0,0,0],"clicks":600000,"kur":200,"refs":5,"first":now-21*3600e3,"play":21*3600,"sound":0},False),
- 'honest: casual, a week in, mostly away':({"v":5,"sit":1e12,"life":5e12,"all":4e13,"votes":34,"n":100,"own":own,"clicks":20000,"kur":40,"refs":1,"first":now-7*24*3600e3,"play":3*3600,"sound":0},False),
+ # votes got 40× harder to earn on 26 Nov 2026: saves from before keep votes earned at the old rate, new saves can't
+ 'honest: finished before the vote change (old rate)':({"v":5,"sit":1e15,"life":6.4e19,"all":6.4e19,"votes":4000,"n":212,"own":[40,30,20,12,8,4,0,0,0,0,0,0],"clicks":60000,"kur":100,"refs":3,"first":now-31*3600e3,"play":13*3600,"sound":0},False),
+ 'cheat: same votes on a new-rate save':({"v":5,"voteV":2,"sit":1e15,"life":6.4e19,"all":6.4e19,"votes":4000,"n":212,"own":[40,30,20,12,8,4,0,0,0,0,0,0],"clicks":60000,"kur":100,"refs":3,"first":now-31*3600e3,"play":13*3600,"sound":0},True),
+ 'honest: perfect 21 h player':({"v":5,"voteV":2,"sit":1e15,"life":1e16,"all":2.6e17,"votes":180,"n":42,"own":[40,30,20,12,8,4,0,0,0,0,0,0],"clicks":600000,"kur":200,"refs":5,"first":now-21*3600e3,"play":21*3600,"sound":0},False),
+ 'honest: casual, a week in, mostly away':({"v":5,"voteV":2,"sit":1e12,"life":5e12,"all":4e13,"votes":10,"n":100,"own":own,"clicks":20000,"kur":40,"refs":1,"first":now-7*24*3600e3,"play":3*3600,"sound":0},False),
  'honest: old v4 save, big':({"v":4,"sit":4e9,"life":5e9,"all":6e9,"n":120,"own":own,"first":now-30*3600e3,"play":20*3600,"sound":0},False),
  'honest: earlier-today v5 save, no runV':({"v":5,"sit":4e9,"life":5e9,"all":6e9,"n":160,"own":own,"first":now-30*3600e3,"play":20*3600,"sound":0},False),
  'new player':(None,False),

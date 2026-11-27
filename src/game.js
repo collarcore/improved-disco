@@ -481,7 +481,7 @@ function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
  const keep={all:S.all,votes:S.votes+g,oldVotes:S.oldVotes||0,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
-  amends:pick?[...S.amends,pick]:S.amends,first:S.first,voteV:S.voteV,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel};
+  amends:pick?[...S.amends,pick]:S.amends,first:S.first,voteV:S.voteV,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel,noHacek:S.noHacek};
  const bells=S.ups.filter(id=>id[0]==='k');S=ASSIGN(fresh(),keep);led=S.sit;
  if(am('a10'))S.ups=bells;if(am('a4')){S.own[0]=10;S.own[1]=10;S.own[2]=5}
  log(tr('referendum: +','referendum: +')+g+tr(' glasov. Nova Slovenija se začne.',' votes. A new Slovenia begins.'));
@@ -601,7 +601,7 @@ function pNext(w){const iw=w-4;const ls=[];const T=tr('NASLEDNJA OBČINA','NEXT 
  let k=0,s=S.sit;while(S.n+k<O.length&&s>=ocost(S.n+k)){s-=ocost(S.n+k);k++}
  if(can)ls.push([btn(tr(' ODKLENI · ',' UNLOCK · ')+(c?fmt(c)+' SIT ':tr('zastonj ','free ')),'unlock',true,tr('Odkleni ','Unlock ')+o.n),...(k>1?['  ',btn(tr(' VSE MOŽNE (',' ALL (')+k+') ','all')]:[])]);
  else ls.push(tr('cena ','cost ')+fmt(c)+' SIT'+(v>0?' · '+tr('še ~','~')+dur((c-S.sit)/v)+tr('',' to go'):''));
- const g=votesGain();if(g>=Math.max(10,S.votes)&&(S.n>=150||(!can&&v>0&&(c-S.sit)/v>3600)))ls.push(wrap(tr('referendum se splača: +'+g+' glasov','a referendum pays off now: +'+g+' votes'),iw)[0]);else ls.push('');
+ const g=votesGain();if(g>=Math.max(10,Math.ceil(votesHeld()-1e-9))&&(S.n>=150||(!can&&v>0&&(c-S.sit)/v>3600)))ls.push(wrap(tr('referendum se splača: +'+g+' glasov','a referendum pays off now: +'+g+' votes'),iw)[0]);else ls.push('');
  const nx=[1,2,3].map(k=>O[S.n+k]).filter(Boolean).map(q=>q.n);
  {let s=tr('sledijo: ','next up: ');if(!nx.length)s+=tr('Ljubljana je zadnja.','Ljubljana is the last.');else{let k=0;for(const q of nx){const add=(k?', ':'')+q;if(L(s+add)+2>iw)break;s+=add;k++}if(k<nx.length||S.n+4<O.length)s+=' …'}ls.push(s)}
  return box(T,ls,w,['[N]'])}
@@ -699,7 +699,7 @@ function pRef(w){const iw=w-4;const g=votesGain();const ls=[];
  ls.push(lr(tr('glasovi','votes'),S.votes+' (+'+pc(Math.round(S.votes*VOTEP()*100))+')',iw));ls.push(lr(tr('referendumi','referendums'),String(S.refs),iw));
  ls.push(lr(tr('ob referendumu dobiš','a referendum now gives'),'+'+g,iw));ls.push(lr(tr('naslednji glas pri','next vote at'),fmt((votesTotal()+1)**3*VOTE_DIV),iw));
  /* worth it once it at least doubles your votes (at least 10): calling earlier resets for little */
- {const rec=Math.max(10,S.votes);ls.push(lr(tr('priporočeno pri','recommended at'),g>=rec?tr('zdaj','now'):'+'+rec,iw))}ls.push('');
+ {const rec=Math.max(10,Math.ceil(votesHeld()-1e-9));/* old votes count at their new-rate value, as in the gain */ls.push(lr(tr('priporočeno pri','recommended at'),g>=rec?tr('zdaj','now'):'+'+rec,iw))}ls.push('');
  if(refPick){wrap(tr('Izberi ustavni amandma. Velja za vedno.','Choose a constitutional amendment. It lasts forever.'),iw).forEach(l=>ls.push(l));ls.push('');
   refPick.forEach(id=>{wrap(amName(id),iw).forEach(l=>ls.push([{t:l,c:'bold'}]));const d=wrap(amDesc(id),iw-14);d.forEach((l,j)=>ls.push(j===d.length-1?two(['  '+l],[btn(tr(' SPREJMI ',' ADOPT '),'am'+id,true,tr('Sprejmi ','Adopt ')+amName(id))],iw):'  '+l))});
   ls.push('');ls.push([btn(tr(' PREKLIČI ',' CANCEL '),'refno')]);return box('REFERENDUM',ls,w)}

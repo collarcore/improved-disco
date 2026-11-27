@@ -14,20 +14,21 @@ def panel(b, sv):
     t = pg.evaluate("document.getElementById('p-ref').innerText"); S = pg.evaluate("[__dbg.S.votes,__dbg.S.oldVotes,__dbg.S.osel]")
     pg.evaluate("dispatchEvent(new Event('pagehide'))"); pg.reload(); pg.wait_for_timeout(800)
     S2 = pg.evaluate("[__dbg.S.votes,__dbg.S.oldVotes]"); c.close()
-    g = int(re.search(r'dobiš\s+\+(\d+)', t).group(1)); return g, S, S2, errs
+    g = int(re.search(r'dobiš\s+\+(\d+)', t).group(1)); rec = re.search(r'priporočeno pri\s+(\S+)', t).group(1)
+    print('   recommended at:', rec); return g, S, S2, errs, rec
 bad = []
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path=os.environ.get('CHROME') or None)
     # 150 old votes (all = 150^3 bn), now earned 4x as much: a new player would have cbrt(4*150^3e9/4e10)= 69 votes; old ones count 150/3.42 = 44
-    g, S, S2, e = panel(b, save(votes=150, life=1.35e16, all=4 * 3.375e15))
+    g, S, S2, e, rec = panel(b, save(votes=150, life=1.35e16, all=4 * 3.375e15))
     print(f'old save, 150 votes: panel offers +{g} (a new player at these earnings: 69, minus 44 for the old votes = +25) | kept {S[0]} votes, {S[1]} old | after a reload {S2} | cap: {bool(S[2])}', e)
-    if not (24 <= g <= 26 and S[0] == 150 and S[1] == 150 and S2 == [150, 150] and not S[2] and not e): bad.append('old')
+    if not (rec == '+44' and 24 <= g <= 26 and S[0] == 150 and S[1] == 150 and S2 == [150, 150] and not S[2] and not e): bad.append('old')
     # the same numbers on a new save: those votes are far beyond its earnings -> caught
-    g, S, S2, e = panel(b, save(voteV=2, votes=150, life=1.35e16, all=4 * 3.375e15, first=1795700000000))
+    g, S, S2, e, rec = panel(b, save(voteV=2, votes=150, life=1.35e16, all=4 * 3.375e15, first=1795700000000))
     print(f'same votes on a new save: cap: {bool(S[2])}')
     if not S[2]: bad.append('new save not caught')
     # a new save with honest votes: gain as before
-    g, S, S2, e = panel(b, save(voteV=2, votes=20, life=1.35e16, all=4 * 3.375e15, first=1795700000000))
+    g, S, S2, e, rec = panel(b, save(voteV=2, votes=20, life=1.35e16, all=4 * 3.375e15, first=1795700000000))
     print(f'new save, 20 votes: panel offers +{g} (69 - 20 = 49) | cap: {bool(S[2])}')
     if not (48 <= g <= 50 and not S[2]): bad.append('new')
 assert not bad, bad

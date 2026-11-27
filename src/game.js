@@ -100,10 +100,10 @@ const BANK_MAX=600,BANK_HARD=1800;/* the ringing bank's cap in seconds (30 min w
 const RELEASE=Date.UTC(2026,10,23,21,0);/* votes got 40× harder to earn on 26 Nov 2026; saves begun before then may hold votes earned at the old rate */
 const VOTES2=Date.UTC(2026,10,26,0,30);
 /* the game came out on 23 November 2026; nobody can have played longer */
-const fresh=()=>({v:VERSION,voteV:2,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
+const fresh=()=>({v:VERSION,voteV:2,oldVotes:0,sit:0,life:0,all:0,n:0,own:GEN.map(()=>0),ups:[],clicks:0,kur:0,t0:Date.now(),save:Date.now(),votes:0,refs:0,ach:[],achT:{},log:[],won:0,amt:1,sound:1,light:0,
  lang:null,amends:[],first:Date.now(),play:0,mile:[],evSeen:{},days:[],runV:VERSION,dev:0});
 /* saves carry a version; each step upgrades an older shape */
-function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2;if(s.voteV!==2)s.voteV=1;/* no marker: votes may be from the old rate (checked against the start date below) */if(!(s.first>0))s.first=RELEASE;/* a save that doesn't know when it started gets the most generous date */
+function migrate(s){if(!s||typeof s!=='object'||!Array.isArray(s.own))return null;const v=s.v||2;if(s.voteV!==2){s.voteV=1;if(!(s.oldVotes>=0))s.oldVotes=s.votes||0}/* no marker: its votes may be from the old rate (checked against the start date below) */if(!(s.first>0))s.first=RELEASE;/* a save that doesn't know when it started gets the most generous date */
  const rv=s.runV||Math.min(v,4);/* runs that don't record their version started before this check existed */s=ASSIGN(fresh(),s);s.__v=v;s.runV=rv;
  if(v<3)s.first=RELEASE;/* before v3 saves only knew when the current run began */
  /* v4: new unlock prices and the ringing meter; nothing in the save needs converting */
@@ -114,6 +114,7 @@ function clean(s){const f=fresh(),num=(v,d)=>{v=+v;return Number.isFinite(v)&&v>
  const obj=o=>o&&typeof o==='object'&&!Array.isArray(o)?o:{};
  for(const k of ['sit','life','all','clicks','kur','t0','save','votes','refs','won','first','play','osel','runV','dev','bank'])s[k]=num(s[k],0||f[k]||0);
  if(s.voteV!==1||!(s.first>0&&s.first<VOTES2))s.voteV=2;/* the old rate only for saves that started under it */
+ s.oldVotes=s.voteV===1?Math.min(s.votes,Math.max(0,num(s.oldVotes,0))):0;
  s.n=Math.min(O.length,Math.floor(num(s.n,0)));s.own=GEN.map((_,k)=>Math.floor(num(Array.isArray(s.own)?s.own[k]:0,0)));
  s.ups=strs(s.ups);s.ach=strs(s.ach);s.amends=strs(s.amends).filter(id=>AM.some(m=>m[0]===id));s.offer=strs(s.offer).filter(id=>AM.some(m=>m[0]===id)&&!s.amends.includes(id)).slice(0,3);s.days=Array.isArray(s.days)?s.days.filter(d=>Number.isInteger(d)&&d>=0&&d<7):[];
  s.log=Array.isArray(s.log)?s.log.filter(x=>typeof x==='string'&&x.length<300).slice(0,40):[];s.mile=Array.isArray(s.mile)?s.mile.filter(m=>m&&typeof m==='object'&&(m.k==='o'||m.k==='r')&&Number.isFinite(+m.v)):[];
@@ -194,7 +195,11 @@ const gcost=(k,a)=>gcostBase(k)*GD()*GROW**S.own[k]*(GROW**a-1)/(GROW-1);
 const gmax=k=>Math.max(0,Math.floor(Math.log(S.sit*(GROW-1)/(gcostBase(k)*GD()*GROW**S.own[k])+1)/Math.log(GROW)));
 /* votes: cube root of all tolars ever earned, in units of VOTE_DIV (40 bn since v6: the first finishers did it in 13 h, about half the plan) */
 const VOTE_DIV=4e10;const votesTotal=()=>Math.floor(Math.cbrt(S.all/VOTE_DIV));
-const votesGain=()=>Math.max(0,votesTotal()-S.votes);
+/* votes earned before the change (S.oldVotes) keep their whole bonus, but count at their new-rate cost when working out new
+   votes: an old vote took 40× fewer tolars, so it stands for 1/cbrt(40) of a new one. A save then earns votes again from the
+   point a new player with the same lifetime earnings would. */
+const OLDK=Math.cbrt(40);const votesHeld=()=>S.votes-(S.oldVotes||0)*(1-1/OLDK);
+const votesGain=()=>Math.max(0,votesTotal()-Math.ceil(votesHeld()-1e-9));
 /* a producer's share of income: what doubling it adds */
 const share=k=>{const b=baseIps();return b>0?genIps(k)/b:0};
 const gainTxt=g=>g==null?'':g<.001?' · '+tr('<0,1 %','<0.1%'):' · +'+pc(g*100>=10?Math.round(g*100):Math.round(g*1000)/10);
@@ -278,7 +283,7 @@ function audio(){if(ac)return ac;ac=new (window.AudioContext||window.webkitAudio
  echoIn.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);lp.connect(master);return ac}
 /* at most MAXV bells ring at once; a new strike fades out the oldest instead of being dropped */
 const MAXV=10,voices=[],jvoices=[];let gestured=false;
-function tone(f,{p=[[1,1,1]],dur=.7,vol=.05,when=0,echo=0,jingle=false}={}){if(!S.sound||!gestured)return;try{const a=audio();if(a.state==='suspended')a.resume();
+function tone(f,{p=[[1,1,1]],dur=.7,vol=.05,when=0,echo=0,jingle=false}={}){if(!S.sound||!gestured)return;try{const a=audio();if(a.state!=='running')a.resume().catch(()=>{});
  const now=a.currentTime;const pool=jingle?jvoices:voices,cap=jingle?8:MAXV;for(let i=pool.length-1;i>=0;i--)if(pool[i].end<now)pool.splice(i,1);
  while(pool.length>=cap){const v=pool.shift();v.g.gain.cancelScheduledValues(now);v.g.gain.setValueAtTime(Math.max(v.g.gain.value,.0001),now);v.g.gain.exponentialRampToValueAtTime(.0001,now+.06);v.os.forEach(o=>{try{o.stop(now+.07)}catch(e){}})}
  const t0=now+when;const g=a.createGain();g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+.004);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);const os=[];
@@ -287,6 +292,17 @@ function tone(f,{p=[[1,1,1]],dur=.7,vol=.05,when=0,echo=0,jingle=false}={}){if(!
  pool.push({g,os,end:t0+dur})}catch(e){}}
 /* browsers only allow sound after the player has touched the page; sounds before that are skipped, not queued */
 for(const ev of ['pointerdown','keydown'])addEventListener(ev,()=>{gestured=true},{capture:true});
+/* iOS (Safari, and Brave/Chrome, which use WebKit there) only lets sound start on finger-up, a click or a key, not on
+   finger-down where the bell rings, and after a call, Siri or switching apps leaves audio 'interrupted' until the next
+   such gesture. So every one of them wakes the audio: resume from any state that isn't running, play one silent sample
+   (iOS's unlock), and ask to play even with the silent switch on (iOS 17+). */
+let unlocked=false;
+function wakeAudio(){gestured=true;if(!S.sound)return;try{
+ if(navigator.audioSession&&navigator.audioSession.type!=='playback')navigator.audioSession.type='playback';
+ const a=audio();if(a.state!=='running')a.resume().catch(()=>{});
+ if(!unlocked||a.state!=='running'){const b=a.createBuffer(1,1,22050),src=a.createBufferSource();src.buffer=b;src.connect(a.destination);src.start(0);unlocked=true}
+}catch(e){}}
+for(const ev of ['touchend','click','keydown'])addEventListener(ev,wakeAudio,{capture:true,passive:true});
 const HAND=[[1,1,1],[2.76,.35,.45],[5.4,.12,.25]];
 const CHURCH=[[.5,.45,1.5],[1,1,1],[1.2,.55,.8],[1.5,.3,.7],[2,.6,.55],[2.5,.18,.4],[3,.15,.3],[4,.08,.2]];
 const GREAT=[[.5,.85,1.6],[.502,.4,1.6],[1,1,1],[1.004,.45,1],[1.2,.6,.85],[1.5,.3,.7],[2,.55,.6],[2.51,.18,.4],[3,.15,.3]];
@@ -464,7 +480,7 @@ function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=
  ding(523,.06);ding(784,.05);drawMap(true)}
 function offerAmendments(){const left=AM.map(a=>a[0]).filter(id=>!am(id));for(let i=left.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[left[i],left[j]]=[left[j],left[i]]}return left.slice(0,3)}
 function referendum(pick){const g=votesGain();if(g<1)return;mark('r',g);
- const keep={all:S.all,votes:S.votes+g,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
+ const keep={all:S.all,votes:S.votes+g,oldVotes:S.oldVotes||0,refs:S.refs+1,ach:S.ach,achT:S.achT,sound:S.sound,light:S.light,lang:S.lang,amt:S.amt,kur:S.kur,clicks:S.clicks,log:S.log,
   amends:pick?[...S.amends,pick]:S.amends,first:S.first,voteV:S.voteV,play:S.play,mile:S.mile,evSeen:S.evSeen,days:S.days,osel:S.osel};
  const bells=S.ups.filter(id=>id[0]==='k');S=ASSIGN(fresh(),keep);led=S.sit;
  if(am('a10'))S.ups=bells;if(am('a4')){S.own[0]=10;S.own[1]=10;S.own[2]=5}
@@ -614,16 +630,18 @@ function mapGridHTML(M,iw){const n=S.n;const tg=triglavCell(M),tri=S.ach.include
   row+=`<i class="${cls}"${da}>${esc(ch)}</i>`}
   h+=row+' '.repeat(iw-pad-M.W)+' |\n'}
  return h}
+/* the map is redrawn whenever the Kurent, boat or seagull moves; blinking cells take their phase from the clock
+   (--ph, set on each redraw), so a redraw carries on mid-blink instead of restarting it */
 let mapKey='';
 function drawMap(force){const w=PW.map;if(!w)return;const el=document.getElementById('p-map');if(!el)return;const M=mapFor(w);const bs=bState(),bp=bs?boatPlace(M,bs):null;const k=S.n+'|'+(kurPos?kurPos.join():'')+'|'+w+'|'+LANG+'|'+(bp?bp.x+','+bp.y+','+bp.f:'')+'|'+S.ach.length+'|'+(S.ach.includes('obala')?gullFrame():'');
  if(!force&&k===mapKey)return;mapKey=k;const iw=w-4;const T=tr('ZEMLJEVID','MAP');const right='[ '+S.n+'/212 ]';
  el.innerHTML=fit([H('+-'),{t:'[ ',c:'bold',hid:true},{t:T,c:'bold',head:true},{t:' ]',c:'bold',hid:true},H('-'.repeat(w-L('+-[ '+T+' ]')-L(right)-2)),right,H('-+')],w)+'\n'+seg(H('| '+' '.repeat(iw)+' |'))+'\n'+
-  `<span id="mapgrid" aria-hidden="true">${mapGridHTML(M,iw)}</span><span id="mapinfo"></span>`+seg(H('+'+'-'.repeat(w-2)+'+'));
+  `<span id="mapgrid" aria-hidden="true" style="--ph:${-Math.round(performance.now())}ms">${mapGridHTML(M,iw)}</span><span id="mapinfo"></span>`+seg(H('+'+'-'.repeat(w-2)+'+'));
  mapInfo(true)}
 let infoKey='',hoverReg=-1;
 /* highlight on the map: one občina in inverse, or a whole region: unlocked part solid, the rest blinking */
 function setHover(i,r){if(i===hover&&r===hoverReg)return;hover=i;hoverReg=r;const st=document.getElementById('hov');
- st.textContent=i>=0?`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`:r>=0?`#mapgrid .r${r}.u{background:var(--fg);color:var(--bg)}#mapgrid .r${r}:not(.u){animation:bl 1.2s steps(1) infinite}@media(prefers-reduced-motion:reduce){#mapgrid .r${r}:not(.u){text-decoration:underline}}`:'';mapInfo()}
+ st.textContent=i>=0?`#mapgrid .c${i}{background:var(--fg);color:var(--bg)}`:r>=0?`#mapgrid .r${r}.u{background:var(--fg);color:var(--bg)}#mapgrid .r${r}:not(.u){animation:bl 1.2s steps(1) infinite;animation-delay:var(--ph,0s)}@media(prefers-reduced-motion:reduce){#mapgrid .r${r}:not(.u){text-decoration:underline}}`:'';mapInfo()}
 function mapInfo(force){const w=PW.map;const el=document.getElementById('mapinfo');if(!el)return;const iw=w-4;const i=hover;
  let a,b;if(i<0&&hoverReg>=0){const r=hoverReg,rc=regCount()[r];let pu=0,pt=0;O.forEach((o,j)=>{if(o.r===r){pt+=o.p;if(j<S.n)pu+=o.p}});
   a=rname(r)+' · '+rc+'/'+RN[r]+' '+obc(RN[r])+' · '+num(pu)+tr(' od ',' of ')+num(pt)+tr(' prebivalcev',' residents');
@@ -778,7 +796,7 @@ function act(a){if(!a)return;
  /* the three on offer stay the same until a referendum is held: cancelling or reloading doesn't redeal them (the referendum's fresh save drops S.offer) */
  if(a==='ref'){const left=AM.filter(m=>!am(m[0])).length;if(!S.offer||S.offer.length!==Math.min(3,left)||S.offer.some(am)){S.offer=offerAmendments();save()}const offer=S.offer;if(offer.length)refPick=offer;else refArm=Date.now()+5000;return}
  if(a==='refno'){refArm=0;refPick=null;return}if(a==='refyes'){refArm=0;return referendum(null)}
- if(a==='snd'){S.sound=S.sound?0:1;return}
+ if(a==='snd'){S.sound=S.sound?0:1;if(S.sound)wakeAudio();return}
  if(a==='thm'){S.light=S.light?0:1;document.documentElement.classList.toggle('light',!!S.light);return}
  if(a==='lng'){LANG=S.lang=LANG==='en'?'sl':'en';document.documentElement.lang=LANG;PH={};full();return}
  if(a==='exp')return copy(signSave(btoa(unescape(encodeURIComponent(JSTR(S))))),tr('igra je kopirana. prilepi jo na drugi napravi.','game copied. paste it on the other device.'));
@@ -879,7 +897,7 @@ function tick(){const now=performance.now(),dt=Math.min(3600,(now-last)/1000);la
 
 /* ================= TEST HOOK ================= */
 /* test hooks: only on a local test server or with ?debug, so the live site has no cheat menu in the console */
-if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={ips:()=>ips(),ev(){return {fill:evFill(),click:evClick(),kur:evKur(),glob:evGlob(),gen:GEN.map((_,k)=>evGen(k))}},soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
+if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)||/[?&]debug\b/.test(location.search))window.__dbg={audio:()=>ac?ac.state:'none',hush:()=>ac&&ac.suspend(),ips:()=>ips(),ev(){return {fill:evFill(),click:evClick(),kur:evKur(),glob:evGlob(),gen:GEN.map((_,k)=>evGen(k))}},soon(){const t=Date.now()+2000;kurNext=t;zmajNext=t;boatNext=t},get hiddenNow(){return document.hidden},boat(){spawnBoat();render(true)},get boatOut(){return !!boat},dragon(){spawnDragon();render(true)},get zmaj(){return !!zmaj},act:a=>act(a),render:f=>render(f),get S(){return S},get meter(){return meter},get voices(){return voices.length},get jvoices(){return jvoices.length},boost(k,ms){if(k==='kur')kurUntil=Date.now()+ms;else clkUntil=Date.now()+ms},spawn(){spawnKurent()},toast(k,ti,tx,art){toastQ.length=0;toast(k,ti,tx,null,art)},art:{EVART,BELLART},sunset:d=>piranSunset(new Date(d)),get noHacek(){return !!S.noHacek}};
 
 /* transfer codes carry a checksum, so a hand-edited code is refused. It only stops casual editing; a determined
    player can always change a game that runs in their own browser, and since there is no leaderboard that only affects them */
@@ -908,7 +926,7 @@ function implausible(){const h=hoursIn(),sec=h*3600;
  /* beyond 1e100 nothing is honest on any timescale, and huge values could overflow the comparisons below */
  if(!(S.all<1e100&&S.life<1e100&&S.sit<1e100&&S.votes<1e30))return 'huge';
  if(S.all>10**ceil10(h))return 'all';if(S.life>S.all*1.001+1000)return 'life';if(S.sit>S.life*1.001+1000)return 'sit';
- if(S.votes>Math.floor(Math.cbrt(S.all/(S.voteV===1?1e9:VOTE_DIV)))+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
+ if(votesHeld()>Math.floor(Math.cbrt(S.all/VOTE_DIV))+1)return 'votes';if(S.clicks>30*sec+5000)return 'clicks';if(S.kur>sec/100+20)return 'kur';if(S.refs>sec/300+5)return 'refs';
  if(S.runV>=5&&spentMin()+upsSpent()>S.life*1.001+1000)return 'spent';return ''}
 function loadCheck(){if(S.dev||implausible())caught()}
 /* honeypots: things that look like a cheat menu to someone browsing the game's internals in a debugger.

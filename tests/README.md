@@ -18,6 +18,9 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `background.py` | in a background tab the Kurent, dragon and boat still arrive with their sounds; a tab with working sound is never reloaded behind your back |
 | `achievements.py` | the 14 newer achievements (61 -> 75) unlock when their condition holds and not before |
 | `reroll.py` | the three amendments on offer survive cancelling and reloading; a new set only after a referendum |
+| `blink.py` | the next municipality's ? keeps blinking steadily while the map is redrawn (seagull, boat, Kurent) |
+| `audio_wake.py` | sound comes back on the next tap after an interruption (iOS), and when switched on in Settings |
+| `oldvotes.py` | votes from before the 26 Nov change are kept, and the referendum panel offers new votes again from the right point |
 | `krof.py` | the Kurent's doughnut pays 3 minutes of the income on screen, ringing included |
 | `amendments.py` | each of the new amendments does what it says (night shift, urban municipalities, cooperatives, market days, holiday law, 30-min bank); offers come only from those not yet adopted |
 | `bank.py` | ringing on a full meter banks time; the meter holds while it runs down, then the grace, then the drain; survives a reload; capped at 10 min (30 with the amendment) |

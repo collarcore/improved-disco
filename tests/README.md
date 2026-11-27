@@ -21,6 +21,7 @@ Serve the repo first: `python3 -m http.server 8765`, then run from the repo root
 | `blink.py` | the next municipality's ? keeps blinking steadily while the map is redrawn (seagull, boat, Kurent) |
 | `audio_wake.py` | sound comes back on the next tap after an interruption (iOS), and when switched on in Settings |
 | `oldvotes.py` | votes from before the 26 Nov change are kept, and the referendum panel offers new votes again from the right point |
+| `pinch.py` | iPhone (WebKit): two or three fingers on the bell, a Kurent, a pop-up or a button can't start a pinch-zoom; plain text still can |
 | `krof.py` | the Kurent's doughnut pays 3 minutes of the income on screen, ringing included |
 | `amendments.py` | each of the new amendments does what it says (night shift, urban municipalities, cooperatives, market days, holiday law, 30-min bank); offers come only from those not yet adopted |
 | `bank.py` | ringing on a full meter banks time; the meter holds while it runs down, then the grace, then the drain; survives a reload; capped at 10 min (30 with the amendment) |

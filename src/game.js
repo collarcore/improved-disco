@@ -834,16 +834,23 @@ document.addEventListener('pointercancel',()=>{downA=null});
 /* phones: a second tap within ~0.35 s must never zoom the page. touch-action covers most browsers; iOS Safari
    can still zoom on fast taps, so the second touchend is cancelled. Actions run on pointer events, so nothing is lost. */
 {let lastEnd=0;document.addEventListener('touchend',e=>{const now=e.timeStamp;if(now-lastEnd<350&&e.cancelable&&!(e.target.closest&&e.target.closest('input')))e.preventDefault();lastEnd=now},{passive:false})}
-/* drumming on the bell with two or three fingers looks like the start of a pinch to iOS, which then zooms and sticks.
-   While a finger is on the bell, multi-finger gestures are cancelled; one-finger scrolling and pinching anywhere else still work. */
-{let onBell=false;const bellTouch=e=>[...e.touches].some(t=>t.target&&t.target.closest&&t.target.closest('.ring'));
+/* tapping fast with two or three fingers (on the bell, a Kurent, a pop-up) looks like the start of a pinch to iOS, which then
+   zooms and sticks (and iOS keeps the zoom across a reload). While a finger is on anything you play with (the bell, the map,
+   a button, a pop-up), multi-finger gestures are cancelled; scrolling, and pinching on plain text and margins, still work. */
+const PLAY='.ring,[data-a],#mapgrid,#toast';
+{let onBell=false;const bellTouch=e=>[...e.touches].some(t=>t.target&&t.target.closest&&t.target.closest(PLAY));
  const stop=e=>{onBell=bellTouch(e);if(e.touches.length>1&&onBell&&e.cancelable)e.preventDefault()};
  document.addEventListener('touchstart',stop,{passive:false});document.addEventListener('touchmove',stop,{passive:false});
  document.addEventListener('touchend',e=>{onBell=bellTouch(e)},{passive:true});
  /* Safari's own pinch events: refuse them while the bell is being played */
  for(const ev of ['gesturestart','gesturechange'])document.addEventListener(ev,e=>{if(onBell)e.preventDefault()},{passive:false})}
 /* iOS zooms in when a text field smaller than 16 px gets focus; maximum-scale stops that, and iOS still allows pinch-zoom */
-if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const v=document.querySelector('meta[name=viewport]');if(v)v.content='width=device-width, initial-scale=1, maximum-scale=1'}
+if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){const v=document.querySelector('meta[name=viewport]');
+ if(v){const base='width=device-width, initial-scale=1, maximum-scale=1';v.content=base;
+  /* iOS restores a page's zoom on reload, so one stuck zoom survives refreshing: if the page opens zoomed in,
+     briefly forbid zooming (which makes iOS snap back to 1×), then allow it again */
+  const unzoom=()=>{if(window.visualViewport&&visualViewport.scale>1.02){v.content=base+', minimum-scale=1, user-scalable=no';setTimeout(()=>{v.content=base},300)}};
+  addEventListener('load',()=>setTimeout(unzoom,50));addEventListener('pageshow',e=>{if(e.persisted)unzoom()})}}
 {const te=document.getElementById('toast');te.addEventListener('pointerup',e=>{if(!(e.button===0||e.pointerType!=='mouse'))return;if(toastQ[0]&&toastQ[0].kind==='upd')return;/* the update notice only answers its two buttons */nextToast()});te.addEventListener('click',e=>{if(e.detail!==0)return;if(toastQ[0]&&toastQ[0].kind==='upd')return;nextToast()});
  /* reading time: the pop-up waits while the mouse rests on it */
  te.addEventListener('mouseenter',()=>clearTimeout(toastTimer));te.addEventListener('mouseleave',()=>{clearTimeout(toastTimer);if(!te.hidden&&!(toastQ[0]&&toastQ[0].kind==='upd'))toastTimer=setTimeout(nextToast,2500)})}

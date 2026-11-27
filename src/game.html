@@ -31,7 +31,7 @@
 :root{--bg:#000;--fg:#f2f2f2}
 :root.light{--bg:#fff;--fg:#000}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--fg)}
+html,body{margin:0;background:var(--bg);color:var(--fg)}html{overflow-x:hidden}
 html{overflow-anchor:none}
 body{font:400 14px/1.25 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-ligatures:none;-webkit-font-smoothing:antialiased;overflow-x:hidden;user-select:none;-webkit-user-select:none}
 #root{margin:0 auto;padding:1.25em 0 2.5em;display:flex;flex-direction:column;align-items:center}
@@ -57,7 +57,8 @@ pre{margin:0 0 1.25em;font:inherit;white-space:pre;overflow:hidden}
 #mapgrid i{font-style:normal}
 input{font:inherit;line-height:inherit;height:1lh;vertical-align:top;color:var(--fg);background:transparent;border:0;border-radius:0;outline:none;padding:0;margin:0;width:20ch;caret-color:var(--fg);-webkit-appearance:none;appearance:none;-webkit-user-select:text;user-select:text}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-#measure{position:fixed;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none}
+/* the character-width ruler sits in a zero-size box: wider than a phone, it must never widen the page (iOS counts that for zoom) */
+#mbox{position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none}#measure{white-space:pre}
 /* no double-tap zoom anywhere, so fast taps on the bell all ring; pinch-zoom stays for anyone who needs bigger text */
 html,body,*{touch-action:manipulation}
 .b,.hk,.sea,.zm,.boat,[data-a]{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -69,7 +70,7 @@ html,body,*{touch-action:manipulation}
 <body>
 <div id="srsum" class="sr" aria-live="off"></div><div id="srlog" class="sr" aria-live="polite"></div>
 <div id="root"><pre id="head" aria-hidden="true"></pre><div id="cols"></div></div>
-<span id="measure" aria-hidden="true">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span>
+<span id="mbox" aria-hidden="true"><span id="measure">MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM</span></span>
 <style id="hov"></style>
 <pre id="toast" hidden role="status" aria-live="polite"></pre>
 <script>

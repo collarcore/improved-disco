@@ -40,6 +40,13 @@ with sync_playwright() as p:
     c, pg, e = page(b, ['a14'], bank=99999); bk = [l for l in pg.evaluate("document.getElementById('p-bell').innerText").split('\n') if 'polno' in l][0]; c.close()
     print('bank with bell-ringing tradition:', bk.strip('| '))
     if '30:00' not in bk and '29:5' not in bk: bad.append('a14')
+    # faster ringing: the bank fills 2 s per ring at a full meter instead of 1
+    def banked(am):
+        c, pg, e = page(b, am)
+        for _ in range(60): pg.keyboard.press(' '); pg.wait_for_timeout(110)
+        v = pg.evaluate("__dbg.S.bank"); c.close(); return v
+    b0, b2 = banked([]), banked(['a15']); print('bank after 60 rings:', b0, '| with faster ringing:', b2)
+    if not (b0 > 0 and b2 >= 1.7 * b0): bad.append('a15 bank')
     # offers: three, never one already adopted; and with all 20 adopted, none
     c, pg, e = page(b, ['a%d' % i for i in range(1, 18)], n=150, life=1e15, all=1e15, sit=1e12, votes=0)
     offered = set()

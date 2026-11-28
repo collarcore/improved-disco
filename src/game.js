@@ -67,7 +67,7 @@ const AM=[['a1','Cenejša proizvodnja','Producer subsidies','proizvodnja je 15 %
  /* these change how you play more than how much you earn, at about the strength of the first twelve */
  ['a13','Dežurstvo','On duty','kurent ostane 2× dlje','the Kurent stays twice as long'],
  ['a14','Zvonarska tradicija','Bell-ringing tradition','zaloga zvonjenja drži do 30 min namesto 10','the ringing bank holds up to 30 min instead of 10'],
- ['a15','Hitrejše zvonjenje','Faster ringing','zvonjenje se polni 2× hitreje','the ringing meter fills twice as fast'],
+ ['a15','Hitrejše zvonjenje','Faster ringing','zvonjenje in zaloga se polnita 2× hitreje','the ringing meter and its bank fill twice as fast'],
  ['a16','Sejemski dnevi','Market days','bonusi dni v tednu so dvojni','weekday bonuses count double'],
  ['a17','Praznični zakon','Holiday law','bonusi praznikov so dvojni','holiday bonuses count double'],
  ['a18','Nočna izmena','Night shift','dohodek ×1,5 med 20. in 6. uro','income ×1.5 between 20:00 and 06:00'],
@@ -468,7 +468,7 @@ function noonCheck(){const d=new Date(window.__date||Date.now());if(d.getHours()
 const RATE=10;const paidT=[];let lastSoft=0,cappedT=-1e9;
 function ring(){noonCheck();if(new Date(window.__date||Date.now()).getHours()<4)nightRang=true;const now=performance.now();while(paidT.length&&now-paidT[0]>=1000)paidT.shift();
  swing=6;pslot=(pslot+1)%6;if(paidT.length>=RATE){/* over the limit: a quiet tick at most every 0.15 s, nothing else */cappedT=now;if(now-lastSoft>150){lastSoft=now;bellSound(true)}return}paidT.push(now);lastRingT=Date.now();
- meter=Math.min(1,meter+FILL*evFill()*(am('a15')?2:1));if(meter>=1){S.bank=Math.min(bankMax(),(S.bank||0)+1);lastBankT=now;if(S.bank>=bankMax())bankFull=true}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
+ meter=Math.min(1,meter+FILL*evFill()*(am('a15')?2:1));if(meter>=1){S.bank=Math.min(bankMax(),(S.bank||0)+(am('a15')?2:1));lastBankT=now;if(S.bank>=bankMax())bankFull=true}const v=clickVal();earn(v);S.clicks++;if(S.clicks>=1991&&!S.ach.includes('sam'))secret('sam',fanfare);
  parts.push({t:'+'+fmt(v,1),x:pslot%2?.75:.25,age:0,y0:6+Math.floor(pslot/2)});if(parts.length>8)parts.shift();bellSound()}
 const kurLm=LM.find(l=>l.kind==='kur');
 function catchKurent(){if(!kurPos)return;kurPos=null;kurGone=0;S.kur++;const lx=has(kurLm.id)?KC.ptujLong:1;const r=Math.random();
